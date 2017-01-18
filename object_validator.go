@@ -97,6 +97,10 @@ func (o *objectValidator) Validate(data interface{}) *Result {
 					res.Merge(NewSchemaValidator(o.AdditionalProperties.Schema, o.Root, o.Path+"."+key, o.KnownFormats).Validate(value))
 				} else if regularProperty && !(matched || succeededOnce) {
 					res.AddErrors(errors.FailedAllPatternProperties(o.Path, o.In, key))
+				} else {
+					//ran into an issue where passing a key not described in the body definition was making a pass 
+					//all the way through. I added this else and it fixed it. 
+					res.AddErrors(errors.PropertyNotAllowed(o.Path, o.In, key))
 				}
 			}
 		}
