@@ -52,6 +52,7 @@ func NewSchemaValidator(schema *spec.Schema, rootSchema interface{}, root string
 	if schema.ID != "" || schema.Ref.String() != "" || schema.Ref.IsRoot() {
 		err := spec.ExpandSchema(schema, rootSchema, nil)
 		if err != nil {
+			// TODO: how do we get there?
 			panic(err)
 		}
 	}
@@ -109,6 +110,7 @@ func (s *SchemaValidator) Validate(data interface{}) *Result {
 		if s.Schema.Type.Contains("integer") { // avoid lossy conversion
 			in, erri := num.Int64()
 			if erri != nil {
+				// TODO: should provide the context to the end user
 				result.AddErrors(erri)
 				result.Inc()
 				return result
@@ -117,6 +119,7 @@ func (s *SchemaValidator) Validate(data interface{}) *Result {
 		} else {
 			nf, errf := num.Float64()
 			if errf != nil {
+				// TODO: should provide the context to the end user
 				result.AddErrors(errf)
 				result.Inc()
 				return result

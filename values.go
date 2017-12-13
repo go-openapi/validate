@@ -16,7 +16,6 @@ package validate
 
 import (
 	"reflect"
-	"regexp"
 	"unicode/utf8"
 
 	"github.com/go-openapi/errors"
@@ -139,7 +138,8 @@ func RequiredNumber(path, in string, data float64) *errors.Validation {
 
 // Pattern validates a string against a regular expression
 func Pattern(path, in, data, pattern string) *errors.Validation {
-	re := regexp.MustCompile(pattern)
+	// TODO: avoid must compile, which panics
+	re := mustCompileRegexp(pattern)
 	if !re.MatchString(data) {
 		return errors.FailedPattern(path, in, pattern)
 	}

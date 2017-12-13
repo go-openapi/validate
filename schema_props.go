@@ -15,6 +15,7 @@
 package validate
 
 import (
+	"fmt"
 	"log"
 	"reflect"
 
@@ -94,8 +95,20 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 		var bestFailures *Result
 		succeededOnce := false
 		for _, anyOfSchema := range s.anyOfValidators {
+			// DEBUG
+			//fmt.Printf("DEBUG: Validate anyOf: %s\n", s.Path)
+			//d := spew.ConfigState{MaxDepth: 1}
+			//d2 := spew.ConfigState{MaxDepth: 2}
+			//d.Dump(anyOfSchema)
+			//fmt.Println("EDEBUG")
+			// Recursively validate schemas
 			result := anyOfSchema.Validate(data)
+			//fmt.Println("DEBUG: Validate anyOf:result")
+			//d2.Dump(result)
+			//d2.Printf("DEBUG: result.IsValid()=%t\n", result.IsValid())
+			//fmt.Println("EDEBUG")
 			if result.IsValid() {
+				//fmt.Println("DEBUG: this one IsValid")
 				bestFailures = nil
 				succeededOnce = true
 				if firstSuccess == nil {
@@ -109,7 +122,7 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 		}
 
 		if !succeededOnce {
-			mainResult.AddErrors(errors.New(422, "must validate at least one schema (anyOf)"))
+			mainResult.AddErrors(errors.New(errors.CompositeErrorCode, fmt.Sprintf("\"%s\" must validate at least one schema (anyOf)", s.Path)))
 		}
 		if bestFailures != nil {
 			mainResult.Merge(bestFailures)
@@ -139,7 +152,14 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 		}
 
 		if validated != 1 {
-			mainResult.AddErrors(errors.New(422, "must validate one and only one schema (oneOf)"))
+			// TODO: this ones is too often detected. Should be filtered if better error assessment found
+			additionalMsg := ""
+			if validated == 0 {
+				additionalMsg = "Found none valid"
+			} else {
+				additionalMsg = fmt.Sprintf("Found %d valid alternatives", validated)
+			}
+			mainResult.AddErrors(errors.New(errors.CompositeErrorCode, fmt.Sprintf("\"%s\" must validate one and only one schema (oneOf). %s", s.Path, additionalMsg)))
 			if bestFailures != nil {
 				mainResult.Merge(bestFailures)
 			}
@@ -160,14 +180,18 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 		}
 
 		if validated != len(s.allOfValidators) {
-			mainResult.AddErrors(errors.New(422, "must validate all the schemas (allOf)"))
+			additionalMsg := ""
+			if validated == 0 {
+				additionalMsg = ". None validated"
+			}
+			mainResult.AddErrors(errors.New(errors.CompositeErrorCode, fmt.Sprintf("\"%s\" must validate all the schemas (allOf)%s", s.Path, additionalMsg)))
 		}
 	}
 
 	if s.notValidator != nil {
 		result := s.notValidator.Validate(data)
 		if result.IsValid() {
-			mainResult.AddErrors(errors.New(422, "must not validate the schema (not)"))
+			mainResult.AddErrors(errors.New(errors.CompositeErrorCode, fmt.Sprintf("\"%s\" must not validate the schema (not)", s.Path)))
 		}
 	}
 
@@ -184,7 +208,7 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 				if len(dep.Property) > 0 {
 					for _, depKey := range dep.Property {
 						if _, ok := val[depKey]; !ok {
-							mainResult.AddErrors(errors.New(422, "has a dependency on %s", depKey))
+							mainResult.AddErrors(errors.New(errors.CompositeErrorCode, "\"%s\" has a dependency on %s", s.Path, depKey))
 						}
 					}
 				}

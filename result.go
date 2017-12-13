@@ -25,23 +25,28 @@ var (
 	Debug = os.Getenv("SWAGGER_DEBUG") != ""
 )
 
+// Defaulter ...
 type Defaulter interface {
 	Apply()
 }
 
+// DefaulterFunc ...
 type DefaulterFunc func()
 
+// Apply ...
 func (f DefaulterFunc) Apply() {
 	f()
 }
 
-// Result represents a validation result
+// Result represents a validation result set
 type Result struct {
 	Errors     []error
 	MatchCount int
 	Defaulters []Defaulter
 }
 
+// TODO func WithPath(path string)
+// TODO merge maintains path / map
 // Merge merges this result with the other one, preserving match counts etc
 func (r *Result) Merge(other *Result) *Result {
 	if other == nil {
@@ -53,10 +58,22 @@ func (r *Result) Merge(other *Result) *Result {
 	return r
 }
 
-// AddErrors adds errors to this validation result
+// TODO AddErrors should return *Result to allow for chaining with .WithPath()
+// AddErrors adds errors to this validation result (if not already reported)
 func (r *Result) AddErrors(errors ...error) {
-	// TODO: filter already existing errors
-	r.Errors = append(r.Errors, errors...)
+	found := false
+	// TODO: could be faster if we maintain a redundant map of errors
+	for _, e := range errors {
+		for _, isReported := range r.Errors {
+			if e.Error() == isReported.Error() {
+				found = true
+				break
+			}
+		}
+		if !found {
+			r.Errors = append(r.Errors, e)
+		}
+	}
 }
 
 // IsValid returns true when this result is valid
@@ -75,6 +92,7 @@ func (r *Result) Inc() {
 }
 
 // AsError renders this result as an error interface
+// TODO : reporting / pretty print with path / ordered
 func (r *Result) AsError() error {
 	if r.IsValid() {
 		return nil
@@ -82,6 +100,7 @@ func (r *Result) AsError() error {
 	return errors.CompositeValidationError(r.Errors...)
 }
 
+// ApplyDefaults ...
 func (r *Result) ApplyDefaults() {
 	for _, d := range r.Defaulters {
 		d.Apply()
