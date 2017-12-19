@@ -17,7 +17,6 @@ package validate
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/spec"
@@ -161,17 +160,7 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 				additionalMsg = fmt.Sprintf("Found %d valid alternatives", validated)
 			}
 
-			// In the OneOf case, we report underlying errors: no need to cascade "must validate... (oneOf)" for all
-			// parent OneOf schemas. Retain only the innermost message.
-			found := false
-			for _, e := range mainResult.Errors {
-				if strings.Contains(e.Error(), "must validate one and only one schema") {
-					found = true
-				}
-			}
-			if !found {
-				mainResult.AddErrors(errors.New(errors.CompositeErrorCode, "\"%s\" must validate one and only one schema (oneOf). %s", s.Path, additionalMsg))
-			}
+			mainResult.AddErrors(errors.New(errors.CompositeErrorCode, "\"%s\" must validate one and only one schema (oneOf). %s", s.Path, additionalMsg))
 			if bestFailures != nil {
 				mainResult.Merge(bestFailures)
 			}

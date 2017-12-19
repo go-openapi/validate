@@ -290,7 +290,6 @@ func TestIssue18(t *testing.T) {
 
 			if DebugTest {
 				if len(verifiedErrors) > 0 {
-
 					t.Logf("DEVMODE: Returned error messages validating %s ", path)
 					for _, v := range verifiedErrors {
 						t.Logf("%s", v)

@@ -126,7 +126,7 @@ func testMessageQuality(t *testing.T, haltOnErrors bool) {
 			expectedValid:     false,
 			expectedWarnings:  []expectedMessage{},
 			expectedMessages: []expectedMessage{
-				expectedMessage{"(.*)json: cannot unmarshal object into Go struct field(.*)", false, true},
+				expectedMessage{".*json: cannot unmarshal object into Go struct field.*", false, true},
 			},
 		},
 		"fixture-859-good.yaml": expectedFixture{
@@ -602,7 +602,7 @@ func testMessageQuality(t *testing.T, haltOnErrors bool) {
 			expectedValid:     false,
 			expectedWarnings:  []expectedMessage{},
 			expectedMessages: []expectedMessage{
-				expectedMessage{`(.*)yaml:(.+)`, false, true},
+				expectedMessage{`.*yaml:.+`, false, true},
 			},
 		},
 		// Load error: incomplete JSON ...
@@ -614,7 +614,7 @@ func testMessageQuality(t *testing.T, haltOnErrors bool) {
 			expectedWarnings:  []expectedMessage{},
 			expectedMessages: []expectedMessage{
 				// Since this error is provided by an external package (go-openapi/loads, only asserts the surface of things)
-				expectedMessage{`(.*)yaml:(.+)`, false, true},
+				expectedMessage{`.*yaml:.+`, false, true},
 			},
 		},
 		"fixture-1289.yaml": expectedFixture{
@@ -765,7 +765,7 @@ func testMessageQuality(t *testing.T, haltOnErrors bool) {
 		})
 	if err != nil {
 		t.Logf("%v", err)
-		t.FailNow()
+		t.Fail()
 	}
 }
 

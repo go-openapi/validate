@@ -175,6 +175,6 @@ func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnL
 		})
 	if err != nil {
 		t.Logf("%v", err)
-		t.FailNow()
+		t.Fail()
 	}
 }
