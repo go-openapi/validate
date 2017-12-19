@@ -35,6 +35,7 @@ func init() {
 // A copy of all fixtures available in in go-swagger/go-swagger
 // is maintained in fixtures/go-swagger
 func Test_GoSwaggerTestCases(t *testing.T) {
+	t.SkipNow()
 	// A list of test cases which fail on "swagger validate" at spec load time
 	expectedLoadFailures := map[string]bool{
 		"fixtures/go-swagger/bugs/342/fixture-342.yaml":   false,

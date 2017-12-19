@@ -255,6 +255,7 @@ func TestIssue6(t *testing.T) {
 
 // check if invalid patterns are indeed invalidated
 func TestIssue18(t *testing.T) {
+	t.SkipNow()
 	files, _ := filepath.Glob(filepath.Join("fixtures", "bugs", "18", "*.json"))
 	for _, path := range files {
 		t.Logf("Tested spec=%s", path)
