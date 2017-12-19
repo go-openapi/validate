@@ -16,8 +16,8 @@ package validate
 
 import (
 	"fmt"
-	"log"
 	"reflect"
+	"strings"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/spec"
@@ -82,47 +82,45 @@ func newSchemaPropsValidator(path string, in string, allOf, oneOf, anyOf []spec.
 
 func (s *schemaPropsValidator) Applies(source interface{}, kind reflect.Kind) bool {
 	r := reflect.TypeOf(source) == specSchemaType
-	if Debug {
-		log.Printf("schema props validator for %q applies %t for %T (kind: %v)\n", s.Path, r, source, kind)
-	}
+	debugLog("schema props validator for %q applies %t for %T (kind: %v)\n", s.Path, r, source, kind)
 	return r
 }
 
 func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 	mainResult := new(Result)
+
+	// Intermediary error results
+
+	// IMPORTANT! messages from underlying validators
+	keepResultAnyOf := new(Result)
+	keepResultOneOf := new(Result)
+	keepResultAllOf := new(Result)
+
 	var firstSuccess *Result
 	if len(s.anyOfValidators) > 0 {
 		var bestFailures *Result
 		succeededOnce := false
 		for _, anyOfSchema := range s.anyOfValidators {
-			// DEBUG
-			//fmt.Printf("DEBUG: Validate anyOf: %s\n", s.Path)
-			//d := spew.ConfigState{MaxDepth: 1}
-			//d2 := spew.ConfigState{MaxDepth: 2}
-			//d.Dump(anyOfSchema)
-			//fmt.Println("EDEBUG")
-			// Recursively validate schemas
 			result := anyOfSchema.Validate(data)
-			//fmt.Println("DEBUG: Validate anyOf:result")
-			//d2.Dump(result)
-			//d2.Printf("DEBUG: result.IsValid()=%t\n", result.IsValid())
-			//fmt.Println("EDEBUG")
+			// We keep inner IMPORTANT! errors no matter what MatchCount tells us
+			keepResultAnyOf.Merge(result.KeepRelevantErrors())
 			if result.IsValid() {
-				//fmt.Println("DEBUG: this one IsValid")
 				bestFailures = nil
 				succeededOnce = true
 				if firstSuccess == nil {
 					firstSuccess = result
 				}
+				keepResultAnyOf = new(Result)
 				break
 			}
+			// MatchCount is used to select errors from the schema with most positive checks
 			if bestFailures == nil || result.MatchCount > bestFailures.MatchCount {
 				bestFailures = result
 			}
 		}
 
 		if !succeededOnce {
-			mainResult.AddErrors(errors.New(errors.CompositeErrorCode, fmt.Sprintf("\"%s\" must validate at least one schema (anyOf)", s.Path)))
+			mainResult.AddErrors(errors.New(errors.CompositeErrorCode, "\"%s\" must validate at least one schema (anyOf)", s.Path))
 		}
 		if bestFailures != nil {
 			mainResult.Merge(bestFailures)
@@ -138,28 +136,42 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 
 		for _, oneOfSchema := range s.oneOfValidators {
 			result := oneOfSchema.Validate(data)
+			// We keep inner IMPORTANT! errors no matter what MatchCount tells us
+			keepResultOneOf.Merge(result.KeepRelevantErrors())
 			if result.IsValid() {
 				validated++
 				bestFailures = nil
 				if firstSuccess == nil {
 					firstSuccess = result
 				}
+				keepResultOneOf = new(Result)
 				continue
 			}
+			// MatchCount is used to select errors from the schema with most positive checks
 			if validated == 0 && (bestFailures == nil || result.MatchCount > bestFailures.MatchCount) {
 				bestFailures = result
 			}
 		}
 
 		if validated != 1 {
-			// TODO: this ones is too often detected. Should be filtered if better error assessment found
 			additionalMsg := ""
 			if validated == 0 {
 				additionalMsg = "Found none valid"
 			} else {
 				additionalMsg = fmt.Sprintf("Found %d valid alternatives", validated)
 			}
-			mainResult.AddErrors(errors.New(errors.CompositeErrorCode, fmt.Sprintf("\"%s\" must validate one and only one schema (oneOf). %s", s.Path, additionalMsg)))
+
+			// In the OneOf case, we report underlying errors: no need to cascade "must validate... (oneOf)" for all
+			// parent OneOf schemas. Retain only the innermost message.
+			found := false
+			for _, e := range mainResult.Errors {
+				if strings.Contains(e.Error(), "must validate one and only one schema") {
+					found = true
+				}
+			}
+			if !found {
+				mainResult.AddErrors(errors.New(errors.CompositeErrorCode, "\"%s\" must validate one and only one schema (oneOf). %s", s.Path, additionalMsg))
+			}
 			if bestFailures != nil {
 				mainResult.Merge(bestFailures)
 			}
@@ -173,6 +185,9 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 
 		for _, allOfSchema := range s.allOfValidators {
 			result := allOfSchema.Validate(data)
+			// We keep inner IMPORTANT! errors no matter what MatchCount tells us
+			keepResultAllOf.Merge(result.KeepRelevantErrors())
+			//keepAllResultsAllOf.Merge(result)
 			if result.IsValid() {
 				validated++
 			}
@@ -184,14 +199,16 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 			if validated == 0 {
 				additionalMsg = ". None validated"
 			}
-			mainResult.AddErrors(errors.New(errors.CompositeErrorCode, fmt.Sprintf("\"%s\" must validate all the schemas (allOf)%s", s.Path, additionalMsg)))
+
+			mainResult.AddErrors(errors.New(errors.CompositeErrorCode, "\"%s\" must validate all the schemas (allOf)%s", s.Path, additionalMsg))
 		}
 	}
 
 	if s.notValidator != nil {
 		result := s.notValidator.Validate(data)
+		// We keep inner IMPORTANT! errors no matter what MatchCount tells us
 		if result.IsValid() {
-			mainResult.AddErrors(errors.New(errors.CompositeErrorCode, fmt.Sprintf("\"%s\" must not validate the schema (not)", s.Path)))
+			mainResult.AddErrors(errors.New(errors.CompositeErrorCode, "\"%s\" must not validate the schema (not)", s.Path))
 		}
 	}
 
@@ -217,5 +234,7 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 	}
 
 	mainResult.Inc()
-	return mainResult
+	// In the end we retain best failures for schema validation
+	// plus, if any, composite errors which may explain special cases (tagged as IMPORTANT!).
+	return mainResult.Merge(keepResultAllOf, keepResultOneOf, keepResultAnyOf)
 }
