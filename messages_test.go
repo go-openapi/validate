@@ -76,7 +76,7 @@ func Test_MessageQualityContinueOnErrors_Issue44(t *testing.T) {
 
 // ContinueOnErrors mode off
 func Test_MessageQualityStopOnErrors_Issue44(t *testing.T) {
-	//t.SkipNow()
+	t.SkipNow()
 	state := continueOnErrors
 	SetContinueOnErrors(false)
 	defer func() {
