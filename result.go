@@ -158,6 +158,8 @@ func (r *Result) KeepRelevantErrors() *Result {
 
 // IsValid returns true when this result is valid
 func (r *Result) IsValid() bool {
+	// TODO: allowing to work on nil object (same with HasErrors(), ...)
+	// same for Merge, etc... => would result in safe, more concise calls.
 	return len(r.Errors) == 0
 }
 
