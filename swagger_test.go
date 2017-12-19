@@ -111,12 +111,14 @@ func Test_GoSwaggerTestCases(t *testing.T) {
 	defer func() {
 		SetContinueOnErrors(state)
 	}()
-	testGoSwaggerSpecs(t, "./fixtures/go-swagger", expectedFailures, expectedLoadFailures, true)
+	if testGoSwaggerSpecs(t, "./fixtures/go-swagger", expectedFailures, expectedLoadFailures, true) != 0 {
+		t.Fail()
+	}
 }
 
 // A non regression test re "swagger validate" expectations
 // Just validates all fixtures in ./fixtures/go-swagger (excluded codegen cases)
-func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnLoad map[string]bool, haltOnErrors bool) {
+func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnLoad map[string]bool, haltOnErrors bool) (errs int) {
 	err := filepath.Walk(path,
 		func(path string, info os.FileInfo, err error) error {
 			shouldNotLoad := false
@@ -127,7 +129,6 @@ func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnL
 			if _, ok := expectToFail[path]; ok {
 				shouldFail = expectToFail[path]
 			}
-			errs := 0
 			if !info.IsDir() && (strings.HasSuffix(info.Name(), ".yaml") || strings.HasSuffix(info.Name(), ".yml") || strings.HasSuffix(info.Name(), ".json")) {
 				// Checking invalid specs
 				t.Logf("Testing messages for spec: %s", path)
@@ -175,6 +176,7 @@ func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnL
 		})
 	if err != nil {
 		t.Logf("%v", err)
-		t.Fail()
+		errs++
 	}
+	return
 }
