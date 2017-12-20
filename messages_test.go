@@ -64,7 +64,10 @@ type ExpectedMap map[string]ExpectedFixture
 // which are not necessarily "unitary". Expect multiple changes in messages whenever
 // altering the validator.
 func Test_MessageQualityContinueOnErrors_Issue44(t *testing.T) {
-	t.SkipNow()
+	if !enableLongTests {
+		skipNotify(t)
+		t.SkipNow()
+	}
 	state := continueOnErrors
 	SetContinueOnErrors(true)
 	defer func() {
@@ -76,7 +79,10 @@ func Test_MessageQualityContinueOnErrors_Issue44(t *testing.T) {
 
 // ContinueOnErrors mode off
 func Test_MessageQualityStopOnErrors_Issue44(t *testing.T) {
-	t.SkipNow()
+	if !enableLongTests {
+		skipNotify(t)
+		t.SkipNow()
+	}
 	state := continueOnErrors
 	SetContinueOnErrors(false)
 	defer func() {

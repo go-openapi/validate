@@ -1,6 +1,34 @@
 # 
 # This document specifies messages expecations on tested fixtures (errors and warnings)
 # Messages may be either a plain string (assert.Contains) or a simple regexp (assert.True(regexp.MatchString())
+fixture-patternProperties.json:
+  comment: Exercise pattern properties (for default values), with an invalid pattern
+  todo: should be generalized to example values when supported
+  expectedLoadError: false
+  expectedValid: false
+  expectedMessages:
+  - message: definitions.Tag.patternProperties in body is a forbidden property
+    withContinueOnErrors: false
+    isRegexp: false
+  - message: definitions.TagInvalidDefault.patternProperties in body is a forbidden property
+    withContinueOnErrors: false
+    isRegexp: false
+  - message: definitions.TagWrong.patternProperties in body is a forbidden property
+    withContinueOnErrors: false
+    isRegeexp: false
+  - message: 'definitions.TagInvalidDefault.default.id in body must be of type integer: "string"'
+    withContinueOnErrors: true
+    isRegexp: false
+  - message: 'definitions.TagInvalidDefault.default.nb-1 in body must be of type integer: "string"'
+    withContinueOnErrors: true
+    isRegexp: false
+  - message: 'definitions.TagInvalidDefault.default.nb-2 in body must be of type integer: "string"'
+    withContinueOnErrors: true
+    isRegexp: false
+  expectedWarnings:
+  - message: 'definition "#/definitions/Parent" is not used anywhere'
+    withContinueOnErrors: true
+    isRegexp: false
 bitbucket.json:
   comment: Path differing by only a trailing "/" are not considered duplicates
   todo:
@@ -699,6 +727,7 @@ fixture-constraints-on-numbers.yaml:
   - message: default value for param8 in query does not validate its schema
     withContinueOnErrors: false
     isRegexp: false
+  # Note how value has been implicitely converted to fload64
   - message: param1 in query should be a multiple of 2.147483648e+09
     withContinueOnErrors: false
     isRegexp: false
@@ -723,6 +752,7 @@ fixture-constraints-on-numbers.yaml:
   - message: Checked value must be of type integer with format int32 in param5
     withContinueOnErrors: false
     isRegexp: false
+  # Note how value has been implicitely converted to fload64
   - message: param5 in query should be less than or equal to 2.147483647e+09
     withContinueOnErrors: false
     isRegexp: false
@@ -735,10 +765,12 @@ fixture-constraints-on-numbers.yaml:
   - message: Checked value must be of type integer with format uint32 in param8
     withContinueOnErrors: false
     isRegexp: false
+  # Note how value has been implicitely converted to fload64
   - message: param8 in query should be greater than or equal to 2.147483647e+09
     withContinueOnErrors: false
     isRegexp: false
   expectedWarnings:
+  # Those used to be a debug log: now its a warning
   - message: param1 in query has a default but no valid schema
     withContinueOnErrors: false
     isRegexp: false
@@ -765,7 +797,7 @@ fixture-constraints-on-numbers.yaml:
     isRegexp: false
 fixture-invalid-example-property.yaml:
   comment: 
-  todo: 
+  todo: this one should fail when examples are validated
   expectedLoadError: false
   expectedValid: true
   expectedMessages: []
@@ -786,6 +818,7 @@ petstore-expanded.json:
   - message: invalid ref "pet"
     withContinueOnErrors: false
     isRegexp: false
+  # this one is a regexp since the full absolute path of the ref is reported
   - message: 'could not resolve reference in newPet to \$ref pet: open .*\/pet: no such file or directory'
     withContinueOnErrors: true
     isRegexp: true

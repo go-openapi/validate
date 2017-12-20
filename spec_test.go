@@ -16,6 +16,7 @@ package validate
 
 import (
 	"encoding/json"
+	"flag"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -29,8 +30,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Enable long running tests by using cmd line arg,
+// e.g. go test ... -arg -enable-long
+// If not enabled, these tests are skipped
+// Current list of tests skipped by default:
+// - spec_test.go:TestIssue18
+// - messages_test.go:Test_Q
+// - swagger_test.go:Test_GoSwagger
+var enableLongTests bool
+
 func init() {
 	loads.AddLoader(fmts.YAMLMatcher, fmts.YAMLDoc)
+	flag.BoolVar(&enableLongTests, "enable-long", false, "enable long runnning tests")
+}
+
+func skipNotify(t *testing.T) {
+	t.Log("To enable this long running test, use -args -enable-long in your go test command line")
 }
 
 func TestExpandResponseLocalFile(t *testing.T) {
@@ -255,7 +270,10 @@ func TestIssue6(t *testing.T) {
 
 // check if invalid patterns are indeed invalidated
 func TestIssue18(t *testing.T) {
-	t.SkipNow()
+	if !enableLongTests {
+		skipNotify(t)
+		t.SkipNow()
+	}
 	files, _ := filepath.Glob(filepath.Join("fixtures", "bugs", "18", "*.json"))
 	for _, path := range files {
 		t.Logf("Tested spec=%s", path)
