@@ -176,3 +176,41 @@ func testCommonApply(t *testing.T, v *basicCommonValidator, sources []interface{
 		assert.True(t, v.Applies(source, reflect.String))
 	}
 }
+
+type anything struct {
+	anyProperty int
+}
+
+// hasDuplicates() is currently not exercised by common spec testcases
+// (this method is not used by the validator atm)
+// Here is a unit exerciser
+// NOTE: this method is probably obsolete and superseeded by values.go:UniqueItems()
+// which is superior in every respect to this one.
+func TestBasicSliceValidator_HasDuplicates(t *testing.T) {
+	s := basicSliceValidator{}
+	// hasDuplicates() makes no hypothesis about the underlying object,
+	// save being an array, slice or string (same constraint as reflect.Value.Index())
+	// it also comes without safeguard or anything.
+	vi := []int{1, 2, 3}
+	vs := []string{"a", "b", "c"}
+	vt := []anything{
+		anything{anyProperty: 1},
+		anything{anyProperty: 2},
+		anything{anyProperty: 3},
+	}
+	assert.False(t, s.hasDuplicates(reflect.ValueOf(vi), len(vi)))
+	// how UniqueItems() is superior? Look:   err := uniqueItems("path","body", vi)
+	assert.False(t, s.hasDuplicates(reflect.ValueOf(vs), len(vs)))
+	assert.False(t, s.hasDuplicates(reflect.ValueOf(vt), len(vt)))
+
+	di := []int{1, 1, 3}
+	ds := []string{"a", "b", "a"}
+	dt := []anything{
+		anything{anyProperty: 1},
+		anything{anyProperty: 2},
+		anything{anyProperty: 2},
+	}
+	assert.True(t, s.hasDuplicates(reflect.ValueOf(di), len(di)))
+	assert.True(t, s.hasDuplicates(reflect.ValueOf(ds), len(ds)))
+	assert.True(t, s.hasDuplicates(reflect.ValueOf(dt), len(dt)))
+}
