@@ -16,10 +16,14 @@ package validate
 
 import (
 	re "regexp"
+	"sync"
 )
 
 // Cache of compiled regular expressions
-var reDict = map[string]*re.Regexp{}
+var (
+	cacheMutex = &sync.Mutex{}
+	reDict     = map[string]*re.Regexp{}
+)
 
 // Save repeated regexp compilation
 func compileRegexp(pattern string) (*re.Regexp, error) {
@@ -27,7 +31,9 @@ func compileRegexp(pattern string) (*re.Regexp, error) {
 		return reDict[pattern], nil
 	}
 	var err error
+	cacheMutex.Lock()
 	reDict[pattern], err = re.Compile(pattern)
+	cacheMutex.Unlock()
 	return reDict[pattern], err
 }
 
@@ -36,6 +42,8 @@ func mustCompileRegexp(pattern string) *re.Regexp {
 	if reDict[pattern] != nil {
 		return reDict[pattern]
 	}
+	cacheMutex.Lock()
 	reDict[pattern] = re.MustCompile(pattern)
+	cacheMutex.Unlock()
 	return reDict[pattern]
 }
