@@ -42,8 +42,8 @@ func mustCompileRegexp(pattern string) *re.Regexp {
 	if reDict[pattern] != nil {
 		return reDict[pattern]
 	}
+	defer cacheMutex.Unlock()
 	cacheMutex.Lock()
 	reDict[pattern] = re.MustCompile(pattern)
-	cacheMutex.Unlock()
 	return reDict[pattern]
 }
