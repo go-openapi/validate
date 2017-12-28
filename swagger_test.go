@@ -16,6 +16,7 @@ package validate
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -119,6 +120,7 @@ func Test_GoSwaggerTestCases(t *testing.T) {
 // A non regression test re "swagger validate" expectations
 // Just validates all fixtures in ./fixtures/go-swagger (excluded codegen cases)
 func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnLoad map[string]bool, haltOnErrors bool) (errs int) {
+	countSpec := 0
 	err := filepath.Walk(path,
 		func(path string, info os.FileInfo, err error) error {
 			shouldNotLoad := false
@@ -131,6 +133,10 @@ func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnL
 			}
 			if !info.IsDir() && (strings.HasSuffix(info.Name(), ".yaml") || strings.HasSuffix(info.Name(), ".yml") || strings.HasSuffix(info.Name(), ".json")) {
 				// Checking invalid specs
+				countSpec++
+				if countSpec%10 == 0 {
+					log.Printf("Processed %d specs...", countSpec)
+				}
 				t.Logf("Testing messages for spec: %s", path)
 				doc, err := loads.Spec(path)
 				if shouldNotLoad {
@@ -175,6 +181,7 @@ func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnL
 			}
 			return nil
 		})
+	log.Printf("Finished. Processed %d specs...", countSpec)
 	if err != nil {
 		t.Logf("%v", err)
 		errs++
