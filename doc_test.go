@@ -64,5 +64,7 @@ func ExampleSpecValidator_Validate() {
 			fmt.Println("This spec has some validation warnings")
 		}
 	}
-	// Output: This spec is valid
+	// Output:
+	// This spec is valid
+	// This spec has some validation warnings
 }
