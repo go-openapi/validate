@@ -16,6 +16,7 @@ package validate
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 
 	"github.com/go-openapi/spec"
@@ -23,12 +24,14 @@ import (
 	"github.com/go-openapi/swag"
 )
 
-var specSchemaType = reflect.TypeOf(&spec.Schema{})
-var specParameterType = reflect.TypeOf(&spec.Parameter{})
-var specItemsType = reflect.TypeOf(&spec.Items{})
-var specHeaderType = reflect.TypeOf(&spec.Header{})
+var (
+	specSchemaType    = reflect.TypeOf(&spec.Schema{})
+	specParameterType = reflect.TypeOf(&spec.Parameter{})
+	specItemsType     = reflect.TypeOf(&spec.Items{})
+	specHeaderType    = reflect.TypeOf(&spec.Header{})
+)
 
-// SchemaValidator like param validator but for a full json schema
+// SchemaValidator validates data against a JSON schema
 type SchemaValidator struct {
 	Path         string
 	in           string
@@ -88,8 +91,8 @@ func (s *SchemaValidator) Validate(data interface{}) *Result {
 	}
 
 	if data == nil {
-		v := s.validators[0].Validate(data)
-		v.Merge(s.validators[6].Validate(data))
+		v := s.validators[0].Validate(data)     // type validator
+		v.Merge(s.validators[6].Validate(data)) // common validator
 		return v
 	}
 
@@ -104,14 +107,13 @@ func (s *SchemaValidator) Validate(data interface{}) *Result {
 		d = swag.ToDynamicJSON(data)
 	}
 
+	// Handle special case of json.Number data (number marshalled as string)
 	isnumber := s.Schema.Type.Contains("number") || s.Schema.Type.Contains("integer")
 	if num, ok := data.(json.Number); ok && isnumber {
 		if s.Schema.Type.Contains("integer") { // avoid lossy conversion
 			in, erri := num.Int64()
 			if erri != nil {
-				// TODO: result.AddErrors(fmt.Errorf("invalid type conversion in %s: %v ", s.Path, erri))
-				// but first find a way on how to get there in tests cases
-				result.AddErrors(erri)
+				result.AddErrors(fmt.Errorf("invalid type conversion in %s: %v ", s.Path, erri))
 				result.Inc()
 				return result
 			}
@@ -119,9 +121,7 @@ func (s *SchemaValidator) Validate(data interface{}) *Result {
 		} else {
 			nf, errf := num.Float64()
 			if errf != nil {
-				// TODO: result.AddErrors(fmt.Errorf("invalid type conversion in %s: %v ", s.Path, errf))
-				// but first find a way on how to get there in tests cases
-				result.AddErrors(errf)
+				result.AddErrors(fmt.Errorf("invalid type conversion in %s: %v ", s.Path, errf))
 				result.Inc()
 				return result
 			}

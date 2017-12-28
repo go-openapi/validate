@@ -1,3 +1,17 @@
+// Copyright 2015 go-swagger maintainers
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package validate
 
 import (
@@ -39,21 +53,6 @@ func TestStringValidator_Validate_Panic(t *testing.T) {
 	input["place"] = json.Number("10")
 
 	assert.Error(t, AgainstSchema(schema, input, strfmt.Default))
-}
-
-func TestNumberValidator_ConvertToFloatEdgeCases(t *testing.T) {
-	v := numberValidator{}
-	// convert
-	assert.Equal(t, float64(12.5), v.convertToFloat(float32(12.5)))
-	assert.Equal(t, float64(12.5), v.convertToFloat(float64(12.5)))
-	assert.Equal(t, float64(12), v.convertToFloat(int(12)))
-	assert.Equal(t, float64(12), v.convertToFloat(int32(12)))
-	assert.Equal(t, float64(12), v.convertToFloat(int64(12)))
-
-	// does not convert
-	assert.Equal(t, float64(0), v.convertToFloat("12"))
-	// overflow : silent loss of info - ok (9.223372036854776e+18)
-	assert.NotEqual(t, float64(0), v.convertToFloat(int64(math.MaxInt64)))
 }
 
 func TestNumberValidator_EdgeCases(t *testing.T) {

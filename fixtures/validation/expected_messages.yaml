@@ -95,11 +95,14 @@ fixture-342.yaml:
   - message: 'invalid definition as Schema for parameter sid in body in operation ""'
     withContinueOnErrors: true
     isRegexp: false
-  - message: some parameters definitions are broken in "/get_main_object".GET. Cannot continue validating parameters for operation
+  - message: 'resolved reference is not a parameter: "#/definitions/sample_info/properties/sid"'
+    withContinueOnErrors: true
+    isRegeexp: false
+  - message: 'some parameters definitions are broken in "/get_main_object".GET. Cannot carry on full checks on parameters for operation'
     withContinueOnErrors: true
     isRegexp: false
   expectedWarnings:
-  - message: definition "#/definitions/sample_info" is not used anywhere
+  - message: 'definition "#/definitions/sample_info" is not used anywhere'
     withContinueOnErrors: true
     isRegexp: false
   - message: $ref property should have no sibling in "".sid
@@ -120,7 +123,7 @@ fixture-581-good.yaml:
   expectedMessages: []
   expectedWarnings: []
 fixture-581-inline-param-format.yaml:
-  comment: 
+  comment: a collection of error messages raised by format validation
   todo: 
   expectedLoadError: false
   expectedValid: false
@@ -158,7 +161,7 @@ fixture-581-inline-param-format.yaml:
   - message: Checked value must be of type integer with format uint32 in negFactor3
     withContinueOnErrors: true
     isRegexp: false
-  - message: 'negFactor in query must be of type number, because: factor in multipleOf must be positive: -300'
+  - message: 'factor MultipleOf declared for negFactor must be positive: -300'
     withContinueOnErrors: true
     isRegexp: false
   - message: negFactor2 in query should be a multiple of 3
@@ -248,7 +251,7 @@ fixture-581-inline-param.yaml:
   - message: Maximum boundary value must be of type integer (default format) in inlineInfiniteInt
     withContinueOnErrors: true
     isRegexp: false
-  - message: 'negFactor in query must be of type number, because: factor in multipleOf must be positive: -300'
+  - message: 'factor MultipleOf declared for negFactor must be positive: -300'
     withContinueOnErrors: true
     isRegexp: false
   - message: inlineMinInt in query should be less than or equal to 1
@@ -319,7 +322,7 @@ fixture-859-good.yaml:
 fixture-859.yaml:
   comment: 'Issue#859: clear message on unresolved $ref. First scenario for messages
     Supplement for items, arrays and other nested structures in fixture-859-2.yaml'
-  todo: 
+  todo: would love to have all missing references in one shot. This works only for parameters as for now.
   expectedLoadError: false
   expectedValid: false
   expectedMessages:
@@ -329,13 +332,16 @@ fixture-859.yaml:
   - message: 'some references could not be resolved in spec\. First found: object has no key ".*"'
     withContinueOnErrors: true
     isRegexp: true
+  - message: 'invalid reference: "#/parameters/rateLimit"'
+    withContinueOnErrors: true
+    isRegexp: true
   - message: 'could not resolve reference in "/".GET to $ref #/parameters/rateLimit: object has no key "rateLimit"'
     withContinueOnErrors: true
     isRegexp: false
-  - message: some parameters definitions are broken in "/".POST. Cannot continue validating parameters for operation
+  - message: some parameters definitions are broken in "/".POST. Cannot carry on full checks on parameters for operation
     withContinueOnErrors: true
     isRegexp: false
-  - message: some parameters definitions are broken in "/".GET. Cannot continue validating parameters for operation
+  - message: some parameters definitions are broken in "/".GET. Cannot carry on full checks on parameters for operation
     withContinueOnErrors: true
     isRegexp: false
   - message: 'could not resolve reference in "/".POST to $ref #/parameters/rateLimit: object has no key "rateLimit"'
@@ -690,7 +696,7 @@ fixture-collisions.yaml:
     withContinueOnErrors: true
     isRegexp: false
   - message: 'params in path "/loadBalancers/{loadBalancerId}/backendSets/{loadBalancerId}/get"
-      must be unique: "{loadBalancerId}" conflicts whith "{loadBalancerId}"'
+      must be unique: "{loadBalancerId}" conflicts with "{loadBalancerId}"'
     withContinueOnErrors: true
     isRegexp: false
   expectedWarnings: []

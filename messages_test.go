@@ -24,6 +24,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/loads/fmts"
 	"github.com/go-openapi/strfmt"
@@ -68,12 +69,7 @@ func Test_MessageQualityContinueOnErrors_Issue44(t *testing.T) {
 		skipNotify(t)
 		t.SkipNow()
 	}
-	state := continueOnErrors
-	SetContinueOnErrors(true)
-	defer func() {
-		SetContinueOnErrors(state)
-	}()
-	errs := testMessageQuality(t, true) /* set haltOnErrors=true to iterate spec by spec */
+	errs := testMessageQuality(t, true, true) /* set haltOnErrors=true to iterate spec by spec */
 	assert.Zero(t, errs, "Message testing didn't match expectations")
 }
 
@@ -83,30 +79,25 @@ func Test_MessageQualityStopOnErrors_Issue44(t *testing.T) {
 		skipNotify(t)
 		t.SkipNow()
 	}
-	state := continueOnErrors
-	SetContinueOnErrors(false)
-	defer func() {
-		SetContinueOnErrors(state)
-	}()
-	errs := testMessageQuality(t, true) /* set haltOnErrors=true to iterate spec by spec */
+	errs := testMessageQuality(t, true, false) /* set haltOnErrors=true to iterate spec by spec */
 	assert.Zero(t, errs, "Message testing didn't match expectations")
 }
 
-// Verifies the production of validation error messages in multiple
-// spec scenarios.
-//
-// The objective is to demonstrate:
-// - messages are stable
-// - validation continues as much as possible, even in presence of many errors
-//
-// haltOnErrors is used in dev mode to study and fix testcases step by step (output is pretty verbose)
-//
-// set SWAGGER_DEBUG_TEST=1 env to get a report of messages at the end of each test.
-// expectedMessage{"", false, false},
-//
-// expected messages and warnings are configured in ./fixtures/validation/expected_messages.yaml
-//
-func testMessageQuality(t *testing.T, haltOnErrors bool) (errs int) {
+func testMessageQuality(t *testing.T, haltOnErrors bool, continueOnErrors bool) (errs int) {
+	// Verifies the production of validation error messages in multiple
+	// spec scenarios.
+	//
+	// The objective is to demonstrate that:
+	//   - messages are stable
+	//   - validation continues as much as possible, even in presence of many errors
+	//
+	// haltOnErrors is used in dev mode to study and fix testcases step by step (output is pretty verbose)
+	//
+	// set SWAGGER_DEBUG_TEST=1 env to get a report of messages at the end of each test.
+	// expectedMessage{"", false, false},
+	//
+	// expected messages and warnings are configured in ./fixtures/validation/expected_messages.yaml
+	//
 	expectedConfig, ferr := ioutil.ReadFile("./fixtures/validation/expected_messages.yaml")
 	if ferr != nil {
 		t.Logf("Cannot read expected messages. Skip this test: %v", ferr)
@@ -151,7 +142,7 @@ func testMessageQuality(t *testing.T, haltOnErrors bool) (errs int) {
 				}
 				if errs > 0 {
 					if haltOnErrors {
-						return fmt.Errorf("Test halted: stop on error mode")
+						return fmt.Errorf("Test halted: stop testing on message checking error mode")
 					}
 					return nil
 				}
@@ -159,6 +150,7 @@ func testMessageQuality(t *testing.T, haltOnErrors bool) (errs int) {
 				if assert.NoError(t, err, "Expected this spec to load properly") {
 					// Validate the spec document
 					validator := NewSpecValidator(doc.Schema(), strfmt.Default)
+					validator.SetContinueOnErrors(continueOnErrors)
 					res, warn := validator.Validate(doc)
 
 					// Check specs with load errors (error is located in pkg loads or spec)
@@ -167,13 +159,13 @@ func testMessageQuality(t *testing.T, haltOnErrors bool) (errs int) {
 					}
 
 					errs += verifyErrorsVsWarnings(t, res, warn)
-					errs += verifyErrors(t, res, tested[info.Name()].ExpectedMessages, "error")
-					errs += verifyErrors(t, warn, tested[info.Name()].ExpectedWarnings, "warning")
+					errs += verifyErrors(t, res, tested[info.Name()].ExpectedMessages, "error", continueOnErrors)
+					errs += verifyErrors(t, warn, tested[info.Name()].ExpectedWarnings, "warning", continueOnErrors)
 
 					// DEVMODE allows developers to experiment and tune expected results
 					if DebugTest && errs > 0 {
-						reportTest(t, path, res, tested[info.Name()].ExpectedMessages, "error")
-						reportTest(t, path, warn, tested[info.Name()].ExpectedWarnings, "warning")
+						reportTest(t, path, res, tested[info.Name()].ExpectedMessages, "error", continueOnErrors)
+						reportTest(t, path, warn, tested[info.Name()].ExpectedWarnings, "warning", continueOnErrors)
 					}
 				} else {
 					errs++
@@ -197,14 +189,15 @@ func testMessageQuality(t *testing.T, haltOnErrors bool) (errs int) {
 					doc, err := loads.Spec(path)
 					if assert.NoError(t, err, "Expected this spec to load without error") {
 						validator := NewSpecValidator(doc.Schema(), strfmt.Default)
+						validator.SetContinueOnErrors(continueOnErrors)
 						res, warn := validator.Validate(doc)
 						if !assert.True(t, res.IsValid(), "Expected this spec to be valid") {
 							errs++
 						}
-						errs += verifyErrors(t, warn, tested[info.Name()].ExpectedWarnings, "warning")
+						errs += verifyErrors(t, warn, tested[info.Name()].ExpectedWarnings, "warning", continueOnErrors)
 						if DebugTest && errs > 0 {
-							reportTest(t, path, res, tested[info.Name()].ExpectedMessages, "error")
-							reportTest(t, path, warn, tested[info.Name()].ExpectedWarnings, "warning")
+							reportTest(t, path, res, tested[info.Name()].ExpectedMessages, "error", continueOnErrors)
+							reportTest(t, path, warn, tested[info.Name()].ExpectedWarnings, "warning", continueOnErrors)
 						}
 					} else {
 						errs++
@@ -212,7 +205,7 @@ func testMessageQuality(t *testing.T, haltOnErrors bool) (errs int) {
 				}
 			}
 			if haltOnErrors && errs > 0 {
-				return fmt.Errorf("Test halted: stop on error mode")
+				return fmt.Errorf("Test halted: stop testing on message checking error mode")
 			}
 			return nil
 		})
@@ -223,8 +216,8 @@ func testMessageQuality(t *testing.T, haltOnErrors bool) (errs int) {
 	return
 }
 
-// Prints out a recap of error messages. To be enabled during development / test iterations
-func reportTest(t *testing.T, path string, res *Result, expectedMessages []ExpectedMessage, msgtype string) {
+func reportTest(t *testing.T, path string, res *Result, expectedMessages []ExpectedMessage, msgtype string, continueOnErrors bool) {
+	// Prints out a recap of error messages. To be enabled during development / test iterations
 	var verifiedErrors, lines []string
 	for _, e := range res.Errors {
 		verifiedErrors = append(verifiedErrors, e.Error())
@@ -250,6 +243,9 @@ func reportTest(t *testing.T, path string, res *Result, expectedMessages []Expec
 		lines = append(lines, fmt.Sprintf("[%s]%s", status, v))
 	}
 
+	if msgtype == "warning" {
+		spew.Dump(expectedMessages)
+	}
 	for _, s := range expectedMessages {
 		if (s.WithContinueOnErrors == true && continueOnErrors == true) || s.WithContinueOnErrors == false {
 			status := fmt.Sprintf("Missing %s", msgtype)
@@ -294,10 +290,13 @@ func verifyErrorsVsWarnings(t *testing.T, res, warn *Result) (errs int) {
 	if !assert.Subset(t, warn.Errors, res.Warnings) {
 		errs++
 	}
+	if errs > 0 {
+		t.Log("Result equivalence errors vs warnings not verified")
+	}
 	return
 }
 
-func verifyErrors(t *testing.T, res *Result, expectedMessages []ExpectedMessage, msgtype string) (errs int) {
+func verifyErrors(t *testing.T, res *Result, expectedMessages []ExpectedMessage, msgtype string, continueOnErrors bool) (errs int) {
 	var verifiedErrors []string
 	var numExpected int
 
@@ -363,10 +362,10 @@ func verifyErrors(t *testing.T, res *Result, expectedMessages []ExpectedMessage,
 	return
 }
 
-// Perform several matchedes on single error message
-// Process here error messages from loads (normally unit tested in the load package:
-// we just want to figure out how all this is captured at the validate package level.
 func verifyLoadErrors(t *testing.T, err error, expectedMessages []ExpectedMessage) (errs int) {
+	// Perform several matchedes on single error message
+	// Process here error messages from loads (normally unit tested in the load package:
+	// we just want to figure out how all this is captured at the validate package level.
 	v := err.Error()
 	for _, s := range expectedMessages {
 		found := false

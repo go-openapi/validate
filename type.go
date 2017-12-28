@@ -120,7 +120,7 @@ func (t *typeValidator) Validate(data interface{}) *Result {
 	result.Inc()
 	if data == nil || reflect.DeepEqual(reflect.Zero(reflect.TypeOf(data)), reflect.ValueOf(data)) {
 		if len(t.Type) > 0 && !t.Type.Contains("null") { // TODO: if a property is not required it also passes this
-			return sErr(errors.InvalidType(t.Path, t.In, strings.Join(t.Type, ","), "null"))
+			return errorHelp.sErr(errors.InvalidType(t.Path, t.In, strings.Join(t.Type, ","), "null"))
 		}
 		return result
 	}
@@ -138,14 +138,14 @@ func (t *typeValidator) Validate(data interface{}) *Result {
 	isIntFloat := schType == "integer" && t.Type.Contains("number")
 
 	if kind != reflect.String && kind != reflect.Slice && t.Format != "" && !(t.Type.Contains(schType) || format == t.Format || isFloatInt || isIntFloat || isLowerInt || isLowerFloat) {
-		return sErr(errors.InvalidType(t.Path, t.In, t.Format, format))
+		return errorHelp.sErr(errors.InvalidType(t.Path, t.In, t.Format, format))
 	}
 	if !(t.Type.Contains("number") || t.Type.Contains("integer")) && t.Format != "" && (kind == reflect.String || kind == reflect.Slice) {
 		return result
 	}
 
 	if !(t.Type.Contains(schType) || isFloatInt || isIntFloat) {
-		return sErr(errors.InvalidType(t.Path, t.In, strings.Join(t.Type, ","), schType))
+		return errorHelp.sErr(errors.InvalidType(t.Path, t.In, strings.Join(t.Type, ","), schType))
 	}
 	return result
 }

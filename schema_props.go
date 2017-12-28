@@ -102,7 +102,7 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 		for _, anyOfSchema := range s.anyOfValidators {
 			result := anyOfSchema.Validate(data)
 			// We keep inner IMPORTANT! errors no matter what MatchCount tells us
-			keepResultAnyOf.Merge(result.KeepRelevantErrors())
+			keepResultAnyOf.Merge(result.keepRelevantErrors())
 			if result.IsValid() {
 				bestFailures = nil
 				succeededOnce = true
@@ -136,7 +136,7 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 		for _, oneOfSchema := range s.oneOfValidators {
 			result := oneOfSchema.Validate(data)
 			// We keep inner IMPORTANT! errors no matter what MatchCount tells us
-			keepResultOneOf.Merge(result.KeepRelevantErrors())
+			keepResultOneOf.Merge(result.keepRelevantErrors())
 			if result.IsValid() {
 				validated++
 				bestFailures = nil
@@ -175,7 +175,7 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 		for _, allOfSchema := range s.allOfValidators {
 			result := allOfSchema.Validate(data)
 			// We keep inner IMPORTANT! errors no matter what MatchCount tells us
-			keepResultAllOf.Merge(result.KeepRelevantErrors())
+			keepResultAllOf.Merge(result.keepRelevantErrors())
 			//keepAllResultsAllOf.Merge(result)
 			if result.IsValid() {
 				validated++

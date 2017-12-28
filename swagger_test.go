@@ -34,6 +34,8 @@ func init() {
 // Exercise validate will all tests cases from package go-swagger
 // A copy of all fixtures available in in go-swagger/go-swagger
 // is maintained in fixtures/go-swagger
+//
+// TODO: move this list to a YAML fixture config file
 func Test_GoSwaggerTestCases(t *testing.T) {
 	if !enableLongTests {
 		skipNotify(t)
@@ -109,12 +111,6 @@ func Test_GoSwaggerTestCases(t *testing.T) {
 		"fixtures/go-swagger/specs/resolution.json":                      true,
 	}
 
-	//t.SkipNow()
-	state := continueOnErrors
-	SetContinueOnErrors(true)
-	defer func() {
-		SetContinueOnErrors(state)
-	}()
 	if testGoSwaggerSpecs(t, "./fixtures/go-swagger", expectedFailures, expectedLoadFailures, true) != 0 {
 		t.Fail()
 	}
@@ -158,6 +154,7 @@ func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnL
 
 				// Validate the spec document
 				validator := NewSpecValidator(doc.Schema(), strfmt.Default)
+				validator.SetContinueOnErrors(true)
 				res, _ := validator.Validate(doc)
 				if shouldFail {
 					if !assert.False(t, res.IsValid(), "Expected this spec to be invalid") {
