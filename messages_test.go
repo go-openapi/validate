@@ -24,7 +24,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/loads/fmts"
 	"github.com/go-openapi/strfmt"
@@ -243,9 +242,6 @@ func reportTest(t *testing.T, path string, res *Result, expectedMessages []Expec
 		lines = append(lines, fmt.Sprintf("[%s]%s", status, v))
 	}
 
-	if msgtype == "warning" {
-		spew.Dump(expectedMessages)
-	}
 	for _, s := range expectedMessages {
 		if (s.WithContinueOnErrors == true && continueOnErrors == true) || s.WithContinueOnErrors == false {
 			status := fmt.Sprintf("Missing %s", msgtype)
