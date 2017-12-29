@@ -160,6 +160,7 @@ func (b *basicCommonValidator) Validate(data interface{}) (res *Result) {
 		for _, enumValue := range b.Enum {
 			actualType := reflect.TypeOf(enumValue)
 			if actualType == nil {
+				// NOTE: Frankly, I don't know how we may get there
 				continue
 			}
 			expectedValue := reflect.ValueOf(data)

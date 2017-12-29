@@ -41,10 +41,6 @@ func TestValues_ValidateEnum(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-type edgeInterface interface {
-	wrongMe() int
-}
-
 // Check edge cases in Enum
 func TestValues_Enum_EdgeCases(t *testing.T) {
 	enumValues := "aa, bb, cc"
@@ -53,15 +49,10 @@ func TestValues_Enum_EdgeCases(t *testing.T) {
 	// No validation occurs: enumValues is not a slice
 	assert.Nil(t, err)
 
-	// value is not a concrete type
-	/* TODO: edge case
-	var enumValues2 []interface{}
-	enumValues2 = append(enumValues2, "abc")
-	var dataValue edgeInterface
-	enumValues2 = append(enumValues2, dataValue)
-	err = Enum("test", "body", dataValue, enumValues2)
-	assert.Nil(t, err)
-	*/
+	// TODO: edge case: value is not a concrete type
+	// It's really a go internals challenge
+	// to figure a test case to demonstrate
+	// this case must be checked (!!)
 }
 
 func TestValues_ValidateUniqueItems(t *testing.T) {

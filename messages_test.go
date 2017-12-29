@@ -377,7 +377,6 @@ func verifyLoadErrors(t *testing.T, err error, expectedMessages []ExpectedMessag
 			}
 		}
 		if !assert.True(t, found, "Unexpected load error: %s", v) {
-			// DEBUG CI
 			t.Logf("Expecting one of the following:")
 			for _, s := range expectedMessages {
 				smode := "Contains"

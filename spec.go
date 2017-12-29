@@ -46,16 +46,6 @@ func Spec(doc *loads.Document, formats strfmt.Registry) error {
 	return nil
 }
 
-// AgainstSchema validates the specified data with the provided schema.
-// When no schema is provided it uses the JSON schema as default.
-func AgainstSchema(schema *spec.Schema, data interface{}, formats strfmt.Registry) error {
-	res := NewSchemaValidator(schema, nil, "", formats).Validate(data)
-	if res.HasErrors() {
-		return errors.CompositeValidationError(res.Errors...)
-	}
-	return nil
-}
-
 // SpecValidator validates a swagger 2.0 spec
 type SpecValidator struct {
 	schema       *spec.Schema // swagger 2.0 schema
@@ -99,6 +89,7 @@ func (s *SpecValidator) Validate(data interface{}) (errs *Result, warnings *Resu
 
 	// Raw spec unmarshalling errors
 	if err := json.Unmarshal(sd.Raw(), &obj); err != nil {
+		// TODO: test case
 		errs.AddErrors(err)
 		return
 	}
@@ -236,6 +227,7 @@ func (s *SpecValidator) resolveRef(ref *spec.Ref) (*spec.Schema, error) {
 	if s.spec.SpecFilePath() != "" {
 		return spec.ResolveRefWithBase(s.spec.Spec(), ref, &spec.ExpandOptions{RelativeBase: s.spec.SpecFilePath()})
 	}
+	// TODO: test case
 	return spec.ResolveRef(s.spec.Spec(), ref)
 }
 
@@ -284,6 +276,7 @@ func (s *SpecValidator) validateCircularAncestry(nm string, sch spec.Schema, kno
 	res := new(Result)
 
 	if sch.Ref.String() == "" && len(sch.AllOf) == 0 {
+		// TODO: test case
 		return nil, res
 	}
 	var ancs []string
@@ -336,11 +329,6 @@ func (s *SpecValidator) validateItems() *Result {
 	for method, pi := range s.analyzer.Operations() {
 		for path, op := range pi {
 			for _, param := range paramHelp.safeExpandedParamsFor(path, method, op.ID, res, s) {
-				//for _, param := range s.analyzer.SafeParamsFor(method, path, func(p spec.Parameter, err error) bool {
-				//	res.AddErrors(errors.New(errors.CompositeErrorCode, "some parameters definitions are broken in %q.%s. Cannot carry on full checks on parameters for operation %s", path, method, op.ID))
-				//	res.AddErrors(err)
-				//	return true
-				//}) {
 
 				if param.TypeName() == "array" && param.ItemsTypeName() == "" {
 					res.AddErrors(errors.New(errors.CompositeErrorCode, "param %q for %q is a collection without an element type (array requires item definition)", param.Name, op.ID))
@@ -555,6 +543,7 @@ func (s *SpecValidator) validateRequiredDefinitions() *Result {
 				for pp := range v.PatternProperties {
 					re, err := compileRegexp(pp)
 					if err != nil {
+						// TODO: test case
 						res.AddErrors(errors.New(errors.CompositeErrorCode, "Pattern \"%q\" is invalid", pp))
 						continue REQUIRED
 					}
@@ -568,6 +557,7 @@ func (s *SpecValidator) validateRequiredDefinitions() *Result {
 						continue
 					}
 					if v.AdditionalProperties.Schema != nil {
+						// TODO: test case
 						continue
 					}
 				}
@@ -671,7 +661,6 @@ func (s *SpecValidator) validateParameters() *Result {
 							res.AddErrors(errors.New(errors.CompositeErrorCode, "params in path %q must be unique: %q conflicts with %q", path, p, q))
 							break
 						}
-
 					}
 				}
 

@@ -32,6 +32,7 @@ type defaultValidator struct {
 func (d *defaultValidator) Validate() (errs *Result) {
 	errs = new(Result)
 	if d == nil || d.SpecValidator == nil {
+		// TODO: test case
 		return errs
 	}
 	errs.Merge(d.validateDefaultValueValidAgainstSchema()) // error -
@@ -130,6 +131,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 									if h.Items != nil {
 										red := d.validateDefaultValueItemsAgainstSchema(nm, "header", &h, h.Items)
 										if red.HasErrorsOrWarnings() {
+											// TODO: test case
 											res.AddErrors(errors.New(errors.CompositeErrorCode, "default value for %s in header.items %s in response %d does not validate its schema", nm, code))
 											res.Merge(red)
 										}
@@ -214,6 +216,7 @@ func (d *defaultValidator) validateDefaultValueItemsAgainstSchema(path, in strin
 			res.Merge(newItemsValidator(path, in, items, root, s.KnownFormats).Validate(0, items.Default))
 		}
 		if items.Items != nil {
+			// TODO: test case
 			res.Merge(d.validateDefaultValueItemsAgainstSchema(path+"[0].default", in, root, items.Items))
 		}
 		if _, err := compileRegexp(items.Pattern); err != nil {

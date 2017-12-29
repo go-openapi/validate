@@ -14,6 +14,9 @@
 
 package validate
 
+// TODO: define as package validate/internal
+// This must be done while keeping CI intact with all tests and test coverage
+
 import (
 	"fmt"
 	"reflect"
@@ -150,6 +153,9 @@ func (h *paramHelper) safeExpandedParamsFor(path, method, operationID string, re
 		}) {
 		pr, red := h.resolveParam(path, method, operationID, ppr, s)
 		if red.HasErrors() {
+			res.Merge(red)
+			// TODO: test case for this branch
+			// it looks like the new spec.Ref.GetPointer() method expands the full tree, so this code is no more reachable
 			if red.HasErrors() && !s.Options.ContinueOnErrors {
 				break
 			}
@@ -172,6 +178,8 @@ func (h *paramHelper) resolveParam(path, method, operationID string, ppr spec.Pa
 		if err != nil {
 			refPath := strings.Join([]string{"\"" + path + "\"", method}, ".")
 			if ppr.Name != "" {
+				// TODO: test case for this branch
+				// it looks like the new spec.Ref.GetPointer() method expands the full tree, so this code is no more reachable
 				refPath = strings.Join([]string{refPath, ppr.Name}, ".")
 			}
 			errorHelp.addPointerError(res, err, pr.Ref.String(), refPath)
@@ -199,7 +207,8 @@ func (h *paramHelper) checkedParamAssertion(obj interface{}, path, in, operation
 		// Schema took over Parameter for an unexplained reason
 		res.AddErrors(errors.New(errors.CompositeErrorCode, "invalid definition as Schema for parameter %s in %s in operation %q", path, in, operation))
 	} else {
-		// Another structure replaced spec.Parametern
+		// NOTE: the only known case for this error is $ref expansion replaced parameter by a Schema
+		// Here, another structure replaced spec.Parameter. We should not be able to enter there.
 		res.AddErrors(errors.New(errors.CompositeErrorCode, "invalid definition for parameter %s in %s in operation %q", path, in, operation))
 	}
 	return spec.Parameter{}, false

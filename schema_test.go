@@ -21,13 +21,114 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/go-openapi/spec"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 )
 
-// Test edge cases in slice_validator which are difficult
+func TestSchemaValidator_Validate_Pattern(t *testing.T) {
+	var schemaJSON = `
+{
+    "properties": {
+        "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z]+$",
+            "minLength": 1
+        },
+        "place": {
+            "type": "string",
+            "pattern": "^[A-Za-z]+$",
+            "minLength": 1
+        }
+    },
+    "required": [
+        "name"
+    ]
+}`
+
+	schema := new(spec.Schema)
+	require.NoError(t, json.Unmarshal([]byte(schemaJSON), schema))
+
+	var input map[string]interface{}
+	var inputJSON = `{"name": "Ivan"}`
+
+	require.NoError(t, json.Unmarshal([]byte(inputJSON), &input))
+	assert.NoError(t, AgainstSchema(schema, input, strfmt.Default))
+
+	input["place"] = json.Number("10")
+
+	assert.Error(t, AgainstSchema(schema, input, strfmt.Default))
+
+}
+
+func TestSchemaValidator_PatternProperties(t *testing.T) {
+	var schemaJSON = `
+{
+    "properties": {
+        "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z]+$",
+            "minLength": 1
+        }
+	},
+    "patternProperties": {
+	  "address-[0-9]+": {
+         "type": "string",
+         "pattern": "^[\\s|a-z]+$"
+	  }
+    },
+    "required": [
+        "name"
+    ],
+	"additionalProperties": false
+}`
+
+	schema := new(spec.Schema)
+	require.NoError(t, json.Unmarshal([]byte(schemaJSON), schema))
+
+	var input map[string]interface{}
+
+	// ok
+	var inputJSON = `{"name": "Ivan","address-1": "sesame street"}`
+	require.NoError(t, json.Unmarshal([]byte(inputJSON), &input))
+	assert.NoError(t, AgainstSchema(schema, input, strfmt.Default))
+
+	// fail pattern regexp
+	input["address-1"] = "1, Sesame Street"
+	assert.Error(t, AgainstSchema(schema, input, strfmt.Default))
+
+	// fail patternProperties regexp
+	inputJSON = `{"name": "Ivan","address-1": "sesame street","address-A": "address"}`
+	require.NoError(t, json.Unmarshal([]byte(inputJSON), &input))
+	assert.Error(t, AgainstSchema(schema, input, strfmt.Default))
+
+}
+
+func TestSchemaValidator_Panic(t *testing.T) {
+	assert.PanicsWithValue(t, "Invalid schema provided to SchemaValidator: object has no key \"pointer-to-nowhere\"", schemaValidatorPanicker)
+}
+
+func schemaValidatorPanicker() {
+	var schemaJSON = `
+{
+    "$ref": "#/pointer-to-nowhere"
+}`
+
+	schema := new(spec.Schema)
+	json.Unmarshal([]byte(schemaJSON), schema)
+
+	var input map[string]interface{}
+
+	// ok
+	var inputJSON = `{"name": "Ivan","address-1": "sesame street"}`
+	json.Unmarshal([]byte(inputJSON), &input)
+	// panics
+	AgainstSchema(schema, input, strfmt.Default)
+}
+
+// Test edge cases in schemaValidator which are difficult
 // to simulate with specs
 func TestSchemaValidator_EdgeCases(t *testing.T) {
 	var s *SchemaValidator

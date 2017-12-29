@@ -41,6 +41,7 @@ func Enum(path, in string, data interface{}, enum interface{}) *errors.Validatio
 			}
 			actualType := reflect.TypeOf(enumValue)
 			if actualType == nil {
+				// NOTE: Frankly, I don't know how we may get there
 				continue
 			}
 			expectedValue := reflect.ValueOf(data)

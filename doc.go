@@ -23,6 +23,11 @@ Validating a specification
 Validates a spec document (from JSON or YAML) against the JSON schema for swagger,
 then checks a number of extra rules that can't be expressed in JSON schema.
 
+Entry points:
+  - Spec()
+  - NewSpecValidator()
+  - SpecValidator.Validate()
+
 Reported as errors:
   - definition can't declare a property that's already defined by one of its ancestors
   - definition's ancestor can't be a descendant of the same model
@@ -49,7 +54,8 @@ Reported as warnings:
 
 Validating a schema
 
-TODO
+Entry points:
+  - AgainstSchema()
 
 Known limitations
 

@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/spec"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
@@ -41,7 +42,22 @@ type SchemaValidator struct {
 	KnownFormats strfmt.Registry
 }
 
-// NewSchemaValidator creates a new schema validator
+// AgainstSchema validates the specified data against the provided schema, using a registry of supported formats.
+//
+// TODO: is that true? When no pre-parsed schema structure is provided, it uses a JSON schema as default.
+func AgainstSchema(schema *spec.Schema, data interface{}, formats strfmt.Registry) error {
+	res := NewSchemaValidator(schema, nil, "", formats).Validate(data)
+	if res.HasErrors() {
+		return errors.CompositeValidationError(res.Errors...)
+	}
+	return nil
+}
+
+// NewSchemaValidator creates a new schema validator.
+//
+// Panics if the schema is invalid.
+//
+// TODO: shall maybe return nil rather than panicking...
 func NewSchemaValidator(schema *spec.Schema, rootSchema interface{}, root string, formats strfmt.Registry) *SchemaValidator {
 	if schema == nil {
 		return nil
@@ -54,8 +70,8 @@ func NewSchemaValidator(schema *spec.Schema, rootSchema interface{}, root string
 	if schema.ID != "" || schema.Ref.String() != "" || schema.Ref.IsRoot() {
 		err := spec.ExpandSchema(schema, rootSchema, nil)
 		if err != nil {
-			// TODO: how do we get there?
-			panic(err)
+			msg := fmt.Sprintf("Invalid schema provided to SchemaValidator: %v", err)
+			panic(msg)
 		}
 	}
 	s := SchemaValidator{Path: root, in: "body", Schema: schema, Root: rootSchema, KnownFormats: formats}
