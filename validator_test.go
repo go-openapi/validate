@@ -144,6 +144,32 @@ func testCommonApply(t *testing.T, v *basicCommonValidator, sources []interface{
 	}
 }
 
+func TestBasicSliceValidator_EdgeCases(t *testing.T) {
+	// Apply
+
+	v := basicSliceValidator{}
+
+	// basicCommonValidator applies to: Parameter,Schema,Header
+
+	sources := []interface{}{
+		new(spec.Parameter),
+		new(spec.Items),
+		new(spec.Header),
+	}
+
+	testSliceApply(t, &v, sources)
+
+	assert.False(t, v.Applies(new(spec.Schema), reflect.Slice))
+	assert.False(t, v.Applies(new(spec.Parameter), reflect.String))
+
+}
+
+func testSliceApply(t *testing.T, v *basicSliceValidator, sources []interface{}) {
+	for _, source := range sources {
+		assert.True(t, v.Applies(source, reflect.Slice))
+	}
+}
+
 type anything struct {
 	anyProperty int
 }

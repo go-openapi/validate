@@ -68,20 +68,19 @@ func NewSpecValidator(schema *spec.Schema, formats strfmt.Registry) *SpecValidat
 // Validate validates the swagger spec
 func (s *SpecValidator) Validate(data interface{}) (errs *Result, warnings *Result) {
 	var sd *loads.Document
+	errs = new(Result)
 
 	switch v := data.(type) {
 	case *loads.Document:
 		sd = v
 	}
 	if sd == nil {
-		// TODO: should use a constant (from errors package?)
-		errs = errorHelp.sErr(errors.New(500, "spec validator can only validate spec.Document objects"))
+		errs.AddErrors(invalidDocumentMsg())
 		return
 	}
 	s.spec = sd
 	s.analyzer = analysis.New(sd.Spec())
 
-	errs = new(Result)
 	warnings = new(Result)
 
 	schv := NewSchemaValidator(s.schema, nil, "", s.KnownFormats)
@@ -89,7 +88,8 @@ func (s *SpecValidator) Validate(data interface{}) (errs *Result, warnings *Resu
 
 	// Raw spec unmarshalling errors
 	if err := json.Unmarshal(sd.Raw(), &obj); err != nil {
-		// TODO: test case
+		// TODO(TEST): test case
+		// TODO: better message
 		errs.AddErrors(err)
 		return
 	}
@@ -136,8 +136,8 @@ func (s *SpecValidator) Validate(data interface{}) (errs *Result, warnings *Resu
 
 	// TODO: validate numeric constraints (issue#581): this should be handled like defaults and examples
 
-	warnings.MergeAsErrors(s.validateRefNoSibling()) // warning only
-	warnings.MergeAsErrors(s.validateReferenced())   // warning only
+	errs.Merge(s.validateRefNoSibling()) // warning only
+	errs.Merge(s.validateReferenced())   // warning only
 
 	return
 }
@@ -146,11 +146,11 @@ func (s *SpecValidator) validateNonEmptyPathParamNames() *Result {
 	res := new(Result)
 	if s.spec.Spec().Paths == nil {
 		// There is no Paths object: error
-		res.AddErrors(errors.New(errors.CompositeErrorCode, "spec has no valid path defined"))
+		res.AddErrors(noValidPathMsg())
 	} else {
 		if s.spec.Spec().Paths.Paths == nil {
 			// Paths may be empty: warning
-			res.AddWarnings(errors.New(errors.CompositeErrorCode, "spec has no valid path defined"))
+			res.AddWarnings(noValidPathMsg())
 		} else {
 			for k := range s.spec.Spec().Paths.Paths {
 				if strings.Contains(k, "{}") {
@@ -164,6 +164,7 @@ func (s *SpecValidator) validateNonEmptyPathParamNames() *Result {
 
 // TODO: there is a catch here. Duplicate operationId are not strictly forbidden, but
 // not supported by go-swagger. Shouldn't it be a warning?
+// Ideally, the behavior error vs warning should be an optional setting (e.g. go-swagger mode)
 func (s *SpecValidator) validateDuplicateOperationIDs() *Result {
 	res := new(Result)
 	known := make(map[string]int)
@@ -227,7 +228,7 @@ func (s *SpecValidator) resolveRef(ref *spec.Ref) (*spec.Schema, error) {
 	if s.spec.SpecFilePath() != "" {
 		return spec.ResolveRefWithBase(s.spec.Spec(), ref, &spec.ExpandOptions{RelativeBase: s.spec.SpecFilePath()})
 	}
-	// TODO: test case
+	// NOTE: it looks like with the new spec resolver, this code is now unrecheable
 	return spec.ResolveRef(s.spec.Spec(), ref)
 }
 
@@ -276,7 +277,7 @@ func (s *SpecValidator) validateCircularAncestry(nm string, sch spec.Schema, kno
 	res := new(Result)
 
 	if sch.Ref.String() == "" && len(sch.AllOf) == 0 {
-		// TODO: test case
+		// TODO(TEST): test case
 		return nil, res
 	}
 	var ancs []string
@@ -403,7 +404,7 @@ func (s *SpecValidator) validateSchemaItems(schema spec.Schema, prefix, opID str
 
 		return s.validateSchemaItems(schema, prefix, opID)
 	}
-
+	// TODO(TEST): test case - Items defined without schema
 	return nil
 }
 
@@ -442,9 +443,9 @@ func (s *SpecValidator) validatePathParamPresence(path string, fromPath, fromOpe
 
 func (s *SpecValidator) validateReferenced() *Result {
 	var res Result
-	res.Merge(s.validateReferencedParameters())
-	res.Merge(s.validateReferencedResponses())
-	res.Merge(s.validateReferencedDefinitions())
+	res.MergeAsWarnings(s.validateReferencedParameters())
+	res.MergeAsWarnings(s.validateReferencedResponses())
+	res.MergeAsWarnings(s.validateReferencedDefinitions())
 	return &res
 }
 
@@ -543,7 +544,7 @@ func (s *SpecValidator) validateRequiredDefinitions() *Result {
 				for pp := range v.PatternProperties {
 					re, err := compileRegexp(pp)
 					if err != nil {
-						// TODO: test case
+						// TODO(TEST): test case
 						res.AddErrors(errors.New(errors.CompositeErrorCode, "Pattern \"%q\" is invalid", pp))
 						continue REQUIRED
 					}
@@ -557,7 +558,7 @@ func (s *SpecValidator) validateRequiredDefinitions() *Result {
 						continue
 					}
 					if v.AdditionalProperties.Schema != nil {
-						// TODO: test case
+						// TODO(TEST): test case
 						continue
 					}
 				}
@@ -684,9 +685,9 @@ func (s *SpecValidator) validateReferencesValid() *Result {
 	// each reference must point to a valid object
 	res := new(Result)
 	for _, r := range s.analyzer.AllRefs() {
-		// TODO: test case
 		if !r.IsValidURI(s.spec.SpecFilePath()) {
-			res.AddErrors(errors.New(404, "invalid ref %q", r.String()))
+			// TODO(TEST): test case
+			res.AddErrors(invalidRefMsg(r.String()))
 		}
 	}
 	if !res.HasErrors() {
@@ -695,7 +696,7 @@ func (s *SpecValidator) validateReferencesValid() *Result {
 		// on errors fails to report errors at all.
 		exp, err := s.spec.Expanded()
 		if err != nil {
-			res.AddErrors(fmt.Errorf("some references could not be resolved in spec. First found: %v", err))
+			res.AddErrors(unresolvedReferencesMsg(err))
 		}
 		s.expanded = exp
 	}

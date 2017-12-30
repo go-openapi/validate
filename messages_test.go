@@ -54,9 +54,11 @@ type ExpectedFixture struct {
 	ExpectedValid     bool              `yaml:"expectedValid"`     // expect valid spec
 	ExpectedMessages  []ExpectedMessage `yaml:"expectedMessages"`
 	ExpectedWarnings  []ExpectedMessage `yaml:"expectedWarnings"`
+	Tested            bool              `yaml:"-"`
+	Failed            bool              `yaml:"-"`
 }
 
-type ExpectedMap map[string]ExpectedFixture
+type ExpectedMap map[string]*ExpectedFixture
 
 // Test message improvements, issue #44 and some more
 // ContinueOnErrors mode on
@@ -99,38 +101,50 @@ func testMessageQuality(t *testing.T, haltOnErrors bool, continueOnErrors bool) 
 	//
 	expectedConfig, ferr := ioutil.ReadFile("./fixtures/validation/expected_messages.yaml")
 	if ferr != nil {
-		t.Logf("Cannot read expected messages. Skip this test: %v", ferr)
+		t.Logf("Cannot read expected messages config file: %v", ferr)
+		errs++
 		return
 	}
 
 	tested := ExpectedMap{}
 	yerr := yaml.Unmarshal(expectedConfig, &tested)
 	if yerr != nil {
-		t.Logf("Cannot unmarshall expected messages. Skip this test: %v", yerr)
+		t.Logf("Cannot unmarshall expected messages from config file : %v", yerr)
+		errs++
 		return
 	}
 	err := filepath.Walk(filepath.Join("fixtures", "validation"),
 		func(path string, info os.FileInfo, err error) error {
-			_, found := tested[info.Name()]
+			basename := info.Name()
+			_, found := tested[basename]
 			errs := 0
-			if !info.IsDir() && found && tested[info.Name()].ExpectedValid == false {
+
+			defer func() {
+				if found {
+					tested[basename].Tested = true
+					tested[basename].Failed = (errs != 0)
+				}
+
+			}()
+
+			if !info.IsDir() && found && tested[basename].ExpectedValid == false {
 				// Checking invalid specs
 				t.Logf("Testing messages for invalid spec: %s", path)
 				if DebugTest {
-					if tested[info.Name()].Comment != "" {
-						t.Logf("\tDEVMODE: Comment: %s", tested[info.Name()].Comment)
+					if tested[basename].Comment != "" {
+						t.Logf("\tDEVMODE: Comment: %s", tested[basename].Comment)
 					}
-					if tested[info.Name()].Todo != "" {
-						t.Logf("\tDEVMODE: Todo: %s", tested[info.Name()].Todo)
+					if tested[basename].Todo != "" {
+						t.Logf("\tDEVMODE: Todo: %s", tested[basename].Todo)
 					}
 				}
 				doc, err := loads.Spec(path)
 
 				// Check specs with load errors (error is located in pkg loads or spec)
-				if tested[info.Name()].ExpectedLoadError == true {
+				if tested[basename].ExpectedLoadError == true {
 					// Expect a load error: no further validation may possibly be conducted.
 					if assert.Error(t, err, "Expected this spec to return a load error") {
-						errs += verifyLoadErrors(t, err, tested[info.Name()].ExpectedMessages)
+						errs += verifyLoadErrors(t, err, tested[basename].ExpectedMessages)
 						if errs == 0 {
 							// spec does not load as expected
 							return nil
@@ -158,13 +172,13 @@ func testMessageQuality(t *testing.T, haltOnErrors bool, continueOnErrors bool) 
 					}
 
 					errs += verifyErrorsVsWarnings(t, res, warn)
-					errs += verifyErrors(t, res, tested[info.Name()].ExpectedMessages, "error", continueOnErrors)
-					errs += verifyErrors(t, warn, tested[info.Name()].ExpectedWarnings, "warning", continueOnErrors)
+					errs += verifyErrors(t, res, tested[basename].ExpectedMessages, "error", continueOnErrors)
+					errs += verifyErrors(t, warn, tested[basename].ExpectedWarnings, "warning", continueOnErrors)
 
 					// DEVMODE allows developers to experiment and tune expected results
 					if DebugTest && errs > 0 {
-						reportTest(t, path, res, tested[info.Name()].ExpectedMessages, "error", continueOnErrors)
-						reportTest(t, path, warn, tested[info.Name()].ExpectedWarnings, "warning", continueOnErrors)
+						reportTest(t, path, res, tested[basename].ExpectedMessages, "error", continueOnErrors)
+						reportTest(t, path, warn, tested[basename].ExpectedWarnings, "warning", continueOnErrors)
 					}
 				} else {
 					errs++
@@ -175,14 +189,15 @@ func testMessageQuality(t *testing.T, haltOnErrors bool, continueOnErrors bool) 
 				}
 			} else {
 				// Expecting no message (e.g.valid spec): 0 message expected
-				if !info.IsDir() && found && tested[info.Name()].ExpectedValid {
+				if !info.IsDir() && found && tested[basename].ExpectedValid {
+					tested[basename].Tested = true
 					t.Logf("Testing valid spec: %s", path)
 					if DebugTest {
-						if tested[info.Name()].Comment != "" {
-							t.Logf("\tDEVMODE: Comment: %s", tested[info.Name()].Comment)
+						if tested[basename].Comment != "" {
+							t.Logf("\tDEVMODE: Comment: %s", tested[basename].Comment)
 						}
-						if tested[info.Name()].Todo != "" {
-							t.Logf("\tDEVMODE: Todo: %s", tested[info.Name()].Todo)
+						if tested[basename].Todo != "" {
+							t.Logf("\tDEVMODE: Todo: %s", tested[basename].Todo)
 						}
 					}
 					doc, err := loads.Spec(path)
@@ -193,10 +208,10 @@ func testMessageQuality(t *testing.T, haltOnErrors bool, continueOnErrors bool) 
 						if !assert.True(t, res.IsValid(), "Expected this spec to be valid") {
 							errs++
 						}
-						errs += verifyErrors(t, warn, tested[info.Name()].ExpectedWarnings, "warning", continueOnErrors)
+						errs += verifyErrors(t, warn, tested[basename].ExpectedWarnings, "warning", continueOnErrors)
 						if DebugTest && errs > 0 {
-							reportTest(t, path, res, tested[info.Name()].ExpectedMessages, "error", continueOnErrors)
-							reportTest(t, path, warn, tested[info.Name()].ExpectedWarnings, "warning", continueOnErrors)
+							reportTest(t, path, res, tested[basename].ExpectedMessages, "error", continueOnErrors)
+							reportTest(t, path, warn, tested[basename].ExpectedWarnings, "warning", continueOnErrors)
 						}
 					} else {
 						errs++
@@ -208,6 +223,7 @@ func testMessageQuality(t *testing.T, haltOnErrors bool, continueOnErrors bool) 
 			}
 			return nil
 		})
+	recapTest(t, tested)
 	if err != nil {
 		t.Logf("%v", err)
 		errs++
@@ -215,6 +231,21 @@ func testMessageQuality(t *testing.T, haltOnErrors bool, continueOnErrors bool) 
 	return
 }
 
+func recapTest(t *testing.T, config ExpectedMap) {
+	recapFailed := false
+	for k, v := range config {
+		if !v.Tested {
+			t.Logf("WARNING: %s configured but not tested (fixture not found)", k)
+			recapFailed = true
+		} else if v.Failed {
+			t.Logf("ERROR: %s failed passing messages verification", k)
+			recapFailed = true
+		}
+	}
+	if !recapFailed {
+		t.Log("INFO:We are good")
+	}
+}
 func reportTest(t *testing.T, path string, res *Result, expectedMessages []ExpectedMessage, msgtype string, continueOnErrors bool) {
 	// Prints out a recap of error messages. To be enabled during development / test iterations
 	var verifiedErrors, lines []string

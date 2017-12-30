@@ -21,19 +21,6 @@ import (
 	"github.com/go-openapi/errors"
 )
 
-// Defaulter ...
-type Defaulter interface {
-	Apply()
-}
-
-// DefaulterFunc ...
-type DefaulterFunc func()
-
-// Apply ...
-func (f DefaulterFunc) Apply() {
-	f()
-}
-
 // Result represents a validation result set, composed of
 // errors and warnings.
 //
@@ -137,6 +124,7 @@ func (r *Result) AddWarnings(warnings ...error) {
 }
 
 func (r *Result) keepRelevantErrors() *Result {
+	// TODO: this one is going to disapear...
 	// keepRelevantErrors strips a result from standard errors and keeps
 	// the ones which are supposedly more accurate.
 	//

@@ -33,11 +33,15 @@ import (
 // Enable long running tests by using cmd line arg,
 // e.g. go test ... -arg -enable-long
 // If not enabled, these tests are skipped
+//
 // Current list of tests skipped by default:
 // - spec_test.go:TestIssue18
-// - messages_test.go:Test_Q
-// - swagger_test.go:Test_GoSwagger
-// TODO: replace with go test -short and testing.Short()
+// - messages_test.go:Test_Quality
+// - swagger_test.go:Test_GoSwagger [the longest]
+//
+// NOTE: replacing with go test -short and testing.Short() means that
+// by default, every test is launched. With -enable-long, we just get the
+// opposite...
 var enableLongTests bool
 
 func init() {
@@ -430,8 +434,10 @@ func TestSpec_ValidateReferenced(t *testing.T) {
 		validator.spec = doc
 		validator.analyzer = analysis.New(doc.Spec())
 		res := validator.validateReferenced()
-		assert.NotEmpty(t, res.Errors)
-		assert.Len(t, res.Errors, 3)
+		assert.Empty(t, res.Errors)
+		assert.NotEmpty(t, res.Warnings)
+		assert.Len(t, res.Warnings, 3)
+		//spew.Dump(res)
 	}
 }
 
@@ -674,7 +680,7 @@ func TestSpec_ValidDoc(t *testing.T) {
 
 // Check higher level behavior on invalid spec doc
 func TestSpec_InvalidDoc(t *testing.T) {
-	doc, err := loads.Spec(filepath.Join("fixtures", "validation", "invalid-default-value-parameter.json"))
+	doc, err := loads.Spec(filepath.Join("fixtures", "validation", "default", "invalid-default-value-parameter.json"))
 	if assert.NoError(t, err) {
 		err := Spec(doc, strfmt.Default)
 		assert.Error(t, err)

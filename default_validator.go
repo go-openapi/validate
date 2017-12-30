@@ -22,17 +22,17 @@ import (
 	"github.com/go-openapi/spec"
 )
 
-// defaultValidator validates default values in a spec
-// TODO: warning default on required parameter
+// defaultValidator validates default values in a spec.
+// According to Swagger spec, default values MUST validate their schema.
 type defaultValidator struct {
 	SpecValidator *SpecValidator
 }
 
 // Validate validates the default values declared in the swagger spec
+//
 func (d *defaultValidator) Validate() (errs *Result) {
 	errs = new(Result)
 	if d == nil || d.SpecValidator == nil {
-		// TODO: test case
 		return errs
 	}
 	errs.Merge(d.validateDefaultValueValidAgainstSchema()) // error -
@@ -51,13 +51,14 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 			for path, op := range pathItem {
 				// parameters
 				for _, param := range paramHelp.safeExpandedParamsFor(path, method, op.ID, res, s) {
+					if param.Default != nil && param.Required {
+						res.AddWarnings(errors.New(errors.CompositeErrorCode, "%s in %s has a default value and is required as parameter", param.Name, param.In))
+					}
 
 					// Check simple parameters first
-					// default values provided must validate against their schema
+					// default values provided must validate against their inline definition (no explicit schema)
 					if param.Default != nil && param.Schema == nil {
-						// This is a warning: expect the error to come from the invalid schema if any
-						res.AddWarnings(errors.New(errors.CompositeErrorCode, "%s in %s has a default but no valid schema", param.Name, param.In))
-						// check param valid
+						// check param default value is valid
 						red := NewParamValidator(&param, s.KnownFormats).Validate(param.Default)
 						if red.HasErrorsOrWarnings() {
 							res.AddErrors(errors.New(errors.CompositeErrorCode, "default value for %s in %s does not validate its schema", param.Name, param.In))
@@ -75,6 +76,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 					}
 
 					if param.Schema != nil {
+						// Validate default value against schema
 						red := d.validateDefaultValueSchemaAgainstSchema(param.Name, param.In, param.Schema)
 						if red.HasErrorsOrWarnings() {
 							res.AddErrors(errors.New(errors.CompositeErrorCode, "default value for %s in %s does not validate its schema", param.Name, param.In))
@@ -84,74 +86,19 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 				}
 
 				if op.Responses != nil {
-					// Same constraint on default Responses
 					if op.Responses.Default != nil {
-						dr := op.Responses.Default
-						if dr.Headers != nil { // Safeguard
-							for nm, h := range dr.Headers {
-								if h.Default != nil {
-									red := NewHeaderValidator(nm, &h, s.KnownFormats).Validate(h.Default)
-									if red.HasErrorsOrWarnings() {
-										res.AddErrors(errors.New(errors.CompositeErrorCode, "default value in header %s in default response does not validate its schema", nm))
-										res.Merge(red)
-									}
-								}
-								if h.Items != nil {
-									red := d.validateDefaultValueItemsAgainstSchema(nm, "header", &h, h.Items)
-									if red.HasErrorsOrWarnings() {
-										res.AddErrors(errors.New(errors.CompositeErrorCode, "default value in header.items %s in default response does not validate its schema", nm))
-										res.Merge(red)
-									}
-								}
-								if _, err := compileRegexp(h.Pattern); err != nil {
-									res.AddErrors(errors.New(errors.CompositeErrorCode, "operation %q has invalid pattern in default header %q: %q", op.ID, nm, h.Pattern))
-								}
-							}
-						}
-						if dr.Schema != nil {
-							red := d.validateDefaultValueSchemaAgainstSchema("default", "response", dr.Schema)
-							if red.HasErrorsOrWarnings() {
-								res.AddErrors(errors.New(errors.CompositeErrorCode, "default value in default response does not validate its schema"))
-								res.Merge(red)
-							}
-						}
+						// Same constraint on default Responses
+						res.Merge(d.validateDefaultInResponse(op.Responses.Default, "default", 0, op.ID))
 					}
 					// Same constraint on regular Responses
 					if op.Responses.StatusCodeResponses != nil { // Safeguard
 						for code, r := range op.Responses.StatusCodeResponses {
-							if r.Headers != nil { // Safeguard
-								for nm, h := range r.Headers {
-									if h.Default != nil {
-										red := NewHeaderValidator(nm, &h, s.KnownFormats).Validate(h.Default)
-										if red.HasErrorsOrWarnings() {
-											res.AddErrors(errors.New(errors.CompositeErrorCode, "default value for %s in header %s in response %d does not validate its schema", nm, code))
-											res.Merge(red)
-										}
-									}
-									if h.Items != nil {
-										red := d.validateDefaultValueItemsAgainstSchema(nm, "header", &h, h.Items)
-										if red.HasErrorsOrWarnings() {
-											// TODO: test case
-											res.AddErrors(errors.New(errors.CompositeErrorCode, "default value for %s in header.items %s in response %d does not validate its schema", nm, code))
-											res.Merge(red)
-										}
-									}
-									if _, err := compileRegexp(h.Pattern); err != nil {
-										res.AddErrors(errors.New(errors.CompositeErrorCode, "operation %q has invalid pattern in %v's header %q: %q", op.ID, code, nm, h.Pattern))
-									}
-								}
-							}
-							if r.Schema != nil {
-								red := d.validateDefaultValueSchemaAgainstSchema(strconv.Itoa(code), "response", r.Schema)
-								if red.HasErrorsOrWarnings() {
-									res.AddErrors(errors.New(errors.CompositeErrorCode, "default value in response %d does not validate its schema", code))
-									res.Merge(red)
-								}
-							}
+							res.Merge(d.validateDefaultInResponse(&r, "response", code, op.ID))
 						}
 					}
 				} else {
 					// Empty op.ID means there is no meaningful operation: no need to report a specific message
+					// TODO(TEST): test that no response definition ends up with an error
 					if op.ID != "" {
 						res.AddErrors(errors.New(errors.CompositeErrorCode, "operation %q has no valid response", op.ID))
 					}
@@ -162,6 +109,62 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 	if s.spec.Spec().Definitions != nil { // Safeguard
 		for nm, sch := range s.spec.Spec().Definitions {
 			res.Merge(d.validateDefaultValueSchemaAgainstSchema(fmt.Sprintf("definitions.%s", nm), "body", &sch))
+		}
+	}
+	return res
+}
+
+func (d *defaultValidator) validateDefaultInResponse(response *spec.Response, responseType string, responseCode int, operationID string) *Result {
+	var responseName, responseCodeAsStr string
+
+	res := new(Result)
+	s := d.SpecValidator
+
+	// Message variants
+	if responseType == "default" {
+		responseCodeAsStr = "default"
+		responseName = "default response"
+	} else {
+		responseCodeAsStr = strconv.Itoa(responseCode)
+		responseName = "response " + responseCodeAsStr
+	}
+
+	if response.Headers != nil { // Safeguard
+		for nm, h := range response.Headers {
+			if h.Default != nil {
+				red := NewHeaderValidator(nm, &h, s.KnownFormats).Validate(h.Default)
+				if red.HasErrorsOrWarnings() {
+					msg := "in operation %q, default value in header %s for %s does not validate its schema"
+					res.AddErrors(errors.New(errors.CompositeErrorCode, msg, operationID, nm, responseName))
+					res.Merge(red)
+				}
+			}
+
+			// Headers have inline definition, like params
+			if h.Items != nil {
+				red := d.validateDefaultValueItemsAgainstSchema(nm, "header", &h, h.Items)
+				if red.HasErrorsOrWarnings() {
+					msg := "in operation %q, default value in header.items %s for %s does not validate its schema"
+					res.AddErrors(errors.New(errors.CompositeErrorCode, msg, operationID, nm, responseName))
+					res.Merge(red)
+				}
+			}
+
+			if _, err := compileRegexp(h.Pattern); err != nil {
+				msg := "in operation %q, header %s for %s has invalid pattern %q: %v"
+				res.AddErrors(errors.New(errors.CompositeErrorCode, msg, operationID, nm, responseName, h.Pattern, err))
+			}
+
+			// Headers don't have schema
+		}
+	}
+	if response.Schema != nil {
+		red := d.validateDefaultValueSchemaAgainstSchema(responseCodeAsStr, "response", response.Schema)
+		if red.HasErrorsOrWarnings() {
+			// Additional message to make sure the context of the error is not lost
+			msg := "in operation %q, default value in %s does not validate its schema"
+			res.AddErrors(errors.New(errors.CompositeErrorCode, msg, operationID, responseName))
+			res.Merge(red)
 		}
 	}
 	return res
@@ -178,6 +181,7 @@ func (d *defaultValidator) validateDefaultValueSchemaAgainstSchema(path, in stri
 			if schema.Items.Schema != nil {
 				res.Merge(d.validateDefaultValueSchemaAgainstSchema(path+".items.default", in, schema.Items.Schema))
 			}
+			// Multiple schemas in items
 			if schema.Items.Schemas != nil { // Safeguard
 				for i, sch := range schema.Items.Schemas {
 					res.Merge(d.validateDefaultValueSchemaAgainstSchema(fmt.Sprintf("%s.items[%d].default", path, i), in, &sch))
@@ -216,7 +220,7 @@ func (d *defaultValidator) validateDefaultValueItemsAgainstSchema(path, in strin
 			res.Merge(newItemsValidator(path, in, items, root, s.KnownFormats).Validate(0, items.Default))
 		}
 		if items.Items != nil {
-			// TODO: test case
+			// TODO(TEST): test case
 			res.Merge(d.validateDefaultValueItemsAgainstSchema(path+"[0].default", in, root, items.Items))
 		}
 		if _, err := compileRegexp(items.Pattern); err != nil {

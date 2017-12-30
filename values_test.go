@@ -49,7 +49,7 @@ func TestValues_Enum_EdgeCases(t *testing.T) {
 	// No validation occurs: enumValues is not a slice
 	assert.Nil(t, err)
 
-	// TODO: edge case: value is not a concrete type
+	// TODO(TEST): edge case: value is not a concrete type
 	// It's really a go internals challenge
 	// to figure a test case to demonstrate
 	// this case must be checked (!!)

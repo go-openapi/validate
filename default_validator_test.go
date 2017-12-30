@@ -36,6 +36,7 @@ func TestDefault_ValidateDefaultValueAgainstSchema(t *testing.T) {
 
 	tests := []string{
 		"parameter",
+		"parameter-required",
 		"parameter-ref",
 		"parameter-items",
 		"header",
@@ -49,6 +50,12 @@ func TestDefault_ValidateDefaultValueAgainstSchema(t *testing.T) {
 		"parameter-schema",
 		"default-response",
 		"header-response",
+		"header-items-default-response",
+		"header-items-response",
+		"header-pattern",
+		"header-badpattern",
+		"schema-items-allOf",
+		// default-response-PatternProperties
 		// - DONE: header in default response
 		// - invalid schema in default response
 		//"default-response-PatternProperties",
@@ -66,8 +73,10 @@ func TestDefault_ValidateDefaultValueAgainstSchema(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		path := filepath.Join("fixtures", "validation", "valid-default-value-"+tt+".json")
-		//t.Logf("Testing valid default values for: %s", path)
+		path := filepath.Join("fixtures", "validation", "default", "valid-default-value-"+tt+".json")
+		if DebugTest {
+			t.Logf("Testing valid default values for: %s", path)
+		}
 		doc, err := loads.Spec(path)
 		if assert.NoError(t, err) {
 			validator := NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
@@ -76,10 +85,20 @@ func TestDefault_ValidateDefaultValueAgainstSchema(t *testing.T) {
 			myDefaultValidator := &defaultValidator{SpecValidator: validator}
 			res := myDefaultValidator.validateDefaultValueValidAgainstSchema()
 			assert.Empty(t, res.Errors, tt+" should not have errors")
+			// Special case: warning only
+			if tt == "parameter-required" {
+				warns := []string{}
+				for _, w := range res.Warnings {
+					warns = append(warns, w.Error())
+				}
+				assert.Contains(t, warns, "limit in query has a default value and is required as parameter")
+			}
 		}
 
-		path = filepath.Join("fixtures", "validation", "invalid-default-value-"+tt+".json")
-		//t.Logf("Testing invalid default values for: %s", path)
+		path = filepath.Join("fixtures", "validation", "default", "invalid-default-value-"+tt+".json")
+		if DebugTest {
+			t.Logf("Testing invalid default values for: %s", path)
+		}
 		doc, err = loads.Spec(path)
 		if assert.NoError(t, err) {
 			validator := NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
@@ -95,4 +114,15 @@ func TestDefault_ValidateDefaultValueAgainstSchema(t *testing.T) {
 			assert.True(t, len(res.Errors) >= 1, tt+" should have at least 1 error")
 		}
 	}
+}
+
+func TestDefault_EdgeCase(t *testing.T) {
+	// Testing guards
+	var myDefaultvalidator *defaultValidator
+	res := myDefaultvalidator.Validate()
+	assert.True(t, res.IsValid())
+
+	myDefaultvalidator = &defaultValidator{}
+	res = myDefaultvalidator.Validate()
+	assert.True(t, res.IsValid())
 }

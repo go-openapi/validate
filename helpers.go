@@ -14,7 +14,7 @@
 
 package validate
 
-// TODO: define as package validate/internal
+// TODO: define this as package validate/internal
 // This must be done while keeping CI intact with all tests and test coverage
 
 import (
@@ -154,7 +154,7 @@ func (h *paramHelper) safeExpandedParamsFor(path, method, operationID string, re
 		pr, red := h.resolveParam(path, method, operationID, ppr, s)
 		if red.HasErrors() {
 			res.Merge(red)
-			// TODO: test case for this branch
+			// NOTE: no test case for this branch
 			// it looks like the new spec.Ref.GetPointer() method expands the full tree, so this code is no more reachable
 			if red.HasErrors() && !s.Options.ContinueOnErrors {
 				break
@@ -178,7 +178,7 @@ func (h *paramHelper) resolveParam(path, method, operationID string, ppr spec.Pa
 		if err != nil {
 			refPath := strings.Join([]string{"\"" + path + "\"", method}, ".")
 			if ppr.Name != "" {
-				// TODO: test case for this branch
+				// NOTE: no test case for this branch
 				// it looks like the new spec.Ref.GetPointer() method expands the full tree, so this code is no more reachable
 				refPath = strings.Join([]string{refPath, ppr.Name}, ".")
 			}

@@ -123,6 +123,7 @@ func (s *SchemaValidator) Validate(data interface{}) *Result {
 		d = swag.ToDynamicJSON(data)
 	}
 
+	// TODO: this part should be hander over to type validator
 	// Handle special case of json.Number data (number marshalled as string)
 	isnumber := s.Schema.Type.Contains("number") || s.Schema.Type.Contains("integer")
 	if num, ok := data.(json.Number); ok && isnumber {

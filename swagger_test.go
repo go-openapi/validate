@@ -134,10 +134,10 @@ func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnL
 			if !info.IsDir() && (strings.HasSuffix(info.Name(), ".yaml") || strings.HasSuffix(info.Name(), ".yml") || strings.HasSuffix(info.Name(), ".json")) {
 				// Checking invalid specs
 				countSpec++
-				if countSpec%10 == 0 {
+				if countSpec%5 == 0 {
 					log.Printf("Processed %d specs...", countSpec)
 				}
-				t.Logf("Testing messages for spec: %s", path)
+				t.Logf("Testing validation status for spec: %s", path)
 				doc, err := loads.Spec(path)
 				if shouldNotLoad {
 					if !assert.Error(t, err, "Expected this spec not to load") {

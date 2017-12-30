@@ -199,8 +199,10 @@ func (o *objectValidator) Validate(data interface{}) *Result {
 			res.Merge(r)
 		} else if pSchema.Default != nil {
 			// If a default value is defined, creates the property from defaults
+			// NOTE: JSON schema does not enforce default values to be valid against schema. Swagger does.
 			createdFromDefaults[pName] = true
 			pName := pName // shadow
+			// TODO: should validate the default first and ignore the value if invalid
 			def := pSchema.Default
 			res.Defaulters = append(res.Defaulters, DefaulterFunc(func() {
 				val[pName] = def
@@ -253,7 +255,6 @@ func (o *objectValidator) validatePatternProperty(key string, value interface{},
 
 	// BUG(fredbi): can't get to here
 	//if succeededOnce {
-	//	// TODO: test case
 	//	result.Inc()
 	//}
 

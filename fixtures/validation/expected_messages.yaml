@@ -195,27 +195,27 @@ fixture-581-inline-param-format.yaml:
   - message: definition "#/definitions/myId" is not used anywhere
     withContinueOnErrors: true
     isRegexp: false
-  - message: inlineMaxInt in query has a default but no valid schema
-    withContinueOnErrors: true
-    isRegexp: false
-  - message: inlineInfiniteInt2 in query has a default but no valid schema
-    withContinueOnErrors: true
-    isRegexp: false
-  - message: negFactor2 in query has a default but no valid schema
-    withContinueOnErrors: true
-    isRegexp: false
-  - message: inlineInfiniteInt in query has a default but no valid schema
-    withContinueOnErrors: true
-    isRegexp: false
-  - message: negFactor in query has a default but no valid schema
-    withContinueOnErrors: true
-    isRegexp: false
-  - message: negFactor3 in query has a default but no valid schema
-    withContinueOnErrors: true
-    isRegexp: false
-  - message: inlineMinInt in query has a default but no valid schema
-    withContinueOnErrors: true
-    isRegexp: false
+  #- message: inlineMaxInt in query has a default but no valid schema
+  #  withContinueOnErrors: true
+  #  isRegexp: false
+  #- message: inlineInfiniteInt2 in query has a default but no valid schema
+  #  withContinueOnErrors: true
+  #  isRegexp: false
+  #- message: negFactor2 in query has a default but no valid schema
+  #  withContinueOnErrors: true
+  #  isRegexp: false
+  #- message: inlineInfiniteInt in query has a default but no valid schema
+  #  withContinueOnErrors: true
+  #  isRegexp: false
+  #- message: negFactor in query has a default but no valid schema
+  #  withContinueOnErrors: true
+  #  isRegexp: false
+  #- message: negFactor3 in query has a default but no valid schema
+  #  withContinueOnErrors: true
+  #  isRegexp: false
+  #- message: inlineMinInt in query has a default but no valid schema
+  #  withContinueOnErrors: true
+  #  isRegexp: false
 fixture-581-inline-param.yaml:
   comment: A variation on the theme of number constraints, inspired by isssue#581.
     Focuses on inline params.
@@ -265,18 +265,6 @@ fixture-581-inline-param.yaml:
     isRegexp: false
   expectedWarnings:
   - message: definition "#/definitions/myId" is not used anywhere
-    withContinueOnErrors: true
-    isRegexp: false
-  - message: inlineMaxInt in query has a default but no valid schema
-    withContinueOnErrors: true
-    isRegexp: false
-  - message: inlineInfiniteInt in query has a default but no valid schema
-    withContinueOnErrors: true
-    isRegexp: false
-  - message: negFactor in query has a default but no valid schema
-    withContinueOnErrors: true
-    isRegexp: false
-  - message: inlineMinInt in query has a default but no valid schema
     withContinueOnErrors: true
     isRegexp: false
 fixture-581.yaml:
@@ -776,31 +764,9 @@ fixture-constraints-on-numbers.yaml:
     withContinueOnErrors: false
     isRegexp: false
   expectedWarnings:
-  # Those used to be a debug log: now its a warning
-  - message: param1 in query has a default but no valid schema
-    withContinueOnErrors: false
-    isRegexp: false
-  - message: param2 in query has a default but no valid schema
-    withContinueOnErrors: false
-    isRegexp: false
-  - message: param3 in query has a default but no valid schema
-    withContinueOnErrors: false
-    isRegexp: false
-  - message: param4 in query has a default but no valid schema
-    withContinueOnErrors: false
-    isRegexp: false
-  - message: param5 in query has a default but no valid schema
-    withContinueOnErrors: false
-    isRegexp: false
-  - message: param6 in query has a default but no valid schema
-    withContinueOnErrors: false
-    isRegexp: false
-  - message: param7 in query has a default but no valid schema
-    withContinueOnErrors: false
-    isRegexp: false
-  - message: param8 in query has a default but no valid schema
-    withContinueOnErrors: false
-    isRegexp: false
+  #- message: param8 in query has a default but no valid schema
+  #  withContinueOnErrors: false
+  #  isRegexp: false
 fixture-invalid-example-property.yaml:
   comment: 
   todo: this one should fail when examples are validated

@@ -46,7 +46,7 @@ func (ex *exampleValidator) validateResponseExample(path string, r *spec.Respons
 	if r.Ref.String() != "" {
 		nr, _, err := r.Ref.GetPointer().Get(s.spec.Spec())
 		if err != nil {
-			// TODO: test case
+			// NOTE: with new ref expansion in spec, this code is no more reachable
 			errorHelp.addPointerError(res, err, r.Ref.String(), strings.Join([]string{"\"" + path + "\"", r.ResponseProps.Schema.ID}, "."))
 			return res
 		}

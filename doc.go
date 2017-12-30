@@ -54,15 +54,24 @@ Reported as warnings:
 
 Validating a schema
 
+The schema validation toolkit validates data against JSON-schema draft 04 schema.
+
+It is tested again json-schema-testing-suite.
+
 Entry points:
   - AgainstSchema()
+  - ...
 
 Known limitations
 
 With the current version of this package, the following aspects of swagger are not yet supported:
   - examples in parameters and in schemas are not checked
+  - default values and examples on responses only support application/json producer type
   - invalid numeric constraints (such as Minimum, etc..) are not checked except for default values
   - valid js ECMA regexp not supported by Go regexp engine are considered invalid
   - errors and warnings are not reported with key/line number in spec
+  - rules for collectionFormat are not implemented
+  - no specific rule for readOnly attribute in properties [not done here]
+  - no specific rule for polymorphism support (discriminator) [not done here]
 */
 package validate
