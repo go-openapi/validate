@@ -290,7 +290,11 @@ func TestSpec_Issue18(t *testing.T) {
 			case strings.Contains(path, "headerItems.json"):
 				assert.Contains(t, verifiedErrors, "X-Foo in header has invalid pattern: \")<-- bad pattern\"")
 			case strings.Contains(path, "headers.json"):
-				assert.Contains(t, verifiedErrors, "operation \"\" has invalid pattern in default header \"X-Foo\": \")<-- bad pattern\"")
+				assert.Contains(t, verifiedErrors, "in operation \"\", header X-Foo for default response has invalid pattern \")<-- bad pattern\": error parsing regexp: unexpected ): `)<-- bad pattern`")
+				//  in operation \"\", header X-Foo for default response has invalid pattern \")<-- bad pattern\": error parsing regexp: unexpected ): `)<-- bad pattern`
+				assert.Contains(t, verifiedErrors, "in operation \"\", header X-Foo for response 402 has invalid pattern \")<-- bad pattern\": error parsing regexp: unexpected ): `)<-- bad pattern`")
+				//  in operation "", header X-Foo for response 402 has invalid pattern ")<-- bad pattern": error parsing regexp: unexpected ): `)<-- bad pattern`
+
 			case strings.Contains(path, "paramItems.json"):
 				assert.Contains(t, verifiedErrors, "body param \"user\" for \"\" has invalid items pattern: \")<-- bad pattern\"")
 				// Updated message: from "user.items in body has invalid pattern: \")<-- bad pattern\"" to:
@@ -437,7 +441,6 @@ func TestSpec_ValidateReferenced(t *testing.T) {
 		assert.Empty(t, res.Errors)
 		assert.NotEmpty(t, res.Warnings)
 		assert.Len(t, res.Warnings, 3)
-		//spew.Dump(res)
 	}
 }
 

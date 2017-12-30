@@ -16,7 +16,8 @@
 Package validate provides methods to validate a swagger specification,
 as well as tools to validate data against their schema.
 
-This package follows Swagger 2.0. specification (aka OpenAPI 2.0).
+This package follows Swagger 2.0. specification (aka OpenAPI 2.0). Reference
+can be found here: https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md.
 
 Validating a specification
 
@@ -54,9 +55,9 @@ Reported as warnings:
 
 Validating a schema
 
-The schema validation toolkit validates data against JSON-schema draft 04 schema.
+The schema validation toolkit validates data against JSON-schema-draft 04 schema.
 
-It is tested again json-schema-testing-suite.
+It is tested again json-schema-testing-suite (https://github.com/json-schema-org/JSON-Schema-Test-Suite).
 
 Entry points:
   - AgainstSchema()

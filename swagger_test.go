@@ -137,14 +137,16 @@ func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnL
 				if countSpec%5 == 0 {
 					log.Printf("Processed %d specs...", countSpec)
 				}
-				t.Logf("Testing validation status for spec: %s", path)
+				if DebugTest {
+					t.Logf("Testing validation status for spec: %s", path)
+				}
 				doc, err := loads.Spec(path)
 				if shouldNotLoad {
-					if !assert.Error(t, err, "Expected this spec not to load") {
+					if !assert.Error(t, err, "Expected this spec not to load: %s", path) {
 						errs++
 					}
 				} else {
-					if !assert.NoError(t, err, "Expected this spec to load without error") {
+					if !assert.NoError(t, err, "Expected this spec to load without error: %s", path) {
 						errs++
 					}
 				}
@@ -163,11 +165,11 @@ func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnL
 				validator.SetContinueOnErrors(true)
 				res, _ := validator.Validate(doc)
 				if shouldFail {
-					if !assert.False(t, res.IsValid(), "Expected this spec to be invalid") {
+					if !assert.False(t, res.IsValid(), "Expected this spec to be invalid: %s", path) {
 						errs++
 					}
 				} else {
-					if !assert.True(t, res.IsValid(), "Expected this spec to be valid") {
+					if !assert.True(t, res.IsValid(), "Expected this spec to be valid: %s", path) {
 						t.Logf("Errors reported by validation on %s", path)
 						for _, e := range res.Errors {
 							t.Log(e)
@@ -185,6 +187,9 @@ func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnL
 	if err != nil {
 		t.Logf("%v", err)
 		errs++
+	}
+	if t.Failed() {
+		log.Printf("A change in expected validation status has been detected")
 	}
 	return
 }
