@@ -1,3 +1,6 @@
+#
+# Config for 5 Travis CI jobs
+#
 language: go
 go:
 # Test multiple versions
@@ -19,8 +22,14 @@ env:
 # Short test suite, with race testing
 - TEST_COMMAND="go test -v -race -covermode=atomic"
 # Long test suite, with maximum coverage
-- TEST_COMMAND="go test -v -timeout=50m -cover -coverprofile=coverage.txt -args -enable-long"
-# TODO(TEST): go swagger non-reg as a separate env + exclude 1.8 for this
+- TEST_COMMAND="go test -v -timeout=20m -cover -coverprofile=coverage.txt -args -enable-long"
+# go swagger non-reg as a separate env + exclude 1.8 for this
+- TEST_COMMAND="go test -v -timeout=30m -args -enable-go-swagger"
+# TODO(TEST): update json-schema-suite benchmark
+matrix:
+  exclude:
+  - go: 1.8
+    env: TEST_COMMAND="go test -v -timeout=30m -args -enable-go-swagger"
 script:
 - (eval "$TEST_COMMAND")
 after_success:

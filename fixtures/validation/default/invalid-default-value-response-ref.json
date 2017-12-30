@@ -29,25 +29,36 @@
             "description": "Generic Error"
           },
           "200": {
-            "description": "Pets list",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Pet"
-              }
-            },
-            "examples": {
-              "application/json": [{
-                "id": 123,
-                "photoUrls": [
-                  "https://cloud.githubusercontent.com/assets/987686/9987390/24bd7be0-607a-11e5-9c3a-e0c6f333a764.png"
-                ]
-              }]
-            }
+            "$ref": "#/responses/petListResponse"
           }
         }
       }
     }
+  },
+  "responses": {
+    "petListResponse": {
+      "description": "Pets list",
+      "schema": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/Pet"
+        },
+      "default": [
+	  {
+            "id": 123,
+            "photoUrls": [
+              "https://cloud.githubusercontent.com/assets/987686/9987390/24bd7be0-607a-11e5-9c3a-e0c6f333a764.png"
+            ]
+          },
+	  {
+            "id": 456,
+            "photoUrls": [
+              "https://cloud.githubusercontent.com/assets/987686/9987390/24bd7be0-607a-11e5-9c3a-e0c6f333a764.png"
+            ]
+          }
+      ]
+    }
+      }
   },
   "definitions": {
     "Parent": {

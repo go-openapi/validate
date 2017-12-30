@@ -25,15 +25,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDefault_ValidateDefaultValueAgainstSchema(t *testing.T) {
+func TestDefault_ValidatePetStore(t *testing.T) {
 	doc, _ := loads.Analyzed(PetStoreJSONMessage, "")
 	validator := NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
 	validator.spec = doc
 	validator.analyzer = analysis.New(doc.Spec())
 	myDefaultValidator := &defaultValidator{SpecValidator: validator}
-	res := myDefaultValidator.validateDefaultValueValidAgainstSchema()
+	res := myDefaultValidator.Validate()
 	assert.Empty(t, res.Errors)
+}
 
+func TestDefault_ValidateDefaults(t *testing.T) {
 	tests := []string{
 		"parameter",
 		"parameter-required",
@@ -55,21 +57,7 @@ func TestDefault_ValidateDefaultValueAgainstSchema(t *testing.T) {
 		"header-pattern",
 		"header-badpattern",
 		"schema-items-allOf",
-		// default-response-PatternProperties
-		// - DONE: header in default response
-		// - invalid schema in default response
-		//"default-response-PatternProperties",
-		// - header in default response with patternProperties
-		// - header in default response with failed patternProperties
-		// - header in response
-		// - failed header in response
-		// - items in header in response
-		// - header in response with failed patternProperties
-		// - invalid schema in response
-		// - items in schema in response
-		// - patternProperties in schema in response
-		// - additionalProperties in schema in response
-		// - Pattern validation
+		"response-ref",
 	}
 
 	for _, tt := range tests {
@@ -83,7 +71,7 @@ func TestDefault_ValidateDefaultValueAgainstSchema(t *testing.T) {
 			validator.spec = doc
 			validator.analyzer = analysis.New(doc.Spec())
 			myDefaultValidator := &defaultValidator{SpecValidator: validator}
-			res := myDefaultValidator.validateDefaultValueValidAgainstSchema()
+			res := myDefaultValidator.Validate()
 			assert.Empty(t, res.Errors, tt+" should not have errors")
 			// Special case: warning only
 			if tt == "parameter-required" {
@@ -105,7 +93,7 @@ func TestDefault_ValidateDefaultValueAgainstSchema(t *testing.T) {
 			validator.spec = doc
 			validator.analyzer = analysis.New(doc.Spec())
 			myDefaultValidator := &defaultValidator{SpecValidator: validator}
-			res := myDefaultValidator.validateDefaultValueValidAgainstSchema()
+			res := myDefaultValidator.Validate()
 			assert.NotEmpty(t, res.Errors, tt+" should have errors")
 			// Update: now we have an additional message to explain it's all about a default value
 			// Example:

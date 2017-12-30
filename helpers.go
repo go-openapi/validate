@@ -177,11 +177,12 @@ func (h *paramHelper) resolveParam(path, method, operationID string, ppr spec.Pa
 		obj, _, err := pr.Ref.GetPointer().Get(sw)
 		if err != nil {
 			refPath := strings.Join([]string{"\"" + path + "\"", method}, ".")
-			if ppr.Name != "" {
-				// NOTE: no test case for this branch
-				// it looks like the new spec.Ref.GetPointer() method expands the full tree, so this code is no more reachable
-				refPath = strings.Join([]string{refPath, ppr.Name}, ".")
-			}
+			// TODO: dead code
+			//if ppr.Name != "" {
+			// NOTE: no test case for this branch
+			// it looks like the new spec.Ref.GetPointer() method expands the full tree, so this code is no more reachable
+			//	refPath = strings.Join([]string{refPath, ppr.Name}, ".")
+			//}
 			errorHelp.addPointerError(res, err, pr.Ref.String(), refPath)
 			pr = spec.Parameter{}
 		} else {
@@ -206,7 +207,7 @@ func (h *paramHelper) checkedParamAssertion(obj interface{}, path, in, operation
 		res.AddWarnings(errors.New(errors.CompositeErrorCode, "$ref property should have no sibling in %q.%s", operation, path))
 		// Schema took over Parameter for an unexplained reason
 		res.AddErrors(errors.New(errors.CompositeErrorCode, "invalid definition as Schema for parameter %s in %s in operation %q", path, in, operation))
-	} else {
+	} else { // Safeguard
 		// NOTE: the only known case for this error is $ref expansion replaced parameter by a Schema
 		// Here, another structure replaced spec.Parameter. We should not be able to enter there.
 		res.AddErrors(errors.New(errors.CompositeErrorCode, "invalid definition for parameter %s in %s in operation %q", path, in, operation))

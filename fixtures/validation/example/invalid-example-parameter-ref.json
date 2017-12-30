@@ -38,7 +38,7 @@
           "$ref": "#/parameters/limit"
         }],
         "responses": {
-          "example": {
+          "default": {
             "description": "Generic Error"
           },
           "200": {

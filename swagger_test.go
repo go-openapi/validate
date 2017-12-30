@@ -32,14 +32,18 @@ func init() {
 	loads.AddLoader(fmts.YAMLMatcher, fmts.YAMLDoc)
 }
 
+func skipNotifyGoSwagger(t *testing.T) {
+	t.Log("To enable this long running test, use -args -enable-go-swagger in your go test command line")
+}
+
 // Exercise validate will all tests cases from package go-swagger
 // A copy of all fixtures available in in go-swagger/go-swagger
 // is maintained in fixtures/go-swagger
 //
 // TODO: move this list to a YAML fixture config file
 func Test_GoSwaggerTestCases(t *testing.T) {
-	if !enableLongTests {
-		skipNotify(t)
+	if !enableGoSwaggerTests {
+		skipNotifyGoSwagger(t)
 		t.SkipNow()
 	}
 	// A list of test cases which fail on "swagger validate" at spec load time
@@ -142,11 +146,11 @@ func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnL
 				}
 				doc, err := loads.Spec(path)
 				if shouldNotLoad {
-					if !assert.Error(t, err, "Expected this spec not to load: %s", path) {
+					if !assert.Errorf(t, err, "Expected this spec not to load: %s", path) {
 						errs++
 					}
 				} else {
-					if !assert.NoError(t, err, "Expected this spec to load without error: %s", path) {
+					if !assert.NoErrorf(t, err, "Expected this spec to load without error: %s", path) {
 						errs++
 					}
 				}
@@ -165,11 +169,11 @@ func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnL
 				validator.SetContinueOnErrors(true)
 				res, _ := validator.Validate(doc)
 				if shouldFail {
-					if !assert.False(t, res.IsValid(), "Expected this spec to be invalid: %s", path) {
+					if !assert.Falsef(t, res.IsValid(), "Expected this spec to be invalid: %s", path) {
 						errs++
 					}
 				} else {
-					if !assert.True(t, res.IsValid(), "Expected this spec to be valid: %s", path) {
+					if !assert.Truef(t, res.IsValid(), "Expected this spec to be valid: %s", path) {
 						t.Logf("Errors reported by validation on %s", path)
 						for _, e := range res.Errors {
 							t.Log(e)

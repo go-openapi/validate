@@ -47,11 +47,14 @@ Reported as errors:
   - path parameters must be declared a required
   - headers must not contain $ref
   - schema and property examples provided must validate against their respective object's schema
+  - examples provided must validate their schema
 
 Reported as warnings:
   - path parameters should not contain any of [{,},\w]
   - empty path
   - unused definitions
+  - unsupported validation of examples on non-JSON media types
+  - examples in response without schema
 
 Validating a schema
 
@@ -66,7 +69,6 @@ Entry points:
 Known limitations
 
 With the current version of this package, the following aspects of swagger are not yet supported:
-  - examples in parameters and in schemas are not checked
   - default values and examples on responses only support application/json producer type
   - invalid numeric constraints (such as Minimum, etc..) are not checked except for default values
   - valid js ECMA regexp not supported by Go regexp engine are considered invalid

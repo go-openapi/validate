@@ -17,6 +17,7 @@ package validate
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/spec"
@@ -29,7 +30,6 @@ type defaultValidator struct {
 }
 
 // Validate validates the default values declared in the swagger spec
-//
 func (d *defaultValidator) Validate() (errs *Result) {
 	errs = new(Result)
 	if d == nil || d.SpecValidator == nil {
@@ -87,18 +87,17 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 
 				if op.Responses != nil {
 					if op.Responses.Default != nil {
-						// Same constraint on default Responses
-						res.Merge(d.validateDefaultInResponse(op.Responses.Default, "default", 0, op.ID))
+						// Same constraint on default Response
+						res.Merge(d.validateDefaultInResponse(op.Responses.Default, "default", path, 0, op.ID))
 					}
 					// Same constraint on regular Responses
 					if op.Responses.StatusCodeResponses != nil { // Safeguard
 						for code, r := range op.Responses.StatusCodeResponses {
-							res.Merge(d.validateDefaultInResponse(&r, "response", code, op.ID))
+							res.Merge(d.validateDefaultInResponse(&r, "response", path, code, op.ID))
 						}
 					}
 				} else {
 					// Empty op.ID means there is no meaningful operation: no need to report a specific message
-					// TODO(TEST): test that no response definition ends up with an error
 					if op.ID != "" {
 						res.AddErrors(errors.New(errors.CompositeErrorCode, "operation %q has no valid response", op.ID))
 					}
@@ -114,11 +113,25 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 	return res
 }
 
-func (d *defaultValidator) validateDefaultInResponse(response *spec.Response, responseType string, responseCode int, operationID string) *Result {
+func (d *defaultValidator) validateDefaultInResponse(response *spec.Response, responseType, path string, responseCode int, operationID string) *Result {
 	var responseName, responseCodeAsStr string
 
 	res := new(Result)
 	s := d.SpecValidator
+
+	// Recursively follow possible $ref's
+	// TODO: warn on ref siblings
+	for response.Ref.String() != "" {
+		obj, _, err := response.Ref.GetPointer().Get(s.spec.Spec())
+		if err != nil {
+			// NOTE: with ref expansion in spec, this code is no more reachable
+			errorHelp.addPointerError(res, err, response.Ref.String(), strings.Join([]string{"\"" + path + "\"", response.ResponseProps.Schema.ID}, "."))
+			return res
+		}
+		// Here we may expect type assertion to be guaranteed (not like in the Parameter case)
+		nr := obj.(spec.Response)
+		response = &nr
+	}
 
 	// Message variants
 	if responseType == "default" {

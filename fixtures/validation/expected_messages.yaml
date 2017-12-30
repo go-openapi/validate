@@ -1,9 +1,32 @@
 # 
 # This document specifies messages expecations on tested fixtures (errors and warnings)
 # Messages may be either a plain string (assert.Contains) or a simple regexp (assert.True(regexp.MatchString())
+fixture-no-response.yaml:
+  comment: 
+  todo: 
+  expectedLoadError: false
+  expectedValid: false
+  expectedMessages:
+  - message: 'operation "ListBackendSets" has no valid response'
+    withContinueOnErrors: false
+    isRegexp: false
+  - message: 'paths./loadBalancers/{loadBalancerId}/backendSets.get.responses in body must be of type object: "null"'
+    withContinueOnErrors: false
+    isRegexp: false
+  expectedWarnings: []
+fixture-empty-paths.json:
+  comment: 
+  todo: 
+  expectedLoadError: false
+  expectedValid: true
+  expectedMessages: []
+  expectedWarnings:
+  - message: spec has no valid path defined
+    withContinueOnErrors: false
+    isRegexp: false
 fixture-patternProperties.json:
   comment: Exercise pattern properties (for default values), with an invalid pattern
-  todo: should be generalized to example values when supported
+  todo: 
   expectedLoadError: false
   expectedValid: false
   expectedMessages:
@@ -51,24 +74,45 @@ fixture-161-2.json:
   - message: 'requestBody.default in body must be of type object: "string"'
     withContinueOnErrors: false
     isRegexp: false
+  - message: 'example value for requestBody in body does not validate its schema'
+    withContinueOnErrors: false
+    isRegexp: false
+  - message: 'requestBody.example.parent.id in body must be of type number: "string"'
+    withContinueOnErrors: false
+    isRegexp: false
   expectedWarnings: []
 fixture-161-good.json:
-  comment: 'Issue#161: this is the corresponding corrected spec which should be valid'
+  comment: 'Issue#161: this is the corresponding corrected spec which should be valid. Ah! But now examples are invalid...'
   todo: 
-  expectedLoadError: false
-  expectedValid: true
-  expectedMessages: []
-  expectedWarnings: []
-fixture-161.json:
-  comment: 'Issue#161: default value as object'
-  todo: This spec may also be used to check example values
   expectedLoadError: false
   expectedValid: false
   expectedMessages:
-  - message: default value for requestBody in body does not validate its schema
+  - message: 'example value for requestBody in body does not validate its schema'
+    withContinueOnErrors: false
+    isRegexp: false
+  - message: 'requestBody.example.parent.id in body must be of type number: "string"'
+    withContinueOnErrors: false
+    isRegexp: false
+  expectedWarnings: []
+fixture-161.json:
+  comment: 'Issue#161: default value as object'
+  todo: 
+  expectedLoadError: false
+  expectedValid: false
+  expectedMessages:
+  - message: 'default value for requestBody in body does not validate its schema'
+    withContinueOnErrors: false
+    isRegexp: false
+  - message: 'requestBody.example.name in body must be of type object: "string"'
     withContinueOnErrors: false
     isRegexp: false
   - message: 'requestBody.default in body must be of type object: "string"'
+    withContinueOnErrors: false
+    isRegexp: false
+  - message: 'example value for requestBody in body does not validate its schema'
+    withContinueOnErrors: false
+    isRegexp: false
+  - message: 'requestBody.example.parent.id in body must be of type number: "string"'
     withContinueOnErrors: false
     isRegexp: false
   expectedWarnings: []
@@ -195,32 +239,10 @@ fixture-581-inline-param-format.yaml:
   - message: definition "#/definitions/myId" is not used anywhere
     withContinueOnErrors: true
     isRegexp: false
-  #- message: inlineMaxInt in query has a default but no valid schema
-  #  withContinueOnErrors: true
-  #  isRegexp: false
-  #- message: inlineInfiniteInt2 in query has a default but no valid schema
-  #  withContinueOnErrors: true
-  #  isRegexp: false
-  #- message: negFactor2 in query has a default but no valid schema
-  #  withContinueOnErrors: true
-  #  isRegexp: false
-  #- message: inlineInfiniteInt in query has a default but no valid schema
-  #  withContinueOnErrors: true
-  #  isRegexp: false
-  #- message: negFactor in query has a default but no valid schema
-  #  withContinueOnErrors: true
-  #  isRegexp: false
-  #- message: negFactor3 in query has a default but no valid schema
-  #  withContinueOnErrors: true
-  #  isRegexp: false
-  #- message: inlineMinInt in query has a default but no valid schema
-  #  withContinueOnErrors: true
-  #  isRegexp: false
 fixture-581-inline-param.yaml:
   comment: A variation on the theme of number constraints, inspired by isssue#581.
     Focuses on inline params.
-  todo: The negative multiple message should be part of he error validation errors.
-    Still limited by support of default values check
+  todo: Still limited by support of default/examples values check
   expectedLoadError: false
   expectedValid: false
   expectedMessages:
@@ -427,6 +449,27 @@ fixture-1231.yaml:
     isRegexp: false
   - message: '/v1/broker/{customer_id}.create_date in body must be of type date-time:
       "bad-date"'
+    withContinueOnErrors: true
+    isRegexp: false
+  - message: 'customer_id in path must be of type uuid: "xyz"'
+    withContinueOnErrors: true
+    isRegexp: false
+  - message: 'definitions.customer.create_date.example in body must be of type date-time: "float64"'
+    withContinueOnErrors: true
+    isRegexp: false
+  - message: 'definitions.customer.email.example in body must be of type email: "float64"'
+    withContinueOnErrors: true
+    isRegexp: false
+  - message: 'definitions.customer.id.example in body must be of type uuid: "float64"'
+    withContinueOnErrors: true
+    isRegexp: false
+  - message: 'definitions.customer2.example.create_date in body must be of type date-time: "bad-date"'
+    withContinueOnErrors: true
+    isRegexp: false
+  - message: 'definitions.customer2.example.id in body must be of type uuid: "mycustomer"'
+    withContinueOnErrors: true
+    isRegexp: false
+  - message: 'example value for customer_id in path does not validate its schema'
     withContinueOnErrors: true
     isRegexp: false
   expectedWarnings: []
@@ -769,10 +812,16 @@ fixture-constraints-on-numbers.yaml:
   #  isRegexp: false
 fixture-invalid-example-property.yaml:
   comment: 
-  todo: this one should fail when examples are validated
+  todo: 
   expectedLoadError: false
-  expectedValid: true
-  expectedMessages: []
+  expectedValid: false
+  expectedMessages:
+  - message: example value for getSomeIds in body does not validate its schema
+    withContinueOnErrors: false
+    isRegexp: false
+  - message: 'getSomeIds.id.example in body must be of type number: "string"'
+    withContinueOnErrors: false
+    isRegexp: false
   expectedWarnings: []
 fixture-valid-example-property.yaml:
   comment: 

@@ -35,6 +35,8 @@ import (
 //  - TODO: warnings about the use of id keyword
 //  - TODO: $ref should not have siblings
 //  - TODO: make sure documentation reflects all checks and warnings
+//  - TODO: warning when readOnly and required
+//  - TODO: check on discriminators
 //
 // NOTE: SecurityScopes are maps: no need to check uniqueness
 //
