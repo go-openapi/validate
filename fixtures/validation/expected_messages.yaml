@@ -8,7 +8,7 @@ fixture-no-response.yaml:
   expectedValid: false
   expectedMessages:
   - message: 'operation "ListBackendSets" has no valid response'
-    withContinueOnErrors: false
+    withContinueOnErrors: true
     isRegexp: false
   - message: 'paths./loadBalancers/{loadBalancerId}/backendSets.get.responses in body must be of type object: "null"'
     withContinueOnErrors: false
