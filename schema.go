@@ -44,7 +44,7 @@ type SchemaValidator struct {
 
 // AgainstSchema validates the specified data against the provided schema, using a registry of supported formats.
 //
-// TODO: is that true? When no pre-parsed schema structure is provided, it uses a JSON schema as default.
+// When no pre-parsed *spec.Schema structure is provided, it uses a JSON schema as default. See example.
 func AgainstSchema(schema *spec.Schema, data interface{}, formats strfmt.Registry) error {
 	res := NewSchemaValidator(schema, nil, "", formats).Validate(data)
 	if res.HasErrors() {
@@ -55,9 +55,7 @@ func AgainstSchema(schema *spec.Schema, data interface{}, formats strfmt.Registr
 
 // NewSchemaValidator creates a new schema validator.
 //
-// Panics if the schema is invalid.
-//
-// TODO: shall maybe return nil rather than panicking...
+// Panics if the provided schema is invalid.
 func NewSchemaValidator(schema *spec.Schema, rootSchema interface{}, root string, formats strfmt.Registry) *SchemaValidator {
 	if schema == nil {
 		return nil
@@ -107,9 +105,9 @@ func (s *SchemaValidator) Validate(data interface{}) *Result {
 	}
 
 	if data == nil {
-		v := s.validators[0].Validate(data)     // type validator
-		v.Merge(s.validators[6].Validate(data)) // common validator
-		return v
+		result.Merge(s.validators[0].Validate(data)) // type validator
+		result.Merge(s.validators[6].Validate(data)) // common validator
+		return result
 	}
 
 	tpe := reflect.TypeOf(data)

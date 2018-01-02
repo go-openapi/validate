@@ -16,10 +16,7 @@ package validate
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 
-	"github.com/go-openapi/errors"
 	"github.com/go-openapi/spec"
 )
 
@@ -70,7 +67,8 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 						// check param default value is valid
 						red := NewParamValidator(&param, s.KnownFormats).Validate(param.Example)
 						if red.HasErrorsOrWarnings() {
-							res.AddErrors(errors.New(errors.CompositeErrorCode, "example value for %s in %s does not validate its schema", param.Name, param.In))
+							//res.AddErrors(errors.New(errors.CompositeErrorCode, "example value for %s in %s does not validate its schema", param.Name, param.In))
+							res.AddErrors(exampleValueDoesNotValidateMsg(param.Name, param.In))
 							res.Merge(red)
 						}
 					}
@@ -79,7 +77,8 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 					if param.Items != nil {
 						red := ex.validateExampleValueItemsAgainstSchema(param.Name, param.In, &param, param.Items)
 						if red.HasErrorsOrWarnings() {
-							res.AddErrors(errors.New(errors.CompositeErrorCode, "example value for %s.items in %s does not validate its schema", param.Name, param.In))
+							//res.AddErrors(errors.New(errors.CompositeErrorCode, "example value for %s.items in %s does not validate its schema", param.Name, param.In))
+							res.AddErrors(exampleValueItemsDoesNotValidateMsg(param.Name, param.In))
 							res.Merge(red)
 						}
 					}
@@ -88,7 +87,8 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 						// Validate example value against schema
 						red := ex.validateExampleValueSchemaAgainstSchema(param.Name, param.In, param.Schema)
 						if red.HasErrorsOrWarnings() {
-							res.AddErrors(errors.New(errors.CompositeErrorCode, "example value for %s in %s does not validate its schema", param.Name, param.In))
+							//res.AddErrors(errors.New(errors.CompositeErrorCode, "example value for %s in %s does not validate its schema", param.Name, param.In))
+							res.AddErrors(exampleValueDoesNotValidateMsg(param.Name, param.In))
 							res.Merge(red)
 						}
 					}
@@ -108,7 +108,8 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 				} else {
 					// Empty op.ID means there is no meaningful operation: no need to report a specific message
 					if op.ID != "" {
-						res.AddErrors(errors.New(errors.CompositeErrorCode, "operation %q has no valid response", op.ID))
+						//res.AddErrors(errors.New(errors.CompositeErrorCode, "operation %q has no valid response", op.ID))
+						res.AddErrors(noValidResponseMsg(op.ID))
 					}
 				}
 			}
@@ -122,41 +123,24 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 	return res
 }
 
-func (ex *exampleValidator) validateExampleInResponse(response *spec.Response, responseType, path string, responseCode int, operationID string) *Result {
-	var responseName, responseCodeAsStr string
-
-	res := new(Result)
+func (ex *exampleValidator) validateExampleInResponse(resp *spec.Response, responseType, path string, responseCode int, operationID string) *Result {
 	s := ex.SpecValidator
 
-	// Recursively follow possible $ref's
-	for response.Ref.String() != "" {
-		obj, _, err := response.Ref.GetPointer().Get(s.spec.Spec())
-		if err != nil {
-			// NOTE: with new ref expansion in spec, this code is no more reachable
-			errorHelp.addPointerError(res, err, response.Ref.String(), strings.Join([]string{"\"" + path + "\"", response.ResponseProps.Schema.ID}, "."))
-			return res
-		}
-		// Here we may expect type assertion to be guaranteed (not like in the Parameter case)
-		nr := obj.(spec.Response)
-		response = &nr
+	response, res := responseHelp.expandResponseRef(resp, path, s)
+	if !res.IsValid() { // Safeguard
+		return res
 	}
 
-	// Message variants
-	if responseType == "default" {
-		responseCodeAsStr = "default"
-		responseName = "default response"
-	} else {
-		responseCodeAsStr = strconv.Itoa(responseCode)
-		responseName = "response " + responseCodeAsStr
-	}
+	responseName, responseCodeAsStr := responseHelp.responseMsgVariants(responseType, responseCode)
 
 	if response.Headers != nil { // Safeguard
 		for nm, h := range response.Headers {
 			if h.Example != nil {
 				red := NewHeaderValidator(nm, &h, s.KnownFormats).Validate(h.Example)
 				if red.HasErrorsOrWarnings() {
-					msg := "in operation %q, example value in header %s for %s does not validate its schema"
-					res.AddErrors(errors.New(errors.CompositeErrorCode, msg, operationID, nm, responseName))
+					//msg := "in operation %q, example value in header %s for %s does not validate its schema"
+					//res.AddErrors(errors.New(errors.CompositeErrorCode, msg, operationID, nm, responseName))
+					res.AddErrors(exampleValueHeaderDoesNotValidateMsg(operationID, nm, responseName))
 					res.Merge(red)
 				}
 			}
@@ -165,15 +149,17 @@ func (ex *exampleValidator) validateExampleInResponse(response *spec.Response, r
 			if h.Items != nil {
 				red := ex.validateExampleValueItemsAgainstSchema(nm, "header", &h, h.Items)
 				if red.HasErrorsOrWarnings() {
-					msg := "in operation %q, example value in header.items %s for %s does not validate its schema"
-					res.AddErrors(errors.New(errors.CompositeErrorCode, msg, operationID, nm, responseName))
+					//msg := "in operation %q, example value in header.items %s for %s does not validate its schema"
+					//res.AddErrors(errors.New(errors.CompositeErrorCode, msg, operationID, nm, responseName))
+					res.AddErrors(exampleValueHeaderItemsDoesNotValidateMsg(operationID, nm, responseName))
 					res.Merge(red)
 				}
 			}
 
 			if _, err := compileRegexp(h.Pattern); err != nil {
-				msg := "in operation %q, header %s for %s has invalid pattern %q: %v"
-				res.AddErrors(errors.New(errors.CompositeErrorCode, msg, operationID, nm, responseName, h.Pattern, err))
+				//msg := "in operation %q, header %s for %s has invalid pattern %q: %v"
+				//res.AddErrors(errors.New(errors.CompositeErrorCode, msg, operationID, nm, responseName, h.Pattern, err))
+				res.AddErrors(invalidPatternInHeaderMsg(operationID, nm, responseName, h.Pattern, err))
 			}
 
 			// Headers don't have schema
@@ -183,8 +169,9 @@ func (ex *exampleValidator) validateExampleInResponse(response *spec.Response, r
 		red := ex.validateExampleValueSchemaAgainstSchema(responseCodeAsStr, "response", response.Schema)
 		if red.HasErrorsOrWarnings() {
 			// Additional message to make sure the context of the error is not lost
-			msg := "in operation %q, example value in %s does not validate its schema"
-			res.AddErrors(errors.New(errors.CompositeErrorCode, msg, operationID, responseName))
+			//msg := "in operation %q, example value in %s does not validate its schema"
+			//res.AddErrors(errors.New(errors.CompositeErrorCode, msg, operationID, responseName))
+			res.AddErrors(exampleValueInDoesNotValidateMsg(operationID, responseName))
 			res.Merge(red)
 		}
 	}
@@ -195,13 +182,13 @@ func (ex *exampleValidator) validateExampleInResponse(response *spec.Response, r
 				res.Merge(NewSchemaValidator(response.Schema, s.spec.Spec(), path, s.KnownFormats).Validate(example))
 			} else {
 				// TODO: validate other media types too
-				res.AddWarnings(errors.New(errors.CompositeErrorCode, "No validation attempt for examples for media types other than application/json, in operation %q, %s:", operationID, responseName))
+				// res.AddWarnings(errors.New(errors.CompositeErrorCode, "No validation attempt for examples for media types other than application/json, in operation %q, %s", operationID, responseName))
+				res.AddWarnings(examplesMimeNotSupportedMsg(operationID, responseName))
 			}
 		} else {
-			// TODO(TEST)
-			res.AddWarnings(errors.New(errors.CompositeErrorCode, "Examples provided without schema in operation %q, %s:", operationID, responseName))
+			//res.AddWarnings(errors.New(errors.CompositeErrorCode, "Examples provided without schema in operation %q, %s", operationID, responseName))
+			res.AddWarnings(examplesWithoutSchemaMsg(operationID, responseName))
 		}
-
 	}
 	return res
 }
@@ -225,9 +212,11 @@ func (ex *exampleValidator) validateExampleValueSchemaAgainstSchema(path, in str
 			}
 		}
 		if _, err := compileRegexp(schema.Pattern); err != nil {
-			res.AddErrors(errors.New(errors.CompositeErrorCode, "%s in %s has invalid pattern: %q", path, in, schema.Pattern))
+			//res.AddErrors(errors.New(errors.CompositeErrorCode, "%s in %s has invalid pattern: %q", path, in, schema.Pattern))
+			res.AddErrors(invalidPatternInMsg(path, in, schema.Pattern))
 		}
 		if schema.AdditionalItems != nil && schema.AdditionalItems.Schema != nil {
+			// NOTE: we keep validating values, even though additionalItems is unsupported in Swagger 2.0 (and 3.0 as well)
 			res.Merge(ex.validateExampleValueSchemaAgainstSchema(fmt.Sprintf("%s.additionalItems", path), in, schema.AdditionalItems.Schema))
 		}
 		for propName, prop := range schema.Properties {
@@ -256,11 +245,11 @@ func (ex *exampleValidator) validateExampleValueItemsAgainstSchema(path, in stri
 			res.Merge(newItemsValidator(path, in, items, root, s.KnownFormats).Validate(0, items.Example))
 		}
 		if items.Items != nil {
-			// TODO(TEST): test case
 			res.Merge(ex.validateExampleValueItemsAgainstSchema(path+"[0].example", in, root, items.Items))
 		}
 		if _, err := compileRegexp(items.Pattern); err != nil {
-			res.AddErrors(errors.New(errors.CompositeErrorCode, "%s in %s has invalid pattern: %q", path, in, items.Pattern))
+			//res.AddErrors(errors.New(errors.CompositeErrorCode, "%s in %s has invalid pattern: %q", path, in, items.Pattern))
+			res.AddErrors(invalidPatternInMsg(path, in, items.Pattern))
 		}
 	}
 	return res

@@ -20,6 +20,7 @@ package validate
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/go-openapi/errors"
@@ -28,10 +29,11 @@ import (
 
 // Helpers available at the package level
 var (
-	pathHelp  *pathHelper
-	valueHelp *valueHelper
-	errorHelp *errorHelper
-	paramHelp *paramHelper
+	pathHelp     *pathHelper
+	valueHelp    *valueHelper
+	errorHelp    *errorHelper
+	paramHelp    *paramHelper
+	responseHelp *responseHelper
 )
 
 type errorHelper struct {
@@ -92,7 +94,6 @@ type valueHelper struct {
 
 // Faster number conversion functions, without error checking
 // (implements an implicit type upgrade).
-// WARNING: moving into edge cases results in panic()
 func (h *valueHelper) asInt64(val interface{}) int64 {
 	v := reflect.ValueOf(val)
 	switch v.Kind() {
@@ -141,7 +142,7 @@ func (h *valueHelper) asFloat64(val interface{}) float64 {
 }
 
 type paramHelper struct {
-	// A collection of unexported helpers for paramters resolution
+	// A collection of unexported helpers for parameters resolution
 }
 
 func (h *paramHelper) safeExpandedParamsFor(path, method, operationID string, res *Result, s *SpecValidator) (params []spec.Parameter) {
@@ -152,10 +153,9 @@ func (h *paramHelper) safeExpandedParamsFor(path, method, operationID string, re
 			return true
 		}) {
 		pr, red := h.resolveParam(path, method, operationID, ppr, s)
-		if red.HasErrors() {
+		if red.HasErrors() { // Safeguard
+			// NOTE: it looks like the new spec.Ref.GetPointer() method expands the full tree, so this code is no more reachable
 			res.Merge(red)
-			// NOTE: no test case for this branch
-			// it looks like the new spec.Ref.GetPointer() method expands the full tree, so this code is no more reachable
 			if red.HasErrors() && !s.Options.ContinueOnErrors {
 				break
 			}
@@ -175,14 +175,9 @@ func (h *paramHelper) resolveParam(path, method, operationID string, ppr spec.Pa
 
 	for pr.Ref.String() != "" {
 		obj, _, err := pr.Ref.GetPointer().Get(sw)
-		if err != nil {
+		if err != nil { // Safeguard
+			// NOTE: it looks like the new spec.Ref.GetPointer() method expands the full tree, so this code is no more reachable
 			refPath := strings.Join([]string{"\"" + path + "\"", method}, ".")
-			// TODO: dead code
-			//if ppr.Name != "" {
-			// NOTE: no test case for this branch
-			// it looks like the new spec.Ref.GetPointer() method expands the full tree, so this code is no more reachable
-			//	refPath = strings.Join([]string{refPath, ppr.Name}, ".")
-			//}
 			errorHelp.addPointerError(res, err, pr.Ref.String(), refPath)
 			pr = spec.Parameter{}
 		} else {
@@ -213,4 +208,37 @@ func (h *paramHelper) checkedParamAssertion(obj interface{}, path, in, operation
 		res.AddErrors(errors.New(errors.CompositeErrorCode, "invalid definition for parameter %s in %s in operation %q", path, in, operation))
 	}
 	return spec.Parameter{}, false
+}
+
+type responseHelper struct {
+	// A collection of unexported helpers for response resolution
+}
+
+func (r *responseHelper) expandResponseRef(response *spec.Response, path string, s *SpecValidator) (*spec.Response, *Result) {
+	// Recursively follow possible $ref's on responses
+	res := new(Result)
+	for response.Ref.String() != "" {
+		obj, _, err := response.Ref.GetPointer().Get(s.spec.Spec())
+		if err != nil { // Safeguard
+			// NOTE: with ref expansion in spec, this code is no more reachable
+			errorHelp.addPointerError(res, err, response.Ref.String(), strings.Join([]string{"\"" + path + "\"", response.ResponseProps.Schema.ID}, "."))
+			break
+		}
+		// Here we may expect type assertion to be guaranteed (not like in the Parameter case)
+		nr := obj.(spec.Response)
+		response = &nr
+	}
+	return response, res
+}
+
+func (r *responseHelper) responseMsgVariants(responseType string, responseCode int) (responseName, responseCodeAsStr string) {
+	// Path variants for messages
+	if responseType == "default" {
+		responseCodeAsStr = "default"
+		responseName = "default response"
+	} else {
+		responseCodeAsStr = strconv.Itoa(responseCode)
+		responseName = "response " + responseCodeAsStr
+	}
+	return
 }

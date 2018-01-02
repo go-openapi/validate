@@ -113,6 +113,21 @@ func testMessageQuality(t *testing.T, haltOnErrors bool, continueOnErrors bool) 
 		errs++
 		return
 	}
+
+	// Check config
+	for fixture, expected := range tested {
+		if err := UniqueItems("", "", expected.ExpectedMessages); err != nil {
+			t.Logf("Duplicate messages configured for %s", fixture)
+			errs++
+		}
+		if err := UniqueItems("", "", expected.ExpectedWarnings); err != nil {
+			t.Logf("Duplicate messages configured for %s", fixture)
+			errs++
+		}
+	}
+	if errs > 0 {
+		return
+	}
 	err := filepath.Walk(filepath.Join("fixtures", "validation"),
 		func(path string, info os.FileInfo, err error) error {
 			basename := info.Name()
@@ -420,4 +435,27 @@ func verifyLoadErrors(t *testing.T, err error, expectedMessages []ExpectedMessag
 		}
 	}
 	return
+}
+
+// Test unitary fixture for dev and bug fixing
+func Test_SingleFixture(t *testing.T) {
+	t.SkipNow()
+	path := "fixtures/validation/fixture-items-items.yaml"
+	doc, err := loads.Spec(path)
+	if assert.NoError(t, err) {
+		validator := NewSpecValidator(doc.Schema(), strfmt.Default)
+		validator.SetContinueOnErrors(true)
+		res, _ := validator.Validate(doc)
+		t.Log("Returned errors:")
+		for _, e := range res.Errors {
+			t.Logf("%v", e)
+		}
+		t.Log("Returned warnings:")
+		for _, e := range res.Warnings {
+			t.Logf("%v", e)
+		}
+
+	} else {
+		t.Logf("Load error: %v", err)
+	}
 }

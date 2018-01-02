@@ -59,7 +59,7 @@ parameters:
     required: true
     type: string
     format: uuid
-    example: xyz
+    example: xyz            #<---- example not allowed here
 definitions:
   # example property by property
   customer:

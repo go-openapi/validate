@@ -95,6 +95,7 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 	keepResultOneOf := new(Result)
 	keepResultAllOf := new(Result)
 
+	// Validates at least one in anyOf schemas
 	var firstSuccess *Result
 	if len(s.anyOfValidators) > 0 {
 		var bestFailures *Result
@@ -103,6 +104,7 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 			result := anyOfSchema.Validate(data)
 			// We keep inner IMPORTANT! errors no matter what MatchCount tells us
 			keepResultAnyOf.Merge(result.keepRelevantErrors())
+			// DEBUG: keepResultAnyOf.Merge(result)
 			if result.IsValid() {
 				bestFailures = nil
 				succeededOnce = true
@@ -128,15 +130,20 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 		}
 	}
 
+	// Validates exactly one in oneOf schemas
 	if len(s.oneOfValidators) > 0 {
+		//log.Printf("DEBUG: have %d oneOfSchemaValidators", len(s.oneOfValidators))
 		var bestFailures *Result
 		var firstSuccess *Result
 		validated := 0
 
 		for _, oneOfSchema := range s.oneOfValidators {
+			//log.Printf("DEBUG: oneOfSchemaValidator for %s", oneOfSchema.Path)
 			result := oneOfSchema.Validate(data)
 			// We keep inner IMPORTANT! errors no matter what MatchCount tells us
 			keepResultOneOf.Merge(result.keepRelevantErrors())
+			//log.Printf("DEBUG: result.isValid()=%t", result.IsValid())
+			//keepResultOneOf.Merge(result)
 			if result.IsValid() {
 				validated++
 				bestFailures = nil
@@ -146,6 +153,8 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 				keepResultOneOf = new(Result)
 				continue
 			}
+			//spew.Dump(result.Errors)
+			//spew.Dump(result.Warnings)
 			// MatchCount is used to select errors from the schema with most positive checks
 			if validated == 0 && (bestFailures == nil || result.MatchCount > bestFailures.MatchCount) {
 				bestFailures = result
@@ -169,6 +178,7 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 		}
 	}
 
+	// Validates all of allOf schemas
 	if len(s.allOfValidators) > 0 {
 		validated := 0
 
@@ -176,7 +186,7 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 			result := allOfSchema.Validate(data)
 			// We keep inner IMPORTANT! errors no matter what MatchCount tells us
 			keepResultAllOf.Merge(result.keepRelevantErrors())
-			//keepAllResultsAllOf.Merge(result)
+			//keepResultAllOf.Merge(result)
 			if result.IsValid() {
 				validated++
 			}

@@ -16,8 +16,6 @@ package validate
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/spec"
@@ -52,7 +50,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 				// parameters
 				for _, param := range paramHelp.safeExpandedParamsFor(path, method, op.ID, res, s) {
 					if param.Default != nil && param.Required {
-						res.AddWarnings(errors.New(errors.CompositeErrorCode, "%s in %s has a default value and is required as parameter", param.Name, param.In))
+						res.AddWarnings(requiredHasDefaultMsg(param.Name, param.In))
 					}
 
 					// Check simple parameters first
@@ -61,7 +59,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 						// check param default value is valid
 						red := NewParamValidator(&param, s.KnownFormats).Validate(param.Default)
 						if red.HasErrorsOrWarnings() {
-							res.AddErrors(errors.New(errors.CompositeErrorCode, "default value for %s in %s does not validate its schema", param.Name, param.In))
+							res.AddErrors(defaultValueDoesNotValidateMsg(param.Name, param.In))
 							res.Merge(red)
 						}
 					}
@@ -70,7 +68,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 					if param.Items != nil {
 						red := d.validateDefaultValueItemsAgainstSchema(param.Name, param.In, &param, param.Items)
 						if red.HasErrorsOrWarnings() {
-							res.AddErrors(errors.New(errors.CompositeErrorCode, "default value for %s.items in %s does not validate its schema", param.Name, param.In))
+							res.AddErrors(defaultValueItemsDoesNotValidateMsg(param.Name, param.In))
 							res.Merge(red)
 						}
 					}
@@ -79,7 +77,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 						// Validate default value against schema
 						red := d.validateDefaultValueSchemaAgainstSchema(param.Name, param.In, param.Schema)
 						if red.HasErrorsOrWarnings() {
-							res.AddErrors(errors.New(errors.CompositeErrorCode, "default value for %s in %s does not validate its schema", param.Name, param.In))
+							res.AddErrors(defaultValueDoesNotValidateMsg(param.Name, param.In))
 							res.Merge(red)
 						}
 					}
@@ -99,7 +97,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 				} else {
 					// Empty op.ID means there is no meaningful operation: no need to report a specific message
 					if op.ID != "" {
-						res.AddErrors(errors.New(errors.CompositeErrorCode, "operation %q has no valid response", op.ID))
+						res.AddErrors(noValidResponseMsg(op.ID))
 					}
 				}
 			}
@@ -113,42 +111,22 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 	return res
 }
 
-func (d *defaultValidator) validateDefaultInResponse(response *spec.Response, responseType, path string, responseCode int, operationID string) *Result {
-	var responseName, responseCodeAsStr string
-
-	res := new(Result)
+func (d *defaultValidator) validateDefaultInResponse(resp *spec.Response, responseType, path string, responseCode int, operationID string) *Result {
 	s := d.SpecValidator
 
-	// Recursively follow possible $ref's
-	// TODO: warn on ref siblings
-	for response.Ref.String() != "" {
-		obj, _, err := response.Ref.GetPointer().Get(s.spec.Spec())
-		if err != nil {
-			// NOTE: with ref expansion in spec, this code is no more reachable
-			errorHelp.addPointerError(res, err, response.Ref.String(), strings.Join([]string{"\"" + path + "\"", response.ResponseProps.Schema.ID}, "."))
-			return res
-		}
-		// Here we may expect type assertion to be guaranteed (not like in the Parameter case)
-		nr := obj.(spec.Response)
-		response = &nr
+	response, res := responseHelp.expandResponseRef(resp, path, s)
+	if !res.IsValid() {
+		return res
 	}
 
-	// Message variants
-	if responseType == "default" {
-		responseCodeAsStr = "default"
-		responseName = "default response"
-	} else {
-		responseCodeAsStr = strconv.Itoa(responseCode)
-		responseName = "response " + responseCodeAsStr
-	}
+	responseName, responseCodeAsStr := responseHelp.responseMsgVariants(responseType, responseCode)
 
 	if response.Headers != nil { // Safeguard
 		for nm, h := range response.Headers {
 			if h.Default != nil {
 				red := NewHeaderValidator(nm, &h, s.KnownFormats).Validate(h.Default)
 				if red.HasErrorsOrWarnings() {
-					msg := "in operation %q, default value in header %s for %s does not validate its schema"
-					res.AddErrors(errors.New(errors.CompositeErrorCode, msg, operationID, nm, responseName))
+					res.AddErrors(defaultValueHeaderDoesNotValidateMsg(operationID, nm, responseName))
 					res.Merge(red)
 				}
 			}
@@ -157,15 +135,13 @@ func (d *defaultValidator) validateDefaultInResponse(response *spec.Response, re
 			if h.Items != nil {
 				red := d.validateDefaultValueItemsAgainstSchema(nm, "header", &h, h.Items)
 				if red.HasErrorsOrWarnings() {
-					msg := "in operation %q, default value in header.items %s for %s does not validate its schema"
-					res.AddErrors(errors.New(errors.CompositeErrorCode, msg, operationID, nm, responseName))
+					res.AddErrors(defaultValueHeaderItemsDoesNotValidateMsg(operationID, nm, responseName))
 					res.Merge(red)
 				}
 			}
 
 			if _, err := compileRegexp(h.Pattern); err != nil {
-				msg := "in operation %q, header %s for %s has invalid pattern %q: %v"
-				res.AddErrors(errors.New(errors.CompositeErrorCode, msg, operationID, nm, responseName, h.Pattern, err))
+				res.AddErrors(invalidPatternInHeaderMsg(operationID, nm, responseName, h.Pattern, err))
 			}
 
 			// Headers don't have schema
@@ -175,8 +151,7 @@ func (d *defaultValidator) validateDefaultInResponse(response *spec.Response, re
 		red := d.validateDefaultValueSchemaAgainstSchema(responseCodeAsStr, "response", response.Schema)
 		if red.HasErrorsOrWarnings() {
 			// Additional message to make sure the context of the error is not lost
-			msg := "in operation %q, default value in %s does not validate its schema"
-			res.AddErrors(errors.New(errors.CompositeErrorCode, msg, operationID, responseName))
+			res.AddErrors(defaultValueInDoesNotValidateMsg(operationID, responseName))
 			res.Merge(red)
 		}
 	}
@@ -205,6 +180,7 @@ func (d *defaultValidator) validateDefaultValueSchemaAgainstSchema(path, in stri
 			res.AddErrors(errors.New(errors.CompositeErrorCode, "%s in %s has invalid pattern: %q", path, in, schema.Pattern))
 		}
 		if schema.AdditionalItems != nil && schema.AdditionalItems.Schema != nil {
+			// NOTE: we keep validating values, even though additionalItems is not supported by Swagger 2.0 (and 3.0 as well)
 			res.Merge(d.validateDefaultValueSchemaAgainstSchema(fmt.Sprintf("%s.additionalItems", path), in, schema.AdditionalItems.Schema))
 		}
 		for propName, prop := range schema.Properties {
@@ -233,11 +209,10 @@ func (d *defaultValidator) validateDefaultValueItemsAgainstSchema(path, in strin
 			res.Merge(newItemsValidator(path, in, items, root, s.KnownFormats).Validate(0, items.Default))
 		}
 		if items.Items != nil {
-			// TODO(TEST): test case
 			res.Merge(d.validateDefaultValueItemsAgainstSchema(path+"[0].default", in, root, items.Items))
 		}
 		if _, err := compileRegexp(items.Pattern); err != nil {
-			res.AddErrors(errors.New(errors.CompositeErrorCode, "%s in %s has invalid pattern: %q", path, in, items.Pattern))
+			res.AddErrors(invalidPatternInMsg(path, in, items.Pattern))
 		}
 	}
 	return res

@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Data structure for jsonschema-suite fixtures
 type schemaTestT struct {
 	Description string       `json:"description"`
 	Schema      *spec.Schema `json:"schema"`
@@ -111,6 +112,13 @@ var enabled = []string{
 	"format",
 }
 
+var optionalFixtures = []string{
+//"zeroTerminatedFloats",
+//"format",	/* error on strict URI formatting */
+//"bignum",
+//"ecmascript-regex",
+}
+
 type noopResCache struct {
 }
 
@@ -125,13 +133,19 @@ func isEnabled(nm string) bool {
 	return swag.ContainsStringsCI(enabled, nm)
 }
 
+func isOptionalEnabled(nm string) bool {
+	return swag.ContainsStringsCI(optionalFixtures, nm)
+}
+
 func TestJSONSchemaSuite(t *testing.T) {
+	// Internal local server to serve remote $ref
 	go func() {
 		err := http.ListenAndServe("localhost:1234", http.FileServer(http.Dir(jsonSchemaFixturesPath+"/remotes")))
 		if err != nil {
 			panic(err.Error())
 		}
 	}()
+
 	files, err := ioutil.ReadDir(jsonSchemaFixturesPath)
 	if err != nil {
 		t.Fatal(err)
@@ -144,7 +158,6 @@ func TestJSONSchemaSuite(t *testing.T) {
 		fileName := f.Name()
 		specName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
 		if isEnabled(specName) {
-
 			t.Log("Running " + specName)
 			b, _ := ioutil.ReadFile(filepath.Join(jsonSchemaFixturesPath, fileName))
 
@@ -168,9 +181,9 @@ func TestJSONSchemaSuite(t *testing.T) {
 				if assert.NoError(t, err, testDescription.Description+" should expand cleanly") {
 					validator := NewSchemaValidator(testDescription.Schema, nil, "data", strfmt.Default)
 					for _, test := range testDescription.Tests {
-
 						result := validator.Validate(test.Data)
 						assert.NotNil(t, result, test.Description+" should validate")
+
 						if test.Valid {
 							assert.Empty(t, result.Errors, test.Description+" should not have errors")
 						} else {
@@ -180,6 +193,8 @@ func TestJSONSchemaSuite(t *testing.T) {
 				}
 				os.Remove(tmpFile.Name())
 			}
+		} else {
+			t.Logf("WARNING: fixture from jsonschema-test-suite not enabled: %s", specName)
 		}
 	}
 }
@@ -218,6 +233,61 @@ func TestSchemaFixtures(t *testing.T) {
 					assert.NotEmpty(t, invalid.Errors, specName+".invalid should have errors")
 				}
 			}
+		}
+	}
+}
+
+func TestOptionalJSONSchemaSuite(t *testing.T) {
+	jsonOptionalSchemaFixturesPath := filepath.Join(jsonSchemaFixturesPath, "optional")
+	files, err := ioutil.ReadDir(jsonOptionalSchemaFixturesPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+		fileName := f.Name()
+		specName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+		if isOptionalEnabled(specName) {
+			t.Log("Running [optional] " + specName)
+			b, _ := ioutil.ReadFile(filepath.Join(jsonOptionalSchemaFixturesPath, fileName))
+
+			var testDescriptions []schemaTestT
+			json.Unmarshal(b, &testDescriptions)
+
+			for _, testDescription := range testDescriptions {
+				var err error
+				b, _ := testDescription.Schema.MarshalJSON()
+				tmpFile, err := ioutil.TempFile(os.TempDir(), "validate-test")
+				assert.NoError(t, err)
+				tmpFile.Write(b)
+				tmpFile.Close()
+				opts := &spec.ExpandOptions{
+					RelativeBase:    tmpFile.Name(),
+					SkipSchemas:     false,
+					ContinueOnError: false,
+				}
+				err = spec.ExpandSchemaWithBasePath(testDescription.Schema, nil, opts)
+
+				if assert.NoError(t, err, testDescription.Description+" should expand cleanly") {
+					validator := NewSchemaValidator(testDescription.Schema, nil, "data", strfmt.Default)
+					for _, test := range testDescription.Tests {
+						result := validator.Validate(test.Data)
+						assert.NotNil(t, result, test.Description+" should validate")
+
+						if test.Valid {
+							assert.Empty(t, result.Errors, test.Description+" should not have errors")
+						} else {
+							assert.NotEmpty(t, result.Errors, test.Description+" should have errors")
+						}
+					}
+				}
+				os.Remove(tmpFile.Name())
+			}
+		} else {
+			t.Logf("INFO: fixture from jsonschema-test-suite [optional] not enabled: %s", specName)
 		}
 	}
 }

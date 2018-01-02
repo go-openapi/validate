@@ -47,7 +47,7 @@ func TestType_schemaInfoForType(t *testing.T) {
 			expectedSwaggerFormat: "datetime",
 		},
 		expectedJSONType{
-			// TODO: this exception is really bound to errors: should alias runtime.File in strfmt
+			// TODO: this exception is really prone to errors: should alias runtime.File in strfmt
 			value:                 runtime.File{},
 			expectedJSONType:      "file",
 			expectedSwaggerFormat: "",

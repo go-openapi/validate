@@ -89,8 +89,8 @@ func (r *Result) MergeAsWarnings(others ...*Result) *Result {
 // spec structure (via $ref, ...) reported messages are kept
 // unique.
 func (r *Result) AddErrors(errors ...error) {
-	found := false
 	for _, e := range errors {
+		found := false
 		if e != nil {
 			for _, isReported := range r.Errors {
 				if e.Error() == isReported.Error() {
@@ -107,8 +107,8 @@ func (r *Result) AddErrors(errors ...error) {
 
 // AddWarnings adds warnings to this validation result (if not already reported).
 func (r *Result) AddWarnings(warnings ...error) {
-	found := false
 	for _, e := range warnings {
+		found := false
 		if e != nil {
 			for _, isReported := range r.Warnings {
 				if e.Error() == isReported.Error() {

@@ -25,6 +25,17 @@ var (
 	Debug = os.Getenv("SWAGGER_DEBUG") != ""
 )
 
+func init() {
+	debugOptions()
+}
+
+func debugOptions() {
+	if Debug {
+		log.SetFlags(log.LstdFlags | log.Lshortfile)
+		log.SetPrefix("validate")
+	}
+}
+
 func debugLog(msg string, args ...interface{}) {
 	// A private, trivial trace logger, based on go-openapi/spec/expander.go:debugLog()
 	if Debug {
