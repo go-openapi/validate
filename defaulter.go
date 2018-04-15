@@ -1,4 +1,4 @@
-// Copyright 2018 go-swagger maintainers
+// Copyright 2015 go-swagger maintainers
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,22 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package post
+package validate
 
-import (
-	"github.com/go-openapi/validate"
-)
+// Defaulter defines an interface to define values from default values
+// provided in a schema.
+type Defaulter interface {
+	Apply()
+}
 
-// ApplyDefaults applies defaults to data.
-func ApplyDefaults(r *validate.Result) {
-	fieldSchemata := r.FieldSchemata()
-	for key, schemata := range fieldSchemata {
-	LookForDefaultingScheme:
-		for _, s := range schemata {
-			if s.Default != nil {
-				key.Object()[key.Field()] = s.Default
-				break LookForDefaultingScheme
-			}
-		}
-	}
+// DefaulterFunc is a function to be called to apply default values to an object.
+type DefaulterFunc func()
+
+// Apply runs the defaulter function, thus applying default values to an object.
+func (f DefaulterFunc) Apply() {
+	f()
 }
