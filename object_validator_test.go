@@ -21,16 +21,27 @@ func TestItemsMustBeTypeArray(t *testing.T) {
 	ov := new(objectValidator)
 	dataValid := map[string]interface{}{
 		"type":  "array",
-		"items": "dummy",
+		"items": []string{"dummy"},
 	}
-	dataInvalid := map[string]interface{}{
-		"type":  "object",
-		"items": "dummy",
+	dataInvalid := map[string]map[string]interface{}{
+		"with a type of object": {
+			"type":  "object",
+			"items": "dummy",
+		},
+		"with items not as an array": {
+			"type":  "array",
+			"items": "dummy",
+		},
 	}
 	res := ov.Validate(dataValid)
 	assert.Equal(t, 0, len(res.Errors))
-	res = ov.Validate(dataInvalid)
-	assert.NotEqual(t, 0, len(res.Errors))
+
+	for k, d := range dataInvalid {
+		t.Run(k, func(t *testing.T) {
+			res = ov.Validate(d)
+			assert.NotEqual(t, 0, len(res.Errors))
+		})
+	}
 }
 
 func TestItemsMustHaveType(t *testing.T) {
