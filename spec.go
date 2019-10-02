@@ -681,6 +681,24 @@ func (s *SpecValidator) validateParameters() *Result {
 					if pr.In == "formData" {
 						hasForm = true
 					}
+
+					if !(pr.Type == "number" || pr.Type == "integer") &&
+						(pr.Maximum != nil || pr.Minimum != nil) {
+						// A non-numeric parameter has validation keywords for numeric instances (number and integer)
+						res.AddWarnings(parameterValidationTypeMismatchMsg(pr.Name, path, pr.Type))
+					}
+
+					if !(pr.Type == "string") &&
+						// A non-string parameter has validation keywords for strings
+						(pr.MaxLength != nil || pr.MinLength != nil || pr.Pattern != "") {
+						res.AddWarnings(parameterValidationTypeMismatchMsg(pr.Name, path, pr.Type))
+					}
+
+					if !(pr.Type == "array") &&
+						// A non-array parameter has validation keywords for arrays
+						(pr.MaxItems != nil || pr.MinItems != nil || pr.UniqueItems == true) {
+						res.AddWarnings(parameterValidationTypeMismatchMsg(pr.Name, path, pr.Type))
+					}
 				}
 
 				// In:formData and In:body are mutually exclusive

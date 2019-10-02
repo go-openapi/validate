@@ -1,0 +1,47 @@
+swagger: '2.0'
+info:
+  description: Validation keyword type mismatch
+  version: 0.0.1
+  title: test
+paths:
+  /test/{id}/string:
+    get:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+          maximum: 5
+      responses:
+        '200':
+          description: successful operation
+        '500':
+          description: Operation error
+
+  /test/{id}/integer:
+    get:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          maxItems: 5
+      responses:
+        '200':
+          description: successful operation
+        '500':
+          description: Operation error
+
+  /test/{id}/array:
+    get:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: array
+          maxLength: 5
+      responses:
+        '200':
+          description: successful operation
+        '500':
+          description: Operation error
