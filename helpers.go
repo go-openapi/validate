@@ -40,10 +40,11 @@ const (
 )
 
 const (
-	stringFormatDate         = "date"
-	stringFormatDateTime     = "date-time"
-	stringFormatPassword     = "password"
-	stringFormatByte         = "byte"
+	stringFormatDate     = "date"
+	stringFormatDateTime = "date-time"
+	stringFormatPassword = "password"
+	stringFormatByte     = "byte"
+	//stringFormatBinary       = "binary"
 	stringFormatCreditCard   = "creditcard"
 	stringFormatDuration     = "duration"
 	stringFormatEmail        = "email"
