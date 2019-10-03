@@ -111,7 +111,7 @@ func (t *typeValidator) schemaInfoForType(data interface{}) (string, string) {
 		case reflect.Slice:
 			return arrayType, ""
 		case reflect.Map, reflect.Struct:
-			return "object", ""
+			return objectType, ""
 		case reflect.Interface:
 			// What to do here?
 			panic("dunno what to do here")
