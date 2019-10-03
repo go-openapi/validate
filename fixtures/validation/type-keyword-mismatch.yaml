@@ -11,7 +11,9 @@ paths:
           in: path
           required: true
           type: string
+          minimum: 1
           maximum: 5
+          multipleOf: 33
       responses:
         '200':
           description: successful operation
@@ -25,7 +27,9 @@ paths:
           in: path
           required: true
           type: integer
+          minItems: 1
           maxItems: 5
+          uniqueItems: true
       responses:
         '200':
           description: successful operation
@@ -39,6 +43,7 @@ paths:
           in: path
           required: true
           type: array
+          minLength: 1
           maxLength: 5
       responses:
         '200':

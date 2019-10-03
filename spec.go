@@ -683,7 +683,7 @@ func (s *SpecValidator) validateParameters() *Result {
 					}
 
 					if !(pr.Type == numberType || pr.Type == integerType) &&
-						(pr.Maximum != nil || pr.Minimum != nil) {
+						(pr.Maximum != nil || pr.Minimum != nil || pr.MultipleOf != nil) {
 						// A non-numeric parameter has validation keywords for numeric instances (number and integer)
 						res.AddWarnings(parameterValidationTypeMismatchMsg(pr.Name, path, pr.Type))
 					}
