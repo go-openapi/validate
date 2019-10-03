@@ -43,7 +43,6 @@ const (
 	stringFormatDate         = "date"
 	stringFormatDateTime     = "date-time"
 	stringFormatPassword     = "password"
-	stringFormatBinary       = "binary"
 	stringFormatByte         = "byte"
 	stringFormatCreditCard   = "creditcard"
 	stringFormatDuration     = "duration"
