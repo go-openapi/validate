@@ -730,3 +730,17 @@ func TestItemsProperty_Issue43(t *testing.T) {
 	}
 	assert.True(t, found)
 }
+
+func Test_Issue2137(t *testing.T) {
+	fp := filepath.Join("fixtures", "bugs", "2137", "fixture-2137.yaml")
+	res, _ := loadAndValidate(t, fp)
+	assert.Falsef(t, res.IsValid(), "expected spec to be invalid")
+	found := false
+	for _, e := range res.Errors {
+		found = strings.Contains(e.Error(), `"test" is defined 2 times`)
+		if found {
+			break
+		}
+	}
+	assert.True(t, found)
+}
