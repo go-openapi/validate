@@ -27,9 +27,9 @@ func TestValues_ValidateIntEnum(t *testing.T) {
 	enumValues := []interface{}{1, 2, 3}
 
 	err := Enum("test", "body", int64(5), enumValues)
-	assert.NotNil(t, err)
-	err2 := Enum("test", "body", int64(1), enumValues)
-	assert.Nil(t, err2)
+	assert.Error(t, err)
+	err = Enum("test", "body", int64(1), enumValues)
+	assert.Nil(t, err)
 }
 
 func TestValues_ValidateEnum(t *testing.T) {
@@ -39,6 +39,20 @@ func TestValues_ValidateEnum(t *testing.T) {
 	assert.Error(t, err)
 	err = Enum("test", "body", "bb", enumValues)
 	assert.Nil(t, err)
+
+	type CustomString string
+
+	err = Enum("test", "body", CustomString("a"), enumValues)
+	assert.Error(t, err)
+	err = Enum("test", "body", CustomString("bb"), enumValues)
+	assert.Nil(t, err)
+}
+
+func TestValues_ValidateNilEnum(t *testing.T) {
+	enumValues := []string{"aa", "bb", "cc"}
+
+	err := Enum("test", "body", nil, enumValues)
+	assert.Error(t, err)
 }
 
 // Check edge cases in Enum
@@ -53,6 +67,26 @@ func TestValues_Enum_EdgeCases(t *testing.T) {
 	// It's really a go internals challenge
 	// to figure a test case to demonstrate
 	// this case must be checked (!!)
+}
+
+func TestValues_ValidateEnumCaseInsensitive(t *testing.T) {
+	enumValues := []string{"aa", "bb", "cc"}
+
+	err := EnumCase("test", "body", "a", enumValues, true)
+	assert.Error(t, err)
+	err = EnumCase("test", "body", "bb", enumValues, true)
+	assert.Nil(t, err)
+	err = EnumCase("test", "body", "BB", enumValues, true)
+	assert.Error(t, err)
+
+	err = EnumCase("test", "body", "a", enumValues, false)
+	assert.Error(t, err)
+	err = EnumCase("test", "body", "bb", enumValues, false)
+	assert.Nil(t, err)
+	err = EnumCase("test", "body", "BB", enumValues, false)
+	assert.Nil(t, err)
+	err = EnumCase("test", "body", int64(1), enumValues, false)
+	assert.Error(t, err)
 }
 
 func TestValues_ValidateUniqueItems(t *testing.T) {
