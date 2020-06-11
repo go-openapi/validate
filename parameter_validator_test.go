@@ -26,16 +26,16 @@ import (
 
 // common validations: enum, allOf, anyOf, oneOf, not, definitions
 
-func maxError(param *spec.Parameter) *errors.Validation {
-	return errors.ExceedsMaximum(param.Name, param.In, *param.Maximum, param.ExclusiveMaximum)
+func maxError(param *spec.Parameter, data interface{}) *errors.Validation {
+	return errors.ExceedsMaximum(param.Name, param.In, *param.Maximum, param.ExclusiveMaximum, data)
 }
 
-func minError(param *spec.Parameter) *errors.Validation {
-	return errors.ExceedsMinimum(param.Name, param.In, *param.Minimum, param.ExclusiveMinimum)
+func minError(param *spec.Parameter, data interface{}) *errors.Validation {
+	return errors.ExceedsMinimum(param.Name, param.In, *param.Minimum, param.ExclusiveMinimum, data)
 }
 
-func multipleOfError(param *spec.Parameter) *errors.Validation {
-	return errors.NotMultipleOf(param.Name, param.In, *param.MultipleOf)
+func multipleOfError(param *spec.Parameter, data interface{}) *errors.Validation {
+	return errors.NotMultipleOf(param.Name, param.In, *param.MultipleOf, data)
 }
 
 func makeFloat(data interface{}) float64 {
@@ -71,7 +71,7 @@ func TestNumberParameterValidation(t *testing.T) {
 		// MultipleOf
 		err := validator.Validate(v[0])
 		assert.True(t, err.HasErrors())
-		assert.EqualError(t, multipleOfError(factorParam), err.Errors[0].Error())
+		assert.EqualError(t, multipleOfError(factorParam, v[0]), err.Errors[0].Error())
 
 		// Maximum
 		err = validator.Validate(v[1])
@@ -82,7 +82,7 @@ func TestNumberParameterValidation(t *testing.T) {
 		err = validator.Validate(v[2])
 
 		assert.True(t, err.HasErrors())
-		assert.EqualError(t, maxError(factorParam), err.Errors[0].Error())
+		assert.EqualError(t, maxError(factorParam, v[1]), err.Errors[0].Error())
 
 		// ExclusiveMaximum
 		factorParam.ExclusiveMaximum = true
@@ -90,14 +90,14 @@ func TestNumberParameterValidation(t *testing.T) {
 		validator = NewParamValidator(factorParam, strfmt.Default)
 		err = validator.Validate(v[1])
 		assert.True(t, err.HasErrors())
-		assert.EqualError(t, maxError(factorParam), err.Errors[0].Error())
+		assert.EqualError(t, maxError(factorParam, v[1]), err.Errors[0].Error())
 
 		// Minimum
 		err = validator.Validate(v[3])
 		assert.True(t, err == nil || err.IsValid())
 		err = validator.Validate(v[4])
 		assert.True(t, err.HasErrors())
-		assert.EqualError(t, minError(factorParam), err.Errors[0].Error())
+		assert.EqualError(t, minError(factorParam, v[4]), err.Errors[0].Error())
 
 		// ExclusiveMinimum
 		factorParam.ExclusiveMinimum = true
@@ -105,7 +105,7 @@ func TestNumberParameterValidation(t *testing.T) {
 		validator = NewParamValidator(factorParam, strfmt.Default)
 		err = validator.Validate(v[3])
 		assert.True(t, err.HasErrors())
-		assert.EqualError(t, minError(factorParam), err.Errors[0].Error())
+		assert.EqualError(t, minError(factorParam, v[3]), err.Errors[0].Error())
 
 		// Enum
 		err = validator.Validate(v[5])
@@ -124,16 +124,16 @@ func TestNumberParameterValidation(t *testing.T) {
 	// Definitions
 }
 
-func maxLengthError(param *spec.Parameter) *errors.Validation {
-	return errors.TooLong(param.Name, param.In, *param.MaxLength)
+func maxLengthError(param *spec.Parameter, data interface{}) *errors.Validation {
+	return errors.TooLong(param.Name, param.In, *param.MaxLength, data)
 }
 
-func minLengthError(param *spec.Parameter) *errors.Validation {
-	return errors.TooShort(param.Name, param.In, *param.MinLength)
+func minLengthError(param *spec.Parameter, data interface{}) *errors.Validation {
+	return errors.TooShort(param.Name, param.In, *param.MinLength, data)
 }
 
-func patternFail(param *spec.Parameter) *errors.Validation {
-	return errors.FailedPattern(param.Name, param.In, param.Pattern)
+func patternFail(param *spec.Parameter, data interface{}) *errors.Validation {
+	return errors.FailedPattern(param.Name, param.In, param.Pattern, data)
 }
 
 func enumFail(param *spec.Parameter, data interface{}) *errors.Validation {
@@ -146,26 +146,31 @@ func TestStringParameterValidation(t *testing.T) {
 	validator := NewParamValidator(nameParam, strfmt.Default)
 
 	// required
-	err := validator.Validate("")
+	data := ""
+	err := validator.Validate(data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, requiredError(nameParam), err.Errors[0].Error())
+	assert.EqualError(t, requiredError(nameParam, data), err.Errors[0].Error())
 	// MaxLength
-	err = validator.Validate("abcdef")
+	data = "abcdef"
+	err = validator.Validate(data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, maxLengthError(nameParam), err.Errors[0].Error())
+	assert.EqualError(t, maxLengthError(nameParam, data), err.Errors[0].Error())
 	// MinLength
-	err = validator.Validate("a")
+	data = "a"
+	err = validator.Validate(data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, minLengthError(nameParam), err.Errors[0].Error())
+	assert.EqualError(t, minLengthError(nameParam, data), err.Errors[0].Error())
 	// Pattern
-	err = validator.Validate("a394")
+	data = "a394"
+	err = validator.Validate(data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, patternFail(nameParam), err.Errors[0].Error())
+	assert.EqualError(t, patternFail(nameParam, data), err.Errors[0].Error())
 
 	// Enum
-	err = validator.Validate("abcde")
+	data = "abcde"
+	err = validator.Validate(data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, enumFail(nameParam, "abcde"), err.Errors[0].Error())
+	assert.EqualError(t, enumFail(nameParam, data), err.Errors[0].Error())
 
 	// Valid passes
 	err = validator.Validate("bbb")
@@ -179,11 +184,11 @@ func TestStringParameterValidation(t *testing.T) {
 	// Definitions
 }
 
-func minItemsError(param *spec.Parameter) *errors.Validation {
-	return errors.TooFewItems(param.Name, param.In, *param.MinItems)
+func minItemsError(param *spec.Parameter, data interface{}) *errors.Validation {
+	return errors.TooFewItems(param.Name, param.In, *param.MinItems, data)
 }
-func maxItemsError(param *spec.Parameter) *errors.Validation {
-	return errors.TooManyItems(param.Name, param.In, *param.MaxItems)
+func maxItemsError(param *spec.Parameter, data interface{}) *errors.Validation {
+	return errors.TooManyItems(param.Name, param.In, *param.MaxItems, data)
 }
 func duplicatesError(param *spec.Parameter) *errors.Validation {
 	return errors.DuplicateItems(param.Name, param.In)
@@ -195,13 +200,15 @@ func TestArrayParameterValidation(t *testing.T) {
 	validator := NewParamValidator(tagsParam, strfmt.Default)
 
 	// MinItems
-	err := validator.Validate([]string{})
+	data := []string{}
+	err := validator.Validate(data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, minItemsError(tagsParam), err.Errors[0].Error())
+	assert.EqualError(t, minItemsError(tagsParam, len(data)), err.Errors[0].Error())
 	// MaxItems
-	err = validator.Validate([]string{"a", "b", "c", "d", "e", "f"})
+	data = []string{"a", "b", "c", "d", "e", "f"}
+	err = validator.Validate(data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, maxItemsError(tagsParam), err.Errors[0].Error())
+	assert.EqualError(t, maxItemsError(tagsParam, len(data)), err.Errors[0].Error())
 	// UniqueItems
 	err = validator.Validate([]string{"a", "a"})
 	assert.True(t, err.HasErrors())
@@ -216,9 +223,10 @@ func TestArrayParameterValidation(t *testing.T) {
 	strItems := spec.NewItems().WithMinLength(3).WithMaxLength(5).WithPattern(`^[a-z]+$`).Typed(stringType, "")
 	tagsParam = spec.QueryParam("tags").CollectionOf(strItems, "").WithMinItems(1).WithMaxItems(5).UniqueValues()
 	validator = NewParamValidator(tagsParam, strfmt.Default)
-	err = validator.Validate([]string{"aa", "bbb", "ccc"})
+	data = []string{"aa", "bbb", "ccc"}
+	err = validator.Validate(data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, minLengthErrorItems("tags.0", tagsParam.In, strItems), err.Errors[0].Error())
+	assert.EqualError(t, minLengthErrorItems("tags.0", tagsParam.In, strItems, data[0]), err.Errors[0].Error())
 
 	// Not required in a parameter or items
 	// Additional items
