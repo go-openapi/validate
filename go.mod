@@ -1,5 +1,7 @@
 module github.com/go-openapi/validate
 
+go 1.14
+
 require (
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
 	github.com/go-openapi/analysis v0.19.10
@@ -17,4 +19,3 @@ require (
 	gopkg.in/yaml.v2 v2.3.0
 )
 
-go 1.13
