@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
 	github.com/go-openapi/analysis v0.19.10
-	github.com/go-openapi/errors v0.19.7-0.20200915043824-00a6ebeed93c
+	github.com/go-openapi/errors v0.19.7
 	github.com/go-openapi/jsonpointer v0.19.3
 	github.com/go-openapi/loads v0.19.5
 	github.com/go-openapi/runtime v0.19.16
