@@ -15,6 +15,7 @@
 package validate
 
 import (
+	"context"
 	"math"
 	"testing"
 
@@ -131,6 +132,62 @@ func TestValues_ValidateMaxLength(t *testing.T) {
 	assert.Error(t, err)
 	err = MaxLength("test", "body", "aa", maxLength)
 	assert.Nil(t, err)
+}
+
+func TestValues_ReadOnly(t *testing.T) {
+	var err error
+	path := "test"
+	in := "body"
+
+	ReadOnlySuccess := []interface{}{
+		"",
+		0,
+		nil,
+	}
+
+	// fail only when operation type is request
+	ReadOnlyFail := []interface{}{
+		" ",
+		"bla-bla-bla",
+		2,
+		[]interface{}{21, []int{}, "testString"},
+	}
+
+	t.Run("No operation context", func(t *testing.T) {
+		// readonly should not have any effect
+		ctx := context.Background()
+		for _, v := range ReadOnlySuccess {
+			err = ReadOnly(ctx, path, in, v)
+			assert.Nil(t, err)
+		}
+		for _, v := range ReadOnlyFail {
+			err = ReadOnly(ctx, path, in, v)
+			assert.Nil(t, err)
+		}
+
+	})
+	t.Run("operationType request", func(t *testing.T) {
+		ctx := WithOperationRequest(context.Background())
+		for _, v := range ReadOnlySuccess {
+			err = ReadOnly(ctx, path, in, v)
+			assert.Nil(t, err)
+		}
+		for _, v := range ReadOnlyFail {
+			err = ReadOnly(ctx, path, in, v)
+			assert.Error(t, err)
+		}
+	})
+	t.Run("operationType response", func(t *testing.T) {
+		ctx := WithOperationResponse(context.Background())
+		for _, v := range ReadOnlySuccess {
+			err = ReadOnly(ctx, path, in, v)
+			assert.Nil(t, err)
+		}
+		for _, v := range ReadOnlyFail {
+			err = ReadOnly(ctx, path, in, v)
+			assert.Nil(t, err)
+		}
+	})
 }
 
 func TestValues_ValidateRequired(t *testing.T) {
