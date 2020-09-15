@@ -153,8 +153,8 @@ func ReadOnly(ctx context.Context, path, in string, data interface{}) *errors.Va
 	} else {
 		return nil
 	}
-	// WIP: define in errors pkg and provide good msg
-	return &errors.Validation{Name: "TODO"}
+
+	return errors.ReadOnly(path, in, data)
 }
 
 // Required validates an interface for requiredness
