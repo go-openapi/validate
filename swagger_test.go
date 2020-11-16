@@ -129,7 +129,7 @@ func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnL
 	err := filepath.Walk(path,
 		func(path string, info os.FileInfo, err error) error {
 			t.Run(path, func(t *testing.T) {
-				t.Parallel()
+				// t.Parallel() // NOTE(fred): cannot use go-openapi in parallel because of global cache pollution
 
 				npath := filepath.ToSlash(path)
 				shouldNotLoad := expectToFailOnLoad[npath]
