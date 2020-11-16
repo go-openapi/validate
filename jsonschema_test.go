@@ -82,10 +82,10 @@ func enabled() []string {
 
 var optionalFixtures = []string{
 	// Optional fixtures from JSON schema suite: at the moment, these are disabled
-	//"zeroTerminatedFloats",
-	//"format",	/* error on strict URI formatting */
-	//"bignum",
-	//"ecmascript-regex",
+	// "zeroTerminatedFloats",
+	// "format",	/* error on strict URI formatting */
+	// "bignum",
+	// "ecmascript-regex",
 }
 
 var extendedFixtures = []string{

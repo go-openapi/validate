@@ -71,8 +71,8 @@ func ExampleSpecValidator_Validate() {
 	// Example of spec validation call with full result
 
 	// Example with online spec URL:
-	//url := "http://petstore.swagger.io/v2/swagger.json"
-	//doc, err := loads.JSONSpec(url)
+	// url := "http://petstore.swagger.io/v2/swagger.json"
+	// doc, err := loads.JSONSpec(url)
 
 	// Example with spec file in this repo:
 	path := "fixtures/validation/valid-ref.json"
