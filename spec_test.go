@@ -503,11 +503,11 @@ func TestSpec_ValidateItems(t *testing.T) {
 	res = validator.validateItems()
 	assert.Empty(t, res.Errors)
 
-	//pp := spec.SimpleArrayParam("other", arrayType, "")
-	//pp.Items = nil
-	//sw.Parameters["other"] = *pp
-	//res = validator.validateItems()
-	//assert.NotEmpty(t, res.Errors)
+	// pp := spec.SimpleArrayParam("other", arrayType, "")
+	// pp.Items = nil
+	// sw.Parameters["other"] = *pp
+	// res = validator.validateItems()
+	// assert.NotEmpty(t, res.Errors)
 
 	// in shared path object parameters
 	doc, _ = loads.Analyzed(PetStoreJSONMessage, "")
