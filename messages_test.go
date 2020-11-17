@@ -220,9 +220,11 @@ func testWalkSpecs(t *testing.T, tested ExpectedMap, haltOnErrors, continueOnErr
 		}
 
 		t.Run(path, func(t *testing.T) {
+			/* go-openapi/spec cannot be run in parallel for now (global cache pollution)
 			if !DebugTest { // when running in dev mode, run serially
 				t.Parallel()
 			}
+			*/
 			defer func() {
 				thisTest.Tested = true
 				thisTest.Failed = t.Failed()
