@@ -17,6 +17,8 @@ package validate_test
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 
 	"github.com/go-openapi/loads" // Spec loading
@@ -178,5 +180,28 @@ func getSimpleSchema() *spec.Schema {
 		SchemaProps: spec.SchemaProps{
 			Type: spec.StringOrArray{"object"},
 		},
+	}
+}
+
+func Test_Issue102_Circular(t *testing.T) {
+	// assert that the issue is fixed in go-openapi/spec
+	for _, fixture := range []string{
+		filepath.Join("fixtures", "bugs", "102", "fixture-102.json"),
+		filepath.Join("fixtures", "bugs", "123-validate", "fixture-123.json"),
+	} {
+		t.Run(fixture, func(t *testing.T) {
+			filebytes, err := ioutil.ReadFile(fixture)
+			require.NoError(t, err)
+
+			openAPIv2Doc := json.RawMessage(filebytes)
+
+			doc, err := loads.Analyzed(openAPIv2Doc, "")
+			require.NoError(t, err)
+
+			validator := validate.NewSpecValidator(doc.Schema(), strfmt.Default)
+			validator.SetContinueOnErrors(true)
+			res, _ := validator.Validate(doc)
+			require.Lenf(t, res.Errors, 0, "unexpected validation erorrs: %v", res.Errors)
+		})
 	}
 }
