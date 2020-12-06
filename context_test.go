@@ -40,8 +40,10 @@ func TestContext_ExtractOperationType(t *testing.T) {
 		},
 	}
 
-	for idx, tc := range testCases {
+	for idx, toPin := range testCases {
+		tc := toPin
 		t.Run(fmt.Sprintf("TestCase #%d", idx), func(t *testing.T) {
+			t.Parallel()
 			op := extractOperationType(tc.Ctx)
 			assert.Equal(t, tc.ExpectedOpType, op)
 		})

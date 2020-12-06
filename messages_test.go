@@ -25,7 +25,6 @@ import (
 	"testing"
 
 	"github.com/go-openapi/loads"
-	"github.com/go-openapi/loads/fmts"
 	"github.com/go-openapi/strfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,10 +36,6 @@ var (
 	// during testing. It should be disabled (undefined) during CI tests.
 	DebugTest = os.Getenv("SWAGGER_DEBUG_TEST") != ""
 )
-
-func init() {
-	loads.AddLoader(fmts.YAMLMatcher, fmts.YAMLDoc)
-}
 
 type ExpectedMessage struct {
 	Message              string `yaml:"message"`
@@ -60,6 +55,11 @@ type ExpectedFixture struct {
 }
 
 type ExpectedMap map[string]*ExpectedFixture
+
+func (m ExpectedMap) Get(key string) (*ExpectedFixture, bool) {
+	v, ok := m[key] // no need to lock this map for now
+	return v, ok
+}
 
 // Test message improvements, issue #44 and some more
 // ContinueOnErrors mode on
@@ -213,18 +213,16 @@ func checkMustHalt(t *testing.T, haltOnErrors bool) {
 
 func testWalkSpecs(t *testing.T, tested ExpectedMap, haltOnErrors, continueOnErrors bool) filepath.WalkFunc {
 	return func(path string, info os.FileInfo, err error) error {
-		thisTest, found := tested[info.Name()]
+		thisTest, found := tested.Get(info.Name())
 
 		if info.IsDir() || !found { // skip
 			return nil
 		}
 
 		t.Run(path, func(t *testing.T) {
-			/* go-openapi/spec cannot be run in parallel for now (global cache pollution)
 			if !DebugTest { // when running in dev mode, run serially
 				t.Parallel()
 			}
-			*/
 			defer func() {
 				thisTest.Tested = true
 				thisTest.Failed = t.Failed()

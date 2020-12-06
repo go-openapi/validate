@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Test AddError() uniqueness
@@ -196,11 +197,11 @@ func TestResult_AsError(t *testing.T) {
 	r.AddErrors(fmt.Errorf("one Error"))
 	r.AddErrors(fmt.Errorf("additional Error"))
 	res := r.AsError()
-	if assert.NotNil(t, res) {
-		assert.Contains(t, res.Error(), "validation failure list:") // Expected from pkg errors
-		assert.Contains(t, res.Error(), "one Error")                // Expected from pkg errors
-		assert.Contains(t, res.Error(), "additional Error")         // Expected from pkg errors
-	}
+	require.NotNil(t, res)
+
+	assert.Contains(t, res.Error(), "validation failure list:") // Expected from pkg errors
+	assert.Contains(t, res.Error(), "one Error")                // Expected from pkg errors
+	assert.Contains(t, res.Error(), "additional Error")         // Expected from pkg errors
 }
 
 // Test methods which suppport a call on a nil instance
