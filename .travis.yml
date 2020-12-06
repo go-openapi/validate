@@ -23,7 +23,8 @@ jobs:
   - go: 1.x
     arch: amd64
     install:
-      go get -u github.com/go-openapi/runtime@master
+    - GO111MODULE=off go get -u gotest.tools/gotestsum
+    - go get -u github.com/go-openapi/runtime@master
     script:
     - gotestsum -f short-verbose -- -timeout=30m github.com/go-openapi/runtime/...
 
