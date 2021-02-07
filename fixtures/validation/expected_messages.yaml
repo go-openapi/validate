@@ -442,7 +442,7 @@ fixture-342.yaml:
   - message: 'parameters.stillnogood.in in body is required'
     withContinueOnErrors: false
     isRegexp: false
-  - message: 'could not resolve reference in "\/get_main_object"\.GET to \$ref nowhere\.yaml#\/definitions\/sample_info\/properties\/sid: open .+nowhere\.yaml: no such file or directory'
+  - message: 'could not resolve reference in "\/get_main_object"\.GET to \$ref nowhere\.yaml#\/definitions\/sample_info\/properties\/sid: open .+nowhere\.yaml:\s.*'
     withContinueOnErrors: true
     isRegexp: true
   expectedWarnings:
@@ -1287,11 +1287,11 @@ petstore-expanded.json:
     withContinueOnErrors: false
     isRegexp: false
   # this one is a regexp since the full absolute path of the ref is reported
-  - message: 'could not resolve reference in newPet to \$ref pet: open .*\/pet: no such file or directory'
+  - message: 'could not resolve reference in newPet to \$ref pet: open .*[\/\\]pet:\s.+'
     withContinueOnErrors: true
     isRegexp: true
   # with systematic response expansion, get more errors
-  - message: 'could not resolve reference in "\/pets".POST to \$ref .*: open .*: no such file or directory'
+  - message: 'could not resolve reference in "\/pets".POST to \$ref .*: open .*:\s.+'
     withContinueOnErrors: true
     isRegexp: true
   expectedWarnings: []
