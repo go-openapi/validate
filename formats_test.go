@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -36,4 +37,35 @@ func TestFormatValidator_EdgeCases(t *testing.T) {
 
 	assert.False(t, v.Applies("A string", reflect.String))
 	assert.False(t, v.Applies(nil, reflect.String))
+}
+
+func TestStringValidation(t *testing.T) {
+	type testParams struct {
+		format string
+		obj    fmt.Stringer
+	}
+
+	testCases := []*testParams{
+		&testParams{
+			format: "datetime",
+			obj:    strfmt.NewDateTime(),
+		},
+		&testParams{
+			format: "uuid",
+			obj:    strfmt.UUID("00000000-0000-0000-0000-000000000000"),
+		},
+		&testParams{
+			format: "email",
+			obj:    strfmt.Email("name@domain.tld"),
+		},
+		&testParams{
+			format: "bsonobjectid",
+			obj:    strfmt.NewObjectId("60a7903427a1e6666d2b998c"),
+		},
+	}
+
+	for _, v := range testCases {
+		err := FormatOf("id", "body", v.format, v.obj.String(), strfmt.Default)
+		assert.Nil(t, err)
+	}
 }
