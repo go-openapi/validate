@@ -19,8 +19,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -49,7 +49,7 @@ func TestType_schemaInfoForType(t *testing.T) {
 		},
 		{
 			// TODO: this exception is really prone to errors: should alias runtime.File in strfmt
-			value:                 runtime.File{},
+			value:                 swag.File{},
 			expectedJSONType:      "file",
 			expectedSwaggerFormat: "",
 		},
@@ -275,7 +275,7 @@ func TestType_schemaInfoForType(t *testing.T) {
 	}
 
 	// Check file declarations as io.ReadCloser are properly detected
-	myFile := runtime.File{}
+	myFile := swag.File{}
 	var myReader io.ReadCloser = &myFile
 	jsonType, swaggerFormat := v.schemaInfoForType(myReader)
 	assert.Equal(t, "file", jsonType)
