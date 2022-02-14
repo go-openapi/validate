@@ -44,7 +44,6 @@ linters:
     - varnamelen
     - forcetypeassert
     - thelper
-    - wastedassign
     # Disable deprecated linters.
     # They will be removed from golangci-lint in future.
     - interfacer
