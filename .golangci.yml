@@ -40,7 +40,6 @@ linters:
     - paralleltest
     - cyclop # because we have gocyclo already
     # TODO: review the linters below. We disabled them to make the CI pass first.
-    - containedctx
     - ireturn
     - varnamelen
     - forcetypeassert

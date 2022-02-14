@@ -11,7 +11,7 @@ import (
 func TestContext_ExtractOperationType(t *testing.T) {
 
 	var testCases = []struct {
-		Ctx            context.Context
+		Ctx            context.Context //nolint: containedctx
 		ExpectedOpType operationType
 	}{
 		{
