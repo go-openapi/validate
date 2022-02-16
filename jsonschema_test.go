@@ -194,8 +194,7 @@ func TestOptionalJSONSchemaSuite(t *testing.T) {
 
 // Further testing with all formats recognized by strfmt
 func TestFormat_JSONSchemaExtended(t *testing.T) {
-	jsonFormatSchemaFixturesPath := filepath.Join(formatFixturesPath)
-	files, err := ioutil.ReadDir(jsonFormatSchemaFixturesPath)
+	files, err := ioutil.ReadDir(formatFixturesPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +212,7 @@ func TestFormat_JSONSchemaExtended(t *testing.T) {
 				return
 			}
 			t.Log("Running [extended formats] " + specName)
-			b, _ := ioutil.ReadFile(filepath.Join(jsonFormatSchemaFixturesPath, fileName))
+			b, _ := ioutil.ReadFile(filepath.Join(formatFixturesPath, fileName))
 			doTestSchemaSuite(t, b)
 		})
 	}
