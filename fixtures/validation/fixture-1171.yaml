@@ -58,10 +58,7 @@ paths:
       responses:
         '200':
           schema:
-            # $ref may not have sibling
-            properties:
-              name: sibling
-              $ref: '#/definitions/Zones'
+            $ref: '#/definitions/Zones'
 
   '/servers/{server_id}/zones/{zone_id}':
     get:
