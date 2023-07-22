@@ -36,7 +36,7 @@ func skipNotifyGoSwagger(t *testing.T) {
 }
 
 // Exercise validate will all tests cases from package go-swagger
-// A copy of all fixtures available in in go-swagger/go-swagger
+// A copy of all fixtures available in go-swagger/go-swagger
 // is maintained in fixtures/go-swagger
 //
 // TODO: move this list to a YAML fixture config file

@@ -35,11 +35,9 @@ import (
 // Usage: go test ... -args [-enable-long|-enable-go-swagger]
 //
 // -enable-long:       enable spec_test.go:TestIssue18 and messages_test.go:Test_Quality*
-// -enable-go-swagger: enable non-regression tests against go-swagger fixtures (validation status)
-//                     in swagger_test.go:Test_GoSwagger  (running about 110 specs...)
+// -enable-go-swagger: enable non-regression tests against go-swagger fixtures (validation status) in swagger_test.go:Test_GoSwagger  (running about 110 specs...)
 //
 // If none enabled, these tests are skipped
-//
 // NOTE: replacing with go test -short and testing.Short() means that
 // by default, every test is launched. With -enable-long, we just get the
 // opposite...

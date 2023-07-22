@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-openapi/spec"
 	"github.com/go-openapi/strfmt"
@@ -107,7 +108,13 @@ func isExtendedEnabled(nm string) bool {
 func TestJSONSchemaSuite(t *testing.T) {
 	// Internal local server to serve remote $ref
 	go func() {
-		err := http.ListenAndServe("localhost:1234", http.FileServer(http.Dir(jsonSchemaFixturesPath+"/remotes")))
+		svr := &http.Server{
+			ReadTimeout:  5 * time.Second,
+			WriteTimeout: 10 * time.Second,
+			Addr:         "localhost:1234",
+			Handler:      http.FileServer(http.Dir(jsonSchemaFixturesPath + "/remotes")),
+		}
+		err := svr.ListenAndServe()
 		if err != nil {
 			panic(err.Error())
 		}

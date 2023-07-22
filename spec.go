@@ -32,17 +32,16 @@ import (
 //
 // Returns an error flattening in a single standard error, all validation messages.
 //
-//  - TODO: $ref should not have siblings
-//  - TODO: make sure documentation reflects all checks and warnings
-//  - TODO: check on discriminators
-//  - TODO: explicit message on unsupported keywords (better than "forbidden property"...)
-//  - TODO: full list of unresolved refs
-//  - TODO: validate numeric constraints (issue#581): this should be handled like defaults and examples
-//  - TODO: option to determine if we validate for go-swagger or in a more general context
-//  - TODO: check on required properties to support anyOf, allOf, oneOf
+//   - TODO: $ref should not have siblings
+//   - TODO: make sure documentation reflects all checks and warnings
+//   - TODO: check on discriminators
+//   - TODO: explicit message on unsupported keywords (better than "forbidden property"...)
+//   - TODO: full list of unresolved refs
+//   - TODO: validate numeric constraints (issue#581): this should be handled like defaults and examples
+//   - TODO: option to determine if we validate for go-swagger or in a more general context
+//   - TODO: check on required properties to support anyOf, allOf, oneOf
 //
 // NOTE: SecurityScopes are maps: no need to check uniqueness
-//
 func Spec(doc *loads.Document, formats strfmt.Registry) error {
 	errs, _ /*warns*/ := NewSpecValidator(doc.Schema(), formats).Validate(doc)
 	if errs.HasErrors() {

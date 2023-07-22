@@ -75,9 +75,10 @@ func TestRace_compileRegexp(t *testing.T) {
 	}
 
 	for i := 0; i < 20; i++ {
-		t.Run(patterns[i%3], func(t *testing.T) {
+		ii := i
+		t.Run(patterns[ii%3], func(t *testing.T) {
 			t.Parallel()
-			comp(patterns[i%3])
+			comp(patterns[ii%3])
 		})
 	}
 }
@@ -98,9 +99,10 @@ func TestRace_mustCompileRegexp(t *testing.T) {
 	}
 
 	for i := 0; i < 20; i++ {
-		t.Run(patterns[i%3], func(t *testing.T) {
+		ii := i
+		t.Run(patterns[ii%3], func(t *testing.T) {
 			t.Parallel()
-			comp(patterns[i%3])
+			comp(patterns[ii%3])
 		})
 	}
 }
