@@ -6,5 +6,5 @@ import (
 
 // This test must be synchronized to avoid issues with -race
 // TODO(TEST)
-func TestOptions_SetContinueOnErrors(t *testing.T) {
+func TestOptions_SetContinueOnErrors(_ *testing.T) {
 }

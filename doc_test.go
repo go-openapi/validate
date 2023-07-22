@@ -49,7 +49,7 @@ func ExampleSpec() {
 	// Output: This spec is valid
 }
 
-func ExampleSpec_url() {
+func ExampleSpec_second() {
 	// Example with high level spec validation call, without showing warnings
 
 	// Example with online spec URL:
@@ -67,6 +67,9 @@ func ExampleSpec_url() {
 	} else {
 		fmt.Println("Could not load this spec")
 	}
+
+	// Output:
+	// This spec is valid
 }
 
 func ExampleSpecValidator_Validate() {
@@ -116,6 +119,9 @@ func ExampleSpecValidator_Validate_url() {
 			fmt.Println("This spec has some validation warnings")
 		}
 	}
+
+	// Output:
+	// This spec is valid
 }
 
 func ExampleAgainstSchema() {
