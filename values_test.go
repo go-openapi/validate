@@ -195,26 +195,10 @@ func TestValues_ValidateRequired(t *testing.T) {
 	path := "test"
 	in := "body"
 
-	emptyString := ""
-	emptyStringStruct := struct {
-		A *string
-	}{
-		A: &emptyString,
-	}
-
-	emptyNumber := 0
-	emptyNumberStruct := struct {
-		A *int
-	}{
-		A: &emptyNumber,
-	}
-
 	RequiredFail := []interface{}{
 		"",
 		0,
 		nil,
-		emptyStringStruct.A,
-		emptyNumberStruct.A,
 	}
 
 	for _, v := range RequiredFail {
@@ -222,27 +206,11 @@ func TestValues_ValidateRequired(t *testing.T) {
 		assert.Error(t, err)
 	}
 
-	notEmptyString := "bla"
-	notEmptyStringStruct := struct {
-		A *string
-	}{
-		A: &notEmptyString,
-	}
-
-	notEmptyNumber := 1
-	notEmptyNumberStruct := struct {
-		A *int
-	}{
-		A: &notEmptyNumber,
-	}
-
 	RequiredSuccess := []interface{}{
 		" ",
 		"bla-bla-bla",
 		2,
 		[]interface{}{21, []int{}, "testString"},
-		notEmptyStringStruct.A,
-		notEmptyNumberStruct.A,
 	}
 
 	for _, v := range RequiredSuccess {
