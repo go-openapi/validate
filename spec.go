@@ -614,7 +614,7 @@ func (s *SpecValidator) validateRequiredProperties(path, in string, v *spec.Sche
 func (s *SpecValidator) validateParameters() *Result {
 	// - for each method, path is unique, regardless of path parameters
 	//   e.g. GET:/petstore/{id}, GET:/petstore/{pet}, GET:/petstore are
-	//   considered duplicate paths
+	//   considered duplicate paths, if StrictPathParamUniqueness is enabled.
 	// - each parameter should have a unique `name` and `type` combination
 	// - each operation should have only 1 parameter of type body
 	// - there must be at most 1 parameter in body
@@ -626,28 +626,30 @@ func (s *SpecValidator) validateParameters() *Result {
 	for method, pi := range s.expandedAnalyzer().Operations() {
 		methodPaths := make(map[string]map[string]string)
 		for path, op := range pi {
-			pathToAdd := pathHelp.stripParametersInPath(path)
+			if s.Options.StrictPathParamUniqueness {
+				pathToAdd := pathHelp.stripParametersInPath(path)
 
-			// Warn on garbled path afer param stripping
-			if rexGarbledPathSegment.MatchString(pathToAdd) {
-				res.AddWarnings(pathStrippedParamGarbledMsg(pathToAdd))
-			}
+				// Warn on garbled path afer param stripping
+				if rexGarbledPathSegment.MatchString(pathToAdd) {
+					res.AddWarnings(pathStrippedParamGarbledMsg(pathToAdd))
+				}
 
-			// Check uniqueness of stripped paths
-			if _, found := methodPaths[method][pathToAdd]; found {
+				// Check uniqueness of stripped paths
+				if _, found := methodPaths[method][pathToAdd]; found {
 
-				// Sort names for stable, testable output
-				if strings.Compare(path, methodPaths[method][pathToAdd]) < 0 {
-					res.AddErrors(pathOverlapMsg(path, methodPaths[method][pathToAdd]))
+					// Sort names for stable, testable output
+					if strings.Compare(path, methodPaths[method][pathToAdd]) < 0 {
+						res.AddErrors(pathOverlapMsg(path, methodPaths[method][pathToAdd]))
+					} else {
+						res.AddErrors(pathOverlapMsg(methodPaths[method][pathToAdd], path))
+					}
 				} else {
-					res.AddErrors(pathOverlapMsg(methodPaths[method][pathToAdd], path))
-				}
-			} else {
-				if _, found := methodPaths[method]; !found {
-					methodPaths[method] = map[string]string{}
-				}
-				methodPaths[method][pathToAdd] = path // Original non stripped path
+					if _, found := methodPaths[method]; !found {
+						methodPaths[method] = map[string]string{}
+					}
+					methodPaths[method][pathToAdd] = path // Original non stripped path
 
+				}
 			}
 
 			var bodyParams []string

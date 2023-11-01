@@ -451,6 +451,11 @@ func TestSpec_ValidateParameters(t *testing.T) {
 	assert.Len(t, res.Errors, 1)
 	assert.Contains(t, res.Errors[0].Error(), "overlaps with")
 
+	// Disable strict path param uniqueness and ensure there is no error
+	validator.Options.StrictPathParamUniqueness = false
+	res = validator.validateParameters()
+	assert.Empty(t, res.Errors)
+
 	doc, _ = loads.Analyzed(PetStoreJSONMessage, "")
 	validator = NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
 	validator.spec = doc

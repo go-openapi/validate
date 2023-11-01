@@ -33,7 +33,7 @@ Reported as errors:
 
 	[x] definition can't declare a property that's already defined by one of its ancestors
 	[x] definition's ancestor can't be a descendant of the same model
-	[x] path uniqueness: each api path should be non-verbatim (account for path param names) unique per method
+	[x] path uniqueness: each api path should be non-verbatim (account for path param names) unique per method. Validation can be laxed by disabling StrictPathParamUniqueness.
 	[x] each security reference should contain only unique scopes
 	[x] each security scope in a security definition should be unique
 	[x] parameters in path must be unique
