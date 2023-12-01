@@ -1,5 +1,7 @@
 module github.com/go-openapi/validate
 
+replace github.com/go-openapi/spec => github.com/fredbi/spec v0.20.11-fix145
+
 go 1.18
 
 require (
