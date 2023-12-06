@@ -29,18 +29,18 @@ func itemsFixture() map[string]interface{} {
 
 func expectAllValid(t *testing.T, ov EntityValidator, dataValid, dataInvalid map[string]interface{}) {
 	res := ov.Validate(dataValid)
-	assert.Equal(t, 0, len(res.Errors))
+	assert.Empty(t, res.Errors)
 
 	res = ov.Validate(dataInvalid)
-	assert.Equal(t, 0, len(res.Errors))
+	assert.Empty(t, res.Errors)
 }
 
 func expectOnlyInvalid(t *testing.T, ov EntityValidator, dataValid, dataInvalid map[string]interface{}) {
 	res := ov.Validate(dataValid)
-	assert.Equal(t, 0, len(res.Errors))
+	assert.Empty(t, res.Errors)
 
 	res = ov.Validate(dataInvalid)
-	assert.NotEqual(t, 0, len(res.Errors))
+	assert.NotEmpty(t, res.Errors)
 }
 
 func TestItemsMustBeTypeArray(t *testing.T) {

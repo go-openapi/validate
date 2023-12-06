@@ -15,7 +15,6 @@
 package validate
 
 import (
-	"io/ioutil"
 	"os"
 	"sync"
 	"testing"
@@ -32,7 +31,7 @@ func TestDebug(t *testing.T) {
 		skipNotify(t)
 		t.SkipNow()
 	}
-	tmpFile, _ := ioutil.TempFile("", "debug-test")
+	tmpFile, _ := os.CreateTemp("", "debug-test")
 	tmpName := tmpFile.Name()
 	defer func() {
 		Debug = false

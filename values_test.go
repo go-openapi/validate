@@ -22,47 +22,40 @@ import (
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValues_ValidateIntEnum(t *testing.T) {
 	enumValues := []interface{}{1, 2, 3}
 
-	err := Enum("test", "body", int64(5), enumValues)
-	assert.Error(t, err)
-	err = Enum("test", "body", int64(1), enumValues)
-	assert.Nil(t, err)
+	require.Error(t, Enum("test", "body", int64(5), enumValues))
+	require.Nil(t, Enum("test", "body", int64(1), enumValues))
 }
 
 func TestValues_ValidateEnum(t *testing.T) {
 	enumValues := []string{"aa", "bb", "cc"}
 
-	err := Enum("test", "body", "a", enumValues)
-	assert.Error(t, err)
-	err = Enum("test", "body", "bb", enumValues)
-	assert.Nil(t, err)
+	require.Error(t, Enum("test", "body", "a", enumValues))
+	require.Nil(t, Enum("test", "body", "bb", enumValues))
 
 	type CustomString string
 
-	err = Enum("test", "body", CustomString("a"), enumValues)
-	assert.Error(t, err)
-	err = Enum("test", "body", CustomString("bb"), enumValues)
-	assert.Nil(t, err)
+	require.Error(t, Enum("test", "body", CustomString("a"), enumValues))
+	require.Nil(t, Enum("test", "body", CustomString("bb"), enumValues))
 }
 
 func TestValues_ValidateNilEnum(t *testing.T) {
 	enumValues := []string{"aa", "bb", "cc"}
 
-	err := Enum("test", "body", nil, enumValues)
-	assert.Error(t, err)
+	require.Error(t, Enum("test", "body", nil, enumValues))
 }
 
 // Check edge cases in Enum
 func TestValues_Enum_EdgeCases(t *testing.T) {
 	enumValues := "aa, bb, cc"
 
-	err := Enum("test", "body", int64(1), enumValues)
 	// No validation occurs: enumValues is not a slice
-	assert.Nil(t, err)
+	require.Nil(t, Enum("test", "body", int64(1), enumValues))
 
 	// TODO(TEST): edge case: value is not a concrete type
 	// It's really a go internals challenge
@@ -73,33 +66,22 @@ func TestValues_Enum_EdgeCases(t *testing.T) {
 func TestValues_ValidateEnumCaseInsensitive(t *testing.T) {
 	enumValues := []string{"aa", "bb", "cc"}
 
-	err := EnumCase("test", "body", "a", enumValues, true)
-	assert.Error(t, err)
-	err = EnumCase("test", "body", "bb", enumValues, true)
-	assert.Nil(t, err)
-	err = EnumCase("test", "body", "BB", enumValues, true)
-	assert.Error(t, err)
-
-	err = EnumCase("test", "body", "a", enumValues, false)
-	assert.Error(t, err)
-	err = EnumCase("test", "body", "bb", enumValues, false)
-	assert.Nil(t, err)
-	err = EnumCase("test", "body", "BB", enumValues, false)
-	assert.Nil(t, err)
-	err = EnumCase("test", "body", int64(1), enumValues, false)
-	assert.Error(t, err)
+	require.Error(t, EnumCase("test", "body", "a", enumValues, true))
+	require.Nil(t, EnumCase("test", "body", "bb", enumValues, true))
+	require.Error(t, EnumCase("test", "body", "BB", enumValues, true))
+	require.Error(t, EnumCase("test", "body", "a", enumValues, false))
+	require.Nil(t, EnumCase("test", "body", "bb", enumValues, false))
+	require.Nil(t, EnumCase("test", "body", "BB", enumValues, false))
+	require.Error(t, EnumCase("test", "body", int64(1), enumValues, false))
 }
 
 func TestValues_ValidateUniqueItems(t *testing.T) {
-	var err error
-
 	itemsNonUnique := []interface{}{
 		[]int32{1, 2, 3, 4, 4, 5},
 		[]string{"aa", "bb", "cc", "cc", "dd"},
 	}
 	for _, v := range itemsNonUnique {
-		err = UniqueItems("test", "body", v)
-		assert.Error(t, err)
+		require.Error(t, UniqueItems("test", "body", v))
 	}
 
 	itemsUnique := []interface{}{
@@ -113,31 +95,27 @@ func TestValues_ValidateUniqueItems(t *testing.T) {
 		nil,
 	}
 	for _, v := range itemsUnique {
-		err = UniqueItems("test", "body", v)
-		assert.Nil(t, err)
+		require.Nil(t, UniqueItems("test", "body", v))
 	}
 }
 
 func TestValues_ValidateMinLength(t *testing.T) {
-	var minLength int64 = 5
-	err := MinLength("test", "body", "aa", minLength)
-	assert.Error(t, err)
-	err = MinLength("test", "body", "aaaaa", minLength)
-	assert.Nil(t, err)
+	const minLength = int64(5)
+	require.Error(t, MinLength("test", "body", "aa", minLength))
+	require.Nil(t, MinLength("test", "body", "aaaaa", minLength))
 }
 
 func TestValues_ValidateMaxLength(t *testing.T) {
-	var maxLength int64 = 5
-	err := MaxLength("test", "body", "bbbbbb", maxLength)
-	assert.Error(t, err)
-	err = MaxLength("test", "body", "aa", maxLength)
-	assert.Nil(t, err)
+	const maxLength = int64(5)
+	require.Error(t, MaxLength("test", "body", "bbbbbb", maxLength))
+	require.Nil(t, MaxLength("test", "body", "aa", maxLength))
 }
 
 func TestValues_ReadOnly(t *testing.T) {
-	var err error
-	path := "test"
-	in := "body"
+	const (
+		path = "test"
+		in   = "body"
+	)
 
 	ReadOnlySuccess := []interface{}{
 		"",
@@ -157,43 +135,38 @@ func TestValues_ReadOnly(t *testing.T) {
 		// readonly should not have any effect
 		ctx := context.Background()
 		for _, v := range ReadOnlySuccess {
-			err = ReadOnly(ctx, path, in, v)
-			assert.Nil(t, err)
+			require.Nil(t, ReadOnly(ctx, path, in, v))
 		}
 		for _, v := range ReadOnlyFail {
-			err = ReadOnly(ctx, path, in, v)
-			assert.Nil(t, err)
+			require.Nil(t, ReadOnly(ctx, path, in, v))
 		}
 
 	})
 	t.Run("operationType request", func(t *testing.T) {
 		ctx := WithOperationRequest(context.Background())
 		for _, v := range ReadOnlySuccess {
-			err = ReadOnly(ctx, path, in, v)
-			assert.Nil(t, err)
+			require.Nil(t, ReadOnly(ctx, path, in, v))
 		}
 		for _, v := range ReadOnlyFail {
-			err = ReadOnly(ctx, path, in, v)
-			assert.Error(t, err)
+			require.Error(t, ReadOnly(ctx, path, in, v))
 		}
 	})
 	t.Run("operationType response", func(t *testing.T) {
 		ctx := WithOperationResponse(context.Background())
 		for _, v := range ReadOnlySuccess {
-			err = ReadOnly(ctx, path, in, v)
-			assert.Nil(t, err)
+			require.Nil(t, ReadOnly(ctx, path, in, v))
 		}
 		for _, v := range ReadOnlyFail {
-			err = ReadOnly(ctx, path, in, v)
-			assert.Nil(t, err)
+			require.Nil(t, ReadOnly(ctx, path, in, v))
 		}
 	})
 }
 
 func TestValues_ValidateRequired(t *testing.T) {
-	var err error
-	path := "test"
-	in := "body"
+	const (
+		path = "test"
+		in   = "body"
+	)
 
 	RequiredFail := []interface{}{
 		"",
@@ -202,8 +175,7 @@ func TestValues_ValidateRequired(t *testing.T) {
 	}
 
 	for _, v := range RequiredFail {
-		err = Required(path, in, v)
-		assert.Error(t, err)
+		require.Error(t, Required(path, in, v))
 	}
 
 	RequiredSuccess := []interface{}{
@@ -214,87 +186,57 @@ func TestValues_ValidateRequired(t *testing.T) {
 	}
 
 	for _, v := range RequiredSuccess {
-		err = Required(path, in, v)
-		assert.Nil(t, err)
+		require.Nil(t, Required(path, in, v))
 	}
 
 }
 
 func TestValues_ValidateRequiredNumber(t *testing.T) {
-	err := RequiredNumber("test", "body", 0)
-	assert.Error(t, err)
-	err = RequiredNumber("test", "body", 1)
-	assert.Nil(t, err)
+	require.Error(t, RequiredNumber("test", "body", 0))
+	require.Nil(t, RequiredNumber("test", "body", 1))
 }
 
 func TestValuMultipleOf(t *testing.T) {
-
 	// positive
-
-	err := MultipleOf("test", "body", 9, 3)
-	assert.Nil(t, err)
-
-	err = MultipleOf("test", "body", 9.3, 3.1)
-	assert.Nil(t, err)
-
-	err = MultipleOf("test", "body", 9.1, 0.1)
-	assert.Nil(t, err)
-
-	err = MultipleOf("test", "body", 3, 0.3)
-	assert.Nil(t, err)
-
-	err = MultipleOf("test", "body", 6, 0.3)
-	assert.Nil(t, err)
-
-	err = MultipleOf("test", "body", 1, 0.25)
-	assert.Nil(t, err)
-
-	err = MultipleOf("test", "body", 8, 0.2)
-	assert.Nil(t, err)
+	require.Nil(t, MultipleOf("test", "body", 9, 3))
+	require.Nil(t, MultipleOf("test", "body", 9.3, 3.1))
+	require.Nil(t, MultipleOf("test", "body", 9.1, 0.1))
+	require.Nil(t, MultipleOf("test", "body", 3, 0.3))
+	require.Nil(t, MultipleOf("test", "body", 6, 0.3))
+	require.Nil(t, MultipleOf("test", "body", 1, 0.25))
+	require.Nil(t, MultipleOf("test", "body", 8, 0.2))
 
 	// zero
-	err = MultipleOf("test", "body", 9, 0)
-	assert.Error(t, err)
-
-	err = MultipleOf("test", "body", 9.1, 0)
-	assert.Error(t, err)
+	require.Error(t, MultipleOf("test", "body", 9, 0))
+	require.Error(t, MultipleOf("test", "body", 9.1, 0))
 
 	// negative
-
-	err = MultipleOf("test", "body", 3, 0.4)
-	assert.Error(t, err)
-
-	err = MultipleOf("test", "body", 9.1, 0.2)
-	assert.Error(t, err)
-
-	err = MultipleOf("test", "body", 9.34, 0.1)
-	assert.Error(t, err)
+	require.Error(t, MultipleOf("test", "body", 3, 0.4))
+	require.Error(t, MultipleOf("test", "body", 9.1, 0.2))
+	require.Error(t, MultipleOf("test", "body", 9.34, 0.1))
 
 	// error on negative factor
-	err = MultipleOf("test", "body", 9.34, -0.1)
-	assert.Error(t, err)
+	require.Error(t, MultipleOf("test", "body", 9.34, -0.1))
 }
 
 // Test edge case for Pattern (in regular spec, no invalid regexp should reach there)
 func TestValues_Pattern_Edgecases(t *testing.T) {
-	var err *errors.Validation
-	err = Pattern("path", "in", "pick-a-boo", `.*-[a-z]-.*`)
-	assert.Nil(t, err)
+	require.Nil(t, Pattern("path", "in", "pick-a-boo", `.*-[a-z]-.*`))
 
-	// Invalid regexp
-	err = Pattern("path", "in", "pick-a-boo", `.*-[a(-z]-^).*`)
-	if assert.NotNil(t, err) {
+	t.Run("with invalid regexp", func(t *testing.T) {
+		err := Pattern("path", "in", "pick-a-boo", `.*-[a(-z]-^).*`)
+		require.Error(t, err)
 		assert.Equal(t, int(err.Code()), int(errors.PatternFailCode))
 		assert.Contains(t, err.Error(), "pattern is invalid")
-	}
+	})
 
-	// Valid regexp, invalid pattern
-	err = Pattern("path", "in", "pick-8-boo", `.*-[a-z]-.*`)
-	if assert.NotNil(t, err) {
+	t.Run("with valid regexp, invalid pattern", func(t *testing.T) {
+		err := Pattern("path", "in", "pick-8-boo", `.*-[a-z]-.*`)
+		require.Error(t, err)
 		assert.Equal(t, int(err.Code()), int(errors.PatternFailCode))
 		assert.NotContains(t, err.Error(), "pattern is invalid")
 		assert.Contains(t, err.Error(), "should match")
-	}
+	})
 }
 
 // Test edge cases in FormatOf
@@ -303,211 +245,173 @@ func TestValues_FormatOf_EdgeCases(t *testing.T) {
 	var err *errors.Validation
 
 	err = FormatOf("path", "in", "bugz", "", nil)
-	if assert.NotNil(t, err) {
-		assert.Equal(t, int(err.Code()), int(errors.InvalidTypeCode))
-		assert.Contains(t, err.Error(), "bugz is an invalid type name")
-	}
+	require.Error(t, err)
+	assert.Equal(t, int(err.Code()), int(errors.InvalidTypeCode))
+	assert.Contains(t, err.Error(), "bugz is an invalid type name")
 
 	err = FormatOf("path", "in", "bugz", "", strfmt.Default)
-	if assert.NotNil(t, err) {
-		assert.Equal(t, int(err.Code()), int(errors.InvalidTypeCode))
-		assert.Contains(t, err.Error(), "bugz is an invalid type name")
-	}
+	require.Error(t, err)
+	assert.Equal(t, int(err.Code()), int(errors.InvalidTypeCode))
+	assert.Contains(t, err.Error(), "bugz is an invalid type name")
 }
 
 // Test edge cases in MaximumNativeType
 // not easily exercised with full specs
 func TestValues_MaximumNative(t *testing.T) {
-	assert.Nil(t, MaximumNativeType("path", "in", int(5), 10, false))
-	assert.Nil(t, MaximumNativeType("path", "in", uint(5), 10, true))
-	assert.Nil(t, MaximumNativeType("path", "in", int8(5), 10, true))
-	assert.Nil(t, MaximumNativeType("path", "in", uint8(5), 10, true))
-	assert.Nil(t, MaximumNativeType("path", "in", int16(5), 10, true))
-	assert.Nil(t, MaximumNativeType("path", "in", uint16(5), 10, true))
-	assert.Nil(t, MaximumNativeType("path", "in", int32(5), 10, true))
-	assert.Nil(t, MaximumNativeType("path", "in", uint32(5), 10, true))
-	assert.Nil(t, MaximumNativeType("path", "in", int64(5), 10, true))
-	assert.Nil(t, MaximumNativeType("path", "in", uint64(5), 10, true))
-	assert.Nil(t, MaximumNativeType("path", "in", float32(5.5), 10, true))
-	assert.Nil(t, MaximumNativeType("path", "in", float64(5.5), 10, true))
+	require.Nil(t, MaximumNativeType("path", "in", int(5), 10, false))
+	require.Nil(t, MaximumNativeType("path", "in", uint(5), 10, true))
+	require.Nil(t, MaximumNativeType("path", "in", int8(5), 10, true))
+	require.Nil(t, MaximumNativeType("path", "in", uint8(5), 10, true))
+	require.Nil(t, MaximumNativeType("path", "in", int16(5), 10, true))
+	require.Nil(t, MaximumNativeType("path", "in", uint16(5), 10, true))
+	require.Nil(t, MaximumNativeType("path", "in", int32(5), 10, true))
+	require.Nil(t, MaximumNativeType("path", "in", uint32(5), 10, true))
+	require.Nil(t, MaximumNativeType("path", "in", int64(5), 10, true))
+	require.Nil(t, MaximumNativeType("path", "in", uint64(5), 10, true))
+	require.Nil(t, MaximumNativeType("path", "in", float32(5.5), 10, true))
+	require.Nil(t, MaximumNativeType("path", "in", float64(5.5), 10, true))
 
 	var err *errors.Validation
 
 	err = MaximumNativeType("path", "in", int32(10), 10, true)
-	if assert.NotNil(t, err) {
-		code := int(err.Code())
-		assert.Equal(t, code, errors.MaxFailCode)
-	}
+	require.Error(t, err)
+	code := int(err.Code())
+	assert.Equal(t, errors.MaxFailCode, code)
 
 	err = MaximumNativeType("path", "in", uint(10), 10, true)
-	if assert.NotNil(t, err) {
-		code := int(err.Code())
-		assert.Equal(t, code, errors.MaxFailCode)
-	}
+	require.Error(t, err)
+	code = int(err.Code())
+	assert.Equal(t, errors.MaxFailCode, code)
 
 	err = MaximumNativeType("path", "in", int64(12), 10, false)
-	if assert.NotNil(t, err) {
-		code := int(err.Code())
-		assert.Equal(t, code, errors.MaxFailCode)
-	}
+	require.Error(t, err)
+	code = int(err.Code())
+	assert.Equal(t, errors.MaxFailCode, code)
 
 	err = MaximumNativeType("path", "in", float32(12.6), 10, false)
-	if assert.NotNil(t, err) {
-		code := int(err.Code())
-		assert.Equal(t, code, int(errors.MaxFailCode))
-	}
+	require.Error(t, err)
+	code = int(err.Code())
+	assert.Equal(t, int(errors.MaxFailCode), code)
 
 	err = MaximumNativeType("path", "in", float64(12.6), 10, false)
-	if assert.NotNil(t, err) {
-		code := int(err.Code())
-		assert.Equal(t, code, int(errors.MaxFailCode))
-	}
+	require.Error(t, err)
+	code = int(err.Code())
+	assert.Equal(t, int(errors.MaxFailCode), code)
 
 	err = MaximumNativeType("path", "in", uint(5), -10, true)
-	if assert.NotNil(t, err) {
-		code := int(err.Code())
-		assert.Equal(t, code, int(errors.MaxFailCode))
-	}
+	require.Error(t, err)
+	code = int(err.Code())
+	assert.Equal(t, int(errors.MaxFailCode), code)
 }
 
 // Test edge cases in MinimumNativeType
 // not easily exercised with full specs
 func TestValues_MinimumNative(t *testing.T) {
-	assert.Nil(t, MinimumNativeType("path", "in", int(5), 0, false))
-	assert.Nil(t, MinimumNativeType("path", "in", uint(5), 0, true))
-	assert.Nil(t, MinimumNativeType("path", "in", int8(5), 0, true))
-	assert.Nil(t, MinimumNativeType("path", "in", uint8(5), 0, true))
-	assert.Nil(t, MinimumNativeType("path", "in", int16(5), 0, true))
-	assert.Nil(t, MinimumNativeType("path", "in", uint16(5), 0, true))
-	assert.Nil(t, MinimumNativeType("path", "in", int32(5), 0, true))
-	assert.Nil(t, MinimumNativeType("path", "in", uint32(5), 0, true))
-	assert.Nil(t, MinimumNativeType("path", "in", int64(5), 0, true))
-	assert.Nil(t, MinimumNativeType("path", "in", uint64(5), 0, true))
-	assert.Nil(t, MinimumNativeType("path", "in", float32(5.5), 0, true))
-	assert.Nil(t, MinimumNativeType("path", "in", float64(5.5), 0, true))
+	require.Nil(t, MinimumNativeType("path", "in", int(5), 0, false))
+	require.Nil(t, MinimumNativeType("path", "in", uint(5), 0, true))
+	require.Nil(t, MinimumNativeType("path", "in", int8(5), 0, true))
+	require.Nil(t, MinimumNativeType("path", "in", uint8(5), 0, true))
+	require.Nil(t, MinimumNativeType("path", "in", int16(5), 0, true))
+	require.Nil(t, MinimumNativeType("path", "in", uint16(5), 0, true))
+	require.Nil(t, MinimumNativeType("path", "in", int32(5), 0, true))
+	require.Nil(t, MinimumNativeType("path", "in", uint32(5), 0, true))
+	require.Nil(t, MinimumNativeType("path", "in", int64(5), 0, true))
+	require.Nil(t, MinimumNativeType("path", "in", uint64(5), 0, true))
+	require.Nil(t, MinimumNativeType("path", "in", float32(5.5), 0, true))
+	require.Nil(t, MinimumNativeType("path", "in", float64(5.5), 0, true))
 
 	var err *errors.Validation
 
 	err = MinimumNativeType("path", "in", uint(10), 10, true)
-	if assert.NotNil(t, err) {
-		code := int(err.Code())
-		assert.Equal(t, code, int(errors.MinFailCode))
-	}
+	require.Error(t, err)
+	code := int(err.Code())
+	assert.Equal(t, int(errors.MinFailCode), code)
 
 	err = MinimumNativeType("path", "in", uint(10), 10, true)
-	if assert.NotNil(t, err) {
-		code := int(err.Code())
-		assert.Equal(t, code, int(errors.MinFailCode))
-	}
+	require.Error(t, err)
+	code = int(err.Code())
+	assert.Equal(t, int(errors.MinFailCode), code)
 
 	err = MinimumNativeType("path", "in", int64(8), 10, false)
-	if assert.NotNil(t, err) {
-		code := int(err.Code())
-		assert.Equal(t, code, int(errors.MinFailCode))
-	}
+	require.Error(t, err)
+	code = int(err.Code())
+	assert.Equal(t, int(errors.MinFailCode), code)
 
 	err = MinimumNativeType("path", "in", float32(12.6), 20, false)
-	if assert.NotNil(t, err) {
-		code := int(err.Code())
-		assert.Equal(t, code, int(errors.MinFailCode))
-	}
+	require.Error(t, err)
+	code = int(err.Code())
+	assert.Equal(t, int(errors.MinFailCode), code)
 
 	err = MinimumNativeType("path", "in", float64(12.6), 20, false)
-	if assert.NotNil(t, err) {
-		code := int(err.Code())
-		assert.Equal(t, code, int(errors.MinFailCode))
-	}
+	require.Error(t, err)
+	code = int(err.Code())
+	assert.Equal(t, int(errors.MinFailCode), code)
 
-	err = MinimumNativeType("path", "in", uint(5), -10, true)
-	assert.Nil(t, err)
+	require.Nil(t, MinimumNativeType("path", "in", uint(5), -10, true))
 }
 
 // Test edge cases in MaximumNativeType
 // not easily exercised with full specs
 func TestValues_MultipleOfNative(t *testing.T) {
-	assert.Nil(t, MultipleOfNativeType("path", "in", int(5), 1))
-	assert.Nil(t, MultipleOfNativeType("path", "in", uint(5), 1))
-	assert.Nil(t, MultipleOfNativeType("path", "in", int8(5), 1))
-	assert.Nil(t, MultipleOfNativeType("path", "in", uint8(5), 1))
-	assert.Nil(t, MultipleOfNativeType("path", "in", int16(5), 1))
-	assert.Nil(t, MultipleOfNativeType("path", "in", uint16(5), 1))
-	assert.Nil(t, MultipleOfNativeType("path", "in", int32(5), 1))
-	assert.Nil(t, MultipleOfNativeType("path", "in", uint32(5), 1))
-	assert.Nil(t, MultipleOfNativeType("path", "in", int64(5), 1))
-	assert.Nil(t, MultipleOfNativeType("path", "in", uint64(5), 1))
+	require.Nil(t, MultipleOfNativeType("path", "in", int(5), 1))
+	require.Nil(t, MultipleOfNativeType("path", "in", uint(5), 1))
+	require.Nil(t, MultipleOfNativeType("path", "in", int8(5), 1))
+	require.Nil(t, MultipleOfNativeType("path", "in", uint8(5), 1))
+	require.Nil(t, MultipleOfNativeType("path", "in", int16(5), 1))
+	require.Nil(t, MultipleOfNativeType("path", "in", uint16(5), 1))
+	require.Nil(t, MultipleOfNativeType("path", "in", int32(5), 1))
+	require.Nil(t, MultipleOfNativeType("path", "in", uint32(5), 1))
+	require.Nil(t, MultipleOfNativeType("path", "in", int64(5), 1))
+	require.Nil(t, MultipleOfNativeType("path", "in", uint64(5), 1))
 
 	var err *errors.Validation
 
 	err = MultipleOfNativeType("path", "in", int64(5), 0)
-	if assert.NotNil(t, err) {
-		code := int(err.Code())
-		assert.Equal(t, code, int(errors.MultipleOfMustBePositiveCode))
-	}
+	require.Error(t, err)
+	code := int(err.Code())
+	assert.Equal(t, int(errors.MultipleOfMustBePositiveCode), code)
 
 	err = MultipleOfNativeType("path", "in", uint64(5), 0)
-	if assert.NotNil(t, err) {
-		code := int(err.Code())
-		assert.Equal(t, code, int(errors.MultipleOfMustBePositiveCode))
-	}
+	require.Error(t, err)
+	code = int(err.Code())
+	assert.Equal(t, int(errors.MultipleOfMustBePositiveCode), code)
 
 	err = MultipleOfNativeType("path", "in", int64(5), -1)
-	if assert.NotNil(t, err) {
-		code := int(err.Code())
-		assert.Equal(t, code, int(errors.MultipleOfMustBePositiveCode))
-	}
+	require.Error(t, err)
+	code = int(err.Code())
+	assert.Equal(t, int(errors.MultipleOfMustBePositiveCode), code)
 
 	err = MultipleOfNativeType("path", "in", int64(11), 5)
-	if assert.NotNil(t, err) {
-		code := int(err.Code())
-		assert.Equal(t, code, int(errors.MultipleOfFailCode))
-	}
+	require.Error(t, err)
+	code = int(err.Code())
+	assert.Equal(t, int(errors.MultipleOfFailCode), code)
 
 	err = MultipleOfNativeType("path", "in", uint64(11), 5)
-	if assert.NotNil(t, err) {
-		code := int(err.Code())
-		assert.Equal(t, code, int(errors.MultipleOfFailCode))
-	}
+	require.Error(t, err)
+	code = int(err.Code())
+	assert.Equal(t, int(errors.MultipleOfFailCode), code)
 }
 
 // Test edge cases in IsValueValidAgainstRange
-// not easily exercised with full specs
+// not easily exercised with full specs: we did not simulate these formats in full specs
 func TestValues_IsValueValidAgainstRange(t *testing.T) {
+	require.NoError(t, IsValueValidAgainstRange(float32(123.45), "number", "float32", "prefix", "path"))
+	require.NoError(t, IsValueValidAgainstRange(float64(123.45), "number", "float32", "prefix", "path"))
+	require.NoError(t, IsValueValidAgainstRange(int64(123), "number", "float", "prefix", "path"))
+	require.NoError(t, IsValueValidAgainstRange(int64(123), "integer", "", "prefix", "path"))
+	require.NoError(t, IsValueValidAgainstRange(int64(123), "integer", "int64", "prefix", "path"))
+	require.NoError(t, IsValueValidAgainstRange(int64(123), "integer", "uint64", "prefix", "path"))
+	require.NoError(t, IsValueValidAgainstRange(int64(2147483647), "integer", "int32", "prefix", "path"))
+	require.NoError(t, IsValueValidAgainstRange(int64(2147483647), "integer", "uint32", "prefix", "path"))
+
 	var err error
-
-	// We did not simulate these formats in full specs
-	err = IsValueValidAgainstRange(float32(123.45), "number", "float32", "prefix", "path")
-	assert.NoError(t, err)
-
-	err = IsValueValidAgainstRange(float64(123.45), "number", "float32", "prefix", "path")
-	assert.NoError(t, err)
-
-	err = IsValueValidAgainstRange(int64(123), "number", "float", "prefix", "path")
-	assert.NoError(t, err)
-
-	err = IsValueValidAgainstRange(int64(123), "integer", "", "prefix", "path")
-	assert.NoError(t, err)
-
-	err = IsValueValidAgainstRange(int64(123), "integer", "int64", "prefix", "path")
-	assert.NoError(t, err)
-
-	err = IsValueValidAgainstRange(int64(123), "integer", "uint64", "prefix", "path")
-	assert.NoError(t, err)
-
 	// Error case (do not occur in normal course of a validation)
 	err = IsValueValidAgainstRange(float64(math.MaxFloat64), "integer", "", "prefix", "path")
-	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "must be of type integer (default format)")
-	}
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "must be of type integer (default format)")
 
 	// Checking a few limits
 	err = IsValueValidAgainstRange("123", "number", "", "prefix", "path")
-	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "called with invalid (non numeric) val type")
-	}
-
-	err = IsValueValidAgainstRange(int64(2147483647), "integer", "int32", "prefix", "path")
-	assert.NoError(t, err)
-
-	err = IsValueValidAgainstRange(int64(2147483647), "integer", "uint32", "prefix", "path")
-	assert.NoError(t, err)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "called with invalid (non numeric) val type")
 }

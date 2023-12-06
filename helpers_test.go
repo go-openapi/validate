@@ -19,11 +19,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHelpers_addPointerError(t *testing.T) {
 	res := new(Result)
 	r := errorHelp.addPointerError(res, fmt.Errorf("my error"), "my ref", "path")
+	require.NotEmpty(t, r.Errors)
 	msg := r.Errors[0].Error()
 	assert.Contains(t, msg, "could not resolve reference in path to $ref my ref: my error")
 }
@@ -55,7 +57,7 @@ func TestHelpers_asInt64(t *testing.T) {
 	if assert.NotPanics(t, func() {
 		valueHelp.asInt64("123")
 	}) {
-		assert.Equal(t, valueHelp.asInt64("123"), (int64)(0))
+		assert.Equal(t, int64(0), valueHelp.asInt64("123"))
 	}
 }
 
@@ -69,20 +71,22 @@ func TestHelpers_asUint64(t *testing.T) {
 	if assert.NotPanics(t, func() {
 		valueHelp.asUint64("123")
 	}) {
-		assert.Equal(t, valueHelp.asUint64("123"), (uint64)(0))
+		assert.Equal(t, uint64(0), valueHelp.asUint64("123"))
 	}
 }
 
 // Test cases in private method asFloat64()
 func TestHelpers_asFloat64(t *testing.T) {
+	const epsilon = 1e-9
+
 	for _, v := range integerFactory(3) {
-		assert.Equal(t, float64(3), valueHelp.asFloat64(v))
+		assert.InDelta(t, float64(3), valueHelp.asFloat64(v), epsilon)
 	}
 
 	// Non numeric
 	if assert.NotPanics(t, func() {
 		valueHelp.asFloat64("123")
 	}) {
-		assert.Equal(t, valueHelp.asFloat64("123"), (float64)(0))
+		assert.InDelta(t, float64(0), valueHelp.asFloat64("123"), epsilon)
 	}
 }

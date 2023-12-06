@@ -25,6 +25,7 @@ import (
 	"github.com/go-openapi/loads/fmts"
 	"github.com/go-openapi/strfmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func init() {
@@ -145,10 +146,10 @@ func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnL
 
 				doc, err := loads.Spec(path)
 				if shouldNotLoad {
-					assert.Errorf(t, err, "expected this spec not to load: %s", path)
+					require.Errorf(t, err, "expected this spec not to load: %s", path)
 					return
 				}
-				assert.NoErrorf(t, err, "expected this spec to load without error: %s", path)
+				require.NoErrorf(t, err, "expected this spec to load without error: %s", path)
 
 				if haltOnErrors && t.Failed() {
 					assert.FailNow(t, "test Halted: stop on error mode")
@@ -176,7 +177,7 @@ func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnL
 			})
 			return nil
 		})
-	assert.NoErrorf(t, err, "walk: %v", err)
+	require.NoErrorf(t, err, "walk: %v", err)
 	if t.Failed() {
 		log.Printf("A change in expected validation status has been detected")
 	}

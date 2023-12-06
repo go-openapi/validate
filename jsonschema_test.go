@@ -16,7 +16,6 @@ package validate
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -120,7 +119,7 @@ func TestJSONSchemaSuite(t *testing.T) {
 		}
 	}()
 
-	files, err := ioutil.ReadDir(jsonSchemaFixturesPath)
+	files, err := os.ReadDir(jsonSchemaFixturesPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,14 +137,14 @@ func TestJSONSchemaSuite(t *testing.T) {
 				return
 			}
 			t.Log("Running " + specName)
-			b, _ := ioutil.ReadFile(filepath.Join(jsonSchemaFixturesPath, fileName))
+			b, _ := os.ReadFile(filepath.Join(jsonSchemaFixturesPath, fileName))
 			doTestSchemaSuite(t, b)
 		})
 	}
 }
 
 func TestSchemaFixtures(t *testing.T) {
-	files, err := ioutil.ReadDir(schemaFixturesPath)
+	files, err := os.ReadDir(schemaFixturesPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +158,7 @@ func TestSchemaFixtures(t *testing.T) {
 			t.Parallel()
 			specName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
 			t.Log("Running " + specName)
-			b, _ := ioutil.ReadFile(filepath.Join(schemaFixturesPath, fileName))
+			b, _ := os.ReadFile(filepath.Join(schemaFixturesPath, fileName))
 			doTestSchemaSuite(t, b)
 		})
 	}
@@ -175,7 +174,7 @@ func expandOpts(base string) *spec.ExpandOptions {
 
 func TestOptionalJSONSchemaSuite(t *testing.T) {
 	jsonOptionalSchemaFixturesPath := filepath.Join(jsonSchemaFixturesPath, "optional")
-	files, err := ioutil.ReadDir(jsonOptionalSchemaFixturesPath)
+	files, err := os.ReadDir(jsonOptionalSchemaFixturesPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,7 +192,7 @@ func TestOptionalJSONSchemaSuite(t *testing.T) {
 				return
 			}
 			t.Log("Running [optional] " + specName)
-			b, _ := ioutil.ReadFile(filepath.Join(jsonOptionalSchemaFixturesPath, fileName))
+			b, _ := os.ReadFile(filepath.Join(jsonOptionalSchemaFixturesPath, fileName))
 			doTestSchemaSuite(t, b)
 		})
 	}
@@ -201,7 +200,7 @@ func TestOptionalJSONSchemaSuite(t *testing.T) {
 
 // Further testing with all formats recognized by strfmt
 func TestFormat_JSONSchemaExtended(t *testing.T) {
-	files, err := ioutil.ReadDir(formatFixturesPath)
+	files, err := os.ReadDir(formatFixturesPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +218,7 @@ func TestFormat_JSONSchemaExtended(t *testing.T) {
 				return
 			}
 			t.Log("Running [extended formats] " + specName)
-			b, _ := ioutil.ReadFile(filepath.Join(formatFixturesPath, fileName))
+			b, _ := os.ReadFile(filepath.Join(formatFixturesPath, fileName))
 			doTestSchemaSuite(t, b)
 		})
 	}
@@ -233,8 +232,8 @@ func doTestSchemaSuite(t *testing.T, doc []byte) {
 
 	for _, testDescription := range testDescriptions {
 		b, _ := testDescription.Schema.MarshalJSON()
-		tmpFile, err := ioutil.TempFile(os.TempDir(), "validate-test")
-		assert.NoError(t, err)
+		tmpFile, err := os.CreateTemp(os.TempDir(), "validate-test")
+		require.NoError(t, err)
 		_, _ = tmpFile.Write(b)
 		tmpFile.Close()
 		defer func() { _ = os.Remove(tmpFile.Name()) }()

@@ -16,7 +16,6 @@ package validate
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -28,7 +27,7 @@ import (
 	"github.com/go-openapi/strfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -86,7 +85,7 @@ func Test_MessageQualityStopOnErrors_Issue44(t *testing.T) {
 }
 
 func loadTestConfig(t *testing.T, fp string) ExpectedMap {
-	expectedConfig, err := ioutil.ReadFile(fp)
+	expectedConfig, err := os.ReadFile(fp)
 	require.NoErrorf(t, err, "cannot read expected messages config file: %v", err)
 
 	tested := make(ExpectedMap, 200)
@@ -192,7 +191,7 @@ func expectValid(t *testing.T, path string, thisTest *ExpectedFixture, continueO
 	validator.SetContinueOnErrors(continueOnErrors)
 	res, warn := validator.Validate(doc)
 	assert.True(t, res.IsValid(), "expected this spec to be valid")
-	assert.Lenf(t, res.Errors, 0, "expected no returned errors")
+	assert.Emptyf(t, res.Errors, "expected no returned errors")
 
 	// check warnings
 	errs := verifyErrors(t, warn, thisTest.ExpectedWarnings, "warning", continueOnErrors)
@@ -316,7 +315,7 @@ func verifyErrorsVsWarnings(t *testing.T, res, warn *Result) int {
 	// First verification of result conventions: results are redundant, just a matter of presentation
 	w := len(warn.Errors)
 	if !assert.Len(t, res.Warnings, w) ||
-		!assert.Len(t, warn.Warnings, 0) ||
+		!assert.Empty(t, warn.Warnings) ||
 		!assert.Subset(t, res.Warnings, warn.Errors) ||
 		!assert.Subset(t, warn.Errors, res.Warnings) {
 		t.Log("Result equivalence errors vs warnings not verified")

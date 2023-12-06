@@ -17,7 +17,7 @@ package validate
 import (
 	"encoding/json"
 	"flag"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -104,7 +104,7 @@ func TestSpec_ExpandResponseRecursive(t *testing.T) {
 // Spec with no path
 func TestSpec_Issue52(t *testing.T) {
 	fp := filepath.Join("fixtures", "bugs", "52", "swagger.json")
-	jstext, _ := ioutil.ReadFile(fp)
+	jstext, _ := os.ReadFile(fp)
 
 	// as json schema
 	var sch spec.Schema
@@ -113,7 +113,8 @@ func TestSpec_Issue52(t *testing.T) {
 	schemaValidator := NewSchemaValidator(spec.MustLoadSwagger20Schema(), nil, "", strfmt.Default)
 	res := schemaValidator.Validate(&sch)
 	assert.False(t, res.IsValid())
-	assert.EqualError(t, res.Errors[0], ".paths in body is required")
+	require.NotEmpty(t, res.Errors)
+	require.EqualError(t, res.Errors[0], ".paths in body is required")
 
 	// as swagger spec: path is set to nil
 	// Here, validation stops as paths is initialized to empty
@@ -128,7 +129,7 @@ func TestSpec_Issue52(t *testing.T) {
 
 func TestSpec_Issue53(t *testing.T) {
 	fp := filepath.Join("fixtures", "bugs", "53", "noswagger.json")
-	jstext, _ := ioutil.ReadFile(fp)
+	jstext, _ := os.ReadFile(fp)
 
 	// as json schema
 	var sch spec.Schema
@@ -137,12 +138,14 @@ func TestSpec_Issue53(t *testing.T) {
 	schemaValidator := NewSchemaValidator(spec.MustLoadSwagger20Schema(), nil, "", strfmt.Default)
 	res := schemaValidator.Validate(&sch)
 	assert.False(t, res.IsValid())
-	assert.EqualError(t, res.Errors[0], ".swagger in body is required")
+	require.NotEmpty(t, res.Errors)
+	require.EqualError(t, res.Errors[0], ".swagger in body is required")
 
 	// as swagger despec
 	res, _ = loadAndValidate(t, fp, false)
 	require.False(t, res.IsValid())
-	assert.EqualError(t, res.Errors[0], ".swagger in body is required")
+	require.NotEmpty(t, res.Errors)
+	require.EqualError(t, res.Errors[0], ".swagger in body is required")
 }
 
 func TestSpec_Issue62(t *testing.T) {
@@ -580,7 +583,7 @@ func TestSpec_ValidDoc(t *testing.T) {
 	doc2, err := loads.Spec(fp)
 	require.NoError(t, err)
 	err = Spec(doc2, strfmt.Default)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 // Check higher level behavior on invalid spec doc
@@ -588,7 +591,7 @@ func TestSpec_InvalidDoc(t *testing.T) {
 	doc, err := loads.Spec(filepath.Join("fixtures", "validation", "default", "invalid-default-value-parameter.json"))
 	require.NoError(t, err)
 	err = Spec(doc, strfmt.Default)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestSpec_Validate_InvalidInterface(t *testing.T) {
@@ -718,12 +721,12 @@ func TestItemsProperty_Issue43(t *testing.T) {
 	fp := filepath.Join("fixtures", "bugs", "43", "fixture-43-fail.yaml")
 	res, _ := loadAndValidate(t, fp)
 	assert.Falsef(t, res.IsValid(), "expected spec to be invalid")
-	assert.True(t, len(res.Errors) > 3)
+	assert.Greater(t, len(res.Errors), 3)
 
 	fp = filepath.Join("fixtures", "validation", "fixture-1171.yaml")
 	res, _ = loadAndValidate(t, fp)
 	assert.Falsef(t, res.IsValid(), "expected spec to be invalid")
-	assert.True(t, len(res.Errors) > 3)
+	assert.Greater(t, len(res.Errors), 3)
 	found := false
 	for _, e := range res.Errors {
 		found = strings.Contains(e.Error(), "array requires items definition")

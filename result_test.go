@@ -40,7 +40,7 @@ func TestResult_AddError(t *testing.T) {
 func TestResult_AddNilError(t *testing.T) {
 	r := Result{}
 	r.AddErrors(nil)
-	assert.Len(t, r.Errors, 0)
+	assert.Empty(t, r.Errors)
 
 	errArray := []error{fmt.Errorf("one Error"), nil, fmt.Errorf("another error")}
 	r.AddErrors(errArray...)
@@ -51,7 +51,7 @@ func TestResult_AddWarnings(t *testing.T) {
 	r := Result{}
 	r.AddErrors(fmt.Errorf("one Error"))
 	assert.Len(t, r.Errors, 1)
-	assert.Len(t, r.Warnings, 0)
+	assert.Empty(t, r.Warnings)
 
 	r.AddWarnings(fmt.Errorf("one Warning"))
 	assert.Len(t, r.Errors, 1)
@@ -65,7 +65,7 @@ func TestResult_Merge(t *testing.T) {
 	r.Inc()
 	assert.Len(t, r.Errors, 1)
 	assert.Len(t, r.Warnings, 1)
-	assert.Equal(t, r.MatchCount, 1)
+	assert.Equal(t, 1, r.MatchCount)
 
 	// Merge with same
 	r2 := Result{}
@@ -77,7 +77,7 @@ func TestResult_Merge(t *testing.T) {
 
 	assert.Len(t, r.Errors, 1)
 	assert.Len(t, r.Warnings, 1)
-	assert.Equal(t, r.MatchCount, 2)
+	assert.Equal(t, 2, r.MatchCount)
 
 	// Merge with new
 	r3 := Result{}
@@ -89,7 +89,7 @@ func TestResult_Merge(t *testing.T) {
 
 	assert.Len(t, r.Errors, 2)
 	assert.Len(t, r.Warnings, 2)
-	assert.Equal(t, r.MatchCount, 3)
+	assert.Equal(t, 3, r.MatchCount)
 }
 
 func errorFixture() (Result, Result, Result) {
@@ -116,26 +116,26 @@ func TestResult_MergeAsErrors(t *testing.T) {
 	r, r2, r3 := errorFixture()
 	assert.Len(t, r.Errors, 1)
 	assert.Len(t, r.Warnings, 1)
-	assert.Equal(t, r.MatchCount, 1)
+	assert.Equal(t, 1, r.MatchCount)
 
 	r.MergeAsErrors(&r2, &r3)
 
 	assert.Len(t, r.Errors, 4) // One Warning added to Errors
 	assert.Len(t, r.Warnings, 1)
-	assert.Equal(t, r.MatchCount, 3)
+	assert.Equal(t, 3, r.MatchCount)
 }
 
 func TestResult_MergeAsWarnings(t *testing.T) {
 	r, r2, r3 := errorFixture()
 	assert.Len(t, r.Errors, 1)
 	assert.Len(t, r.Warnings, 1)
-	assert.Equal(t, r.MatchCount, 1)
+	assert.Equal(t, 1, r.MatchCount)
 
 	r.MergeAsWarnings(&r2, &r3)
 
 	assert.Len(t, r.Errors, 1) // One Warning added to Errors
 	assert.Len(t, r.Warnings, 4)
-	assert.Equal(t, r.MatchCount, 3)
+	assert.Equal(t, 3, r.MatchCount)
 }
 
 func TestResult_IsValid(t *testing.T) {
@@ -193,11 +193,11 @@ func TestResult_keepRelevantErrors(t *testing.T) {
 
 func TestResult_AsError(t *testing.T) {
 	r := Result{}
-	assert.Nil(t, r.AsError())
+	require.NoError(t, r.AsError())
 	r.AddErrors(fmt.Errorf("one Error"))
 	r.AddErrors(fmt.Errorf("additional Error"))
 	res := r.AsError()
-	require.NotNil(t, res)
+	require.Error(t, res)
 
 	assert.Contains(t, res.Error(), "validation failure list:") // Expected from pkg errors
 	assert.Contains(t, res.Error(), "one Error")                // Expected from pkg errors
