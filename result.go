@@ -132,8 +132,6 @@ func (r *Result) RootObjectSchemata() []*spec.Schema {
 }
 
 // FieldSchemata returns the schemata which apply to fields in objects.
-//
-
 func (r *Result) FieldSchemata() map[FieldKey][]*spec.Schema {
 	if r.cachedFieldSchemta != nil {
 		return r.cachedFieldSchemta
@@ -153,8 +151,6 @@ func (r *Result) FieldSchemata() map[FieldKey][]*spec.Schema {
 }
 
 // ItemSchemata returns the schemata which apply to items in slices.
-//
-
 func (r *Result) ItemSchemata() map[ItemKey][]*spec.Schema {
 	if r.cachedItemSchemata != nil {
 		return r.cachedItemSchemata
