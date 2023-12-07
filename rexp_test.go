@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Save repeated regexp compilation
@@ -26,16 +27,16 @@ func Test_compileRegexp(t *testing.T) {
 	vrex := new(re.Regexp)
 
 	rex, err := compileRegexp(".*TestRegexp.*")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, rex)
 	assert.IsType(t, vrex, rex)
 
 	rex, err = compileRegexp(".*TestRegexp.*")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, rex)
 
 	irex, ierr := compileRegexp(".[*InvalidTestRegexp.*")
-	assert.Error(t, ierr)
+	require.Error(t, ierr)
 	assert.Nil(t, irex)
 	assert.IsType(t, vrex, irex)
 }
@@ -69,7 +70,7 @@ func TestRace_compileRegexp(t *testing.T) {
 
 	comp := func(pattern string) {
 		rex, err := compileRegexp(pattern)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, rex)
 		assert.IsType(t, vrex, rex)
 	}

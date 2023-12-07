@@ -26,6 +26,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	jsonExt       = ".json"
+	hasErrorMsg   = " should have errors"
+	noErrorMsg    = " should not have errors"
+	hasWarningMsg = " should have warnings"
+)
+
 func TestDefault_ValidatePetStore(t *testing.T) {
 	doc, _ := loads.Analyzed(PetStoreJSONMessage, "")
 	validator := NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
@@ -72,14 +79,14 @@ func TestDefault_ValidateDefaults(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		path := filepath.Join("fixtures", "validation", "default", "valid-default-value-"+tt+".json")
+		path := filepath.Join("fixtures", "validation", "default", "valid-default-value-"+tt+jsonExt)
 		if DebugTest {
 			t.Logf("Testing valid default values for: %s", path)
 		}
 		validator := makeSpecValidator(t, path)
 		myDefaultValidator := &defaultValidator{SpecValidator: validator}
 		res := myDefaultValidator.Validate()
-		assert.Empty(t, res.Errors, tt+" should not have errors")
+		assert.Empty(t, res.Errors, tt+noErrorMsg)
 
 		// Special case: warning only
 		if tt == "parameter-required" {
@@ -87,7 +94,7 @@ func TestDefault_ValidateDefaults(t *testing.T) {
 			assert.Contains(t, warns, "limit in query has a default value and is required as parameter")
 		}
 
-		path = filepath.Join("fixtures", "validation", "default", "invalid-default-value-"+tt+".json")
+		path = filepath.Join("fixtures", "validation", "default", "invalid-default-value-"+tt+jsonExt)
 		if DebugTest {
 			t.Logf("Testing invalid default values for: %s", path)
 		}
@@ -95,13 +102,13 @@ func TestDefault_ValidateDefaults(t *testing.T) {
 		validator = makeSpecValidator(t, path)
 		myDefaultValidator = &defaultValidator{SpecValidator: validator}
 		res = myDefaultValidator.Validate()
-		assert.NotEmpty(t, res.Errors, tt+" should have errors")
+		assert.NotEmpty(t, res.Errors, tt+hasErrorMsg)
 
 		// Update: now we have an additional message to explain it's all about a default value
 		// Example:
 		// - default value for limit in query does not validate its Schema
 		// - limit in query must be of type integer: "string"]
-		assert.True(t, len(res.Errors) >= 1, tt+" should have at least 1 error")
+		assert.NotEmptyf(t, res.Errors, tt+" should have at least 1 error")
 	}
 }
 

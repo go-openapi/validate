@@ -17,8 +17,8 @@ package validate
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -26,6 +26,7 @@ import (
 	"github.com/go-openapi/spec"
 	"github.com/go-openapi/strfmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -38,7 +39,7 @@ var (
 
 func init() {
 	petstoreFixture := filepath.Join("fixtures", "petstore", "swagger.json")
-	petstore, err := ioutil.ReadFile(petstoreFixture)
+	petstore, err := os.ReadFile(petstoreFixture)
 	if err != nil {
 		log.Fatalf("could not initialize fixture: %s: %v", petstoreFixture, err)
 	}
@@ -122,14 +123,16 @@ func TestNumberItemsValidation(t *testing.T) {
 		// MultipleOf
 		err := validator.Validate(i, v[0])
 		assert.True(t, err.HasErrors())
-		assert.EqualError(t, multipleOfErrorItems(path, validator.in, items, v[0]), err.Errors[0].Error())
+		require.NotEmpty(t, err.Errors)
+		require.EqualError(t, multipleOfErrorItems(path, validator.in, items, v[0]), err.Errors[0].Error())
 
 		// Maximum
 		err = validator.Validate(i, v[1])
 		assert.True(t, err == nil || err.IsValid())
 		err = validator.Validate(i, v[2])
 		assert.True(t, err.HasErrors())
-		assert.EqualError(t, maxErrorItems(path, validator.in, items, v[2]), err.Errors[0].Error())
+		require.NotEmpty(t, err.Errors)
+		require.EqualError(t, maxErrorItems(path, validator.in, items, v[2]), err.Errors[0].Error())
 
 		// ExclusiveMaximum
 		items.ExclusiveMaximum = true
@@ -137,14 +140,16 @@ func TestNumberItemsValidation(t *testing.T) {
 		validator = newItemsValidator(parent.Name, parent.In, items, parent, strfmt.Default)
 		err = validator.Validate(i, v[1])
 		assert.True(t, err.HasErrors())
-		assert.EqualError(t, maxErrorItems(path, validator.in, items, v[1]), err.Errors[0].Error())
+		require.NotEmpty(t, err.Errors)
+		require.EqualError(t, maxErrorItems(path, validator.in, items, v[1]), err.Errors[0].Error())
 
 		// Minimum
 		err = validator.Validate(i, v[3])
 		assert.True(t, err == nil || err.IsValid())
 		err = validator.Validate(i, v[4])
 		assert.True(t, err.HasErrors())
-		assert.EqualError(t, minErrorItems(path, validator.in, items, v[4]), err.Errors[0].Error())
+		require.NotEmpty(t, err.Errors)
+		require.EqualError(t, minErrorItems(path, validator.in, items, v[4]), err.Errors[0].Error())
 
 		// ExclusiveMinimum
 		items.ExclusiveMinimum = true
@@ -152,12 +157,14 @@ func TestNumberItemsValidation(t *testing.T) {
 		validator = newItemsValidator(parent.Name, parent.In, items, parent, strfmt.Default)
 		err = validator.Validate(i, v[3])
 		assert.True(t, err.HasErrors())
-		assert.EqualError(t, minErrorItems(path, validator.in, items, v[3]), err.Errors[0].Error())
+		require.NotEmpty(t, err.Errors)
+		require.EqualError(t, minErrorItems(path, validator.in, items, v[3]), err.Errors[0].Error())
 
 		// Enum
 		err = validator.Validate(i, v[5])
 		assert.True(t, err.HasErrors())
-		assert.EqualError(t, enumFailItems(path, validator.in, items, v[5]), err.Errors[0].Error())
+		require.NotEmpty(t, err.Errors)
+		require.EqualError(t, enumFailItems(path, validator.in, items, v[5]), err.Errors[0].Error())
 
 		// Valid passes
 		err = validator.Validate(i, v[6])
@@ -177,31 +184,36 @@ func TestStringItemsValidation(t *testing.T) {
 	data := ""
 	err := validator.Validate(1, data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, minLengthErrorItems(path, validator.in, items, data), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, minLengthErrorItems(path, validator.in, items, data), err.Errors[0].Error())
 
 	// MaxLength
 	data = "abcdef"
 	err = validator.Validate(1, data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, maxLengthErrorItems(path, validator.in, items, data), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, maxLengthErrorItems(path, validator.in, items, data), err.Errors[0].Error())
 
 	// MinLength
 	data = "a"
 	err = validator.Validate(1, data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, minLengthErrorItems(path, validator.in, items, data), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, minLengthErrorItems(path, validator.in, items, data), err.Errors[0].Error())
 
 	// Pattern
 	data = "a394"
 	err = validator.Validate(1, data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, patternFailItems(path, validator.in, items, data), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, patternFailItems(path, validator.in, items, data), err.Errors[0].Error())
 
 	// Enum
 	data = "abcde"
 	err = validator.Validate(1, data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, enumFailItems(path, validator.in, items, data), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, enumFailItems(path, validator.in, items, data), err.Errors[0].Error())
 
 	// Valid passes
 	err = validator.Validate(1, "bbb")
@@ -219,22 +231,26 @@ func TestArrayItemsValidation(t *testing.T) {
 	data := []string{}
 	err := validator.Validate(1, data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, minItemsErrorItems(path, validator.in, items, len(data)), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, minItemsErrorItems(path, validator.in, items, len(data)), err.Errors[0].Error())
 	// MaxItems
 	data = []string{"a", "b", "c", "d", "e", "f"}
 	err = validator.Validate(1, data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, maxItemsErrorItems(path, validator.in, items, len(data)), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, maxItemsErrorItems(path, validator.in, items, len(data)), err.Errors[0].Error())
 	// UniqueItems
 	err = validator.Validate(1, []string{"a", "a"})
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, duplicatesErrorItems(path, validator.in), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, duplicatesErrorItems(path, validator.in), err.Errors[0].Error())
 
 	// Enum
 	data = []string{"a", "b", "c"}
 	err = validator.Validate(1, data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, enumFailItems(path, validator.in, items, data), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, enumFailItems(path, validator.in, items, data), err.Errors[0].Error())
 
 	// Items
 	strItems := spec.NewItems().WithMinLength(3).WithMaxLength(5).WithPattern(`^[a-z]+$`).Typed(stringType, "")
@@ -244,5 +260,6 @@ func TestArrayItemsValidation(t *testing.T) {
 	data = []string{"aa", "bbb", "ccc"}
 	err = validator.Validate(1, data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, minLengthErrorItems(path+".0", parent.In, strItems, data[0]), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, minLengthErrorItems(path+".0", parent.In, strItems, data[0]), err.Errors[0].Error())
 }

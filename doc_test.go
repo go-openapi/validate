@@ -17,7 +17,7 @@ package validate_test
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -196,7 +196,7 @@ func Test_Issue102_Circular(t *testing.T) {
 		filepath.Join("fixtures", "bugs", "123-validate", "fixture-123.json"),
 	} {
 		t.Run(fixture, func(t *testing.T) {
-			filebytes, err := ioutil.ReadFile(fixture)
+			filebytes, err := os.ReadFile(fixture)
 			require.NoError(t, err)
 
 			openAPIv2Doc := json.RawMessage(filebytes)
@@ -207,7 +207,7 @@ func Test_Issue102_Circular(t *testing.T) {
 			validator := validate.NewSpecValidator(doc.Schema(), strfmt.Default)
 			validator.SetContinueOnErrors(true)
 			res, _ := validator.Validate(doc)
-			require.Lenf(t, res.Errors, 0, "unexpected validation erorrs: %v", res.Errors)
+			require.Emptyf(t, res.Errors, "unexpected validation erorrs: %v", res.Errors)
 		})
 	}
 }

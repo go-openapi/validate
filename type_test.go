@@ -265,11 +265,13 @@ func TestType_schemaInfoForType(t *testing.T) {
 
 	v := &typeValidator{}
 	for _, x := range testTypes {
-		jsonType, swaggerFormat := v.schemaInfoForType(x.value)
+		value := x.value
+
+		jsonType, swaggerFormat := v.schemaInfoForType(value)
 		assert.Equal(t, x.expectedJSONType, jsonType)
 		assert.Equal(t, x.expectedSwaggerFormat, swaggerFormat)
 
-		jsonType, swaggerFormat = v.schemaInfoForType(&x.value)
+		jsonType, swaggerFormat = v.schemaInfoForType(&value)
 		assert.Equal(t, x.expectedJSONType, jsonType)
 		assert.Equal(t, x.expectedSwaggerFormat, swaggerFormat)
 	}

@@ -17,11 +17,12 @@ package post
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/go-openapi/spec"
 	"github.com/go-openapi/strfmt"
@@ -32,7 +33,7 @@ var pruneFixturesPath = filepath.Join("..", "fixtures", "pruning")
 
 func TestPrune(t *testing.T) {
 	schema, err := pruningFixture()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	x := map[string]interface{}{
 		"foo": 42,
@@ -111,7 +112,7 @@ func TestPrune(t *testing.T) {
 
 func pruningFixture() (*spec.Schema, error) {
 	fname := filepath.Join(pruneFixturesPath, "schema.json")
-	b, err := ioutil.ReadFile(fname)
+	b, err := os.ReadFile(fname)
 	if err != nil {
 		return nil, err
 	}

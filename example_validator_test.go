@@ -69,7 +69,7 @@ func TestExample_ValidateExamples(t *testing.T) {
 		validator := makeSpecValidator(t, path)
 		myExampleValidator := &exampleValidator{SpecValidator: validator}
 		res := myExampleValidator.Validate()
-		assert.Empty(t, res.Errors, tt+" should not have errors")
+		assert.Empty(t, res.Errors, tt+noErrorMsg)
 		/*
 			// Special case: warning only
 			if tt == "parameter-required" {
@@ -90,17 +90,17 @@ func TestExample_ValidateExamples(t *testing.T) {
 		switch tt {
 		case "header-badpattern":
 			// This fixture exhibits real errors besides example values
-			assert.NotEmpty(t, res.Errors, tt+" should have errors")
-			assert.NotEmpty(t, res.Warnings, tt+" should have warnings")
+			assert.NotEmpty(t, res.Errors, tt+hasErrorMsg)
+			assert.NotEmpty(t, res.Warnings, tt+hasWarningMsg)
 		default:
-			assert.Empty(t, res.Errors, tt+" should not have errors")
-			assert.NotEmpty(t, res.Warnings, tt+" should have warnings")
+			assert.Empty(t, res.Errors, tt+noErrorMsg)
+			assert.NotEmpty(t, res.Warnings, tt+hasWarningMsg)
 		}
 		// Update: now we have an additional message to explain it's all about a default value
 		// Example:
 		// - default value for limit in query does not validate its Schema
 		// - limit in query must be of type integer: "string"]
-		assert.True(t, len(res.Warnings) >= 1, tt+" should have at least 1 warning")
+		assert.NotEmptyf(t, res.Warnings, tt+" should have at least 1 warning")
 
 		debugTest(t, path, res)
 		if DebugTest && t.Failed() {

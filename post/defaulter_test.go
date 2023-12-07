@@ -17,22 +17,22 @@ package post
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 
 	"github.com/go-openapi/spec"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/validate"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var defaulterFixturesPath = filepath.Join("..", "fixtures", "defaulting")
 
 func TestDefaulter(t *testing.T) {
 	schema, err := defaulterFixture()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	validator := validate.NewSchemaValidator(schema, nil, "", strfmt.Default)
 	x := defaulterFixtureInput()
@@ -54,7 +54,7 @@ func TestDefaulter(t *testing.T) {
 		"any": {"foo": 42},
 		"one": {"bar": 42}
 	}`), &expected)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expected, x)
 }
 
@@ -88,7 +88,7 @@ func TestDefaulterSimple(t *testing.T) {
 		"int": 42,
 		"str": "Hello"
 	}`), &expected)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expected, x)
 }
 
@@ -96,7 +96,7 @@ func BenchmarkDefaulting(b *testing.B) {
 	b.ReportAllocs()
 
 	schema, err := defaulterFixture()
-	assert.NoError(b, err)
+	require.NoError(b, err)
 
 	for n := 0; n < b.N; n++ {
 		validator := validate.NewSchemaValidator(schema, nil, "", strfmt.Default)
@@ -119,7 +119,7 @@ func defaulterFixtureInput() map[string]interface{} {
 
 func defaulterFixture() (*spec.Schema, error) {
 	fname := filepath.Join(defaulterFixturesPath, "schema.json")
-	b, err := ioutil.ReadFile(fname)
+	b, err := os.ReadFile(fname)
 	if err != nil {
 		return nil, err
 	}

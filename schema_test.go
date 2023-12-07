@@ -55,11 +55,11 @@ func TestSchemaValidator_Validate_Pattern(t *testing.T) {
 	var inputJSON = `{"name": "Ivan"}`
 
 	require.NoError(t, json.Unmarshal([]byte(inputJSON), &input))
-	assert.NoError(t, AgainstSchema(schema, input, strfmt.Default))
+	require.NoError(t, AgainstSchema(schema, input, strfmt.Default))
 
 	input["place"] = json.Number("10")
 
-	assert.Error(t, AgainstSchema(schema, input, strfmt.Default))
+	require.Error(t, AgainstSchema(schema, input, strfmt.Default))
 
 }
 
@@ -93,16 +93,16 @@ func TestSchemaValidator_PatternProperties(t *testing.T) {
 	// ok
 	var inputJSON = `{"name": "Ivan","address-1": "sesame street"}`
 	require.NoError(t, json.Unmarshal([]byte(inputJSON), &input))
-	assert.NoError(t, AgainstSchema(schema, input, strfmt.Default))
+	require.NoError(t, AgainstSchema(schema, input, strfmt.Default))
 
 	// fail pattern regexp
 	input["address-1"] = "1, Sesame Street"
-	assert.Error(t, AgainstSchema(schema, input, strfmt.Default))
+	require.Error(t, AgainstSchema(schema, input, strfmt.Default))
 
 	// fail patternProperties regexp
 	inputJSON = `{"name": "Ivan","address-1": "sesame street","address-A": "address"}`
 	require.NoError(t, json.Unmarshal([]byte(inputJSON), &input))
-	assert.Error(t, AgainstSchema(schema, input, strfmt.Default))
+	require.Error(t, AgainstSchema(schema, input, strfmt.Default))
 
 }
 
@@ -203,7 +203,7 @@ func TestSchemaValidator_SchemaOptions(t *testing.T) {
 
 	var input map[string]interface{}
 	var inputJSON = `{"spec": {"items": ["foo", "bar"], "replicas": 1}}`
-	assert.NoError(t, json.Unmarshal([]byte(inputJSON), &input))
+	require.NoError(t, json.Unmarshal([]byte(inputJSON), &input))
 
 	// ok
 	s := NewSchemaValidator(schema, nil, "", strfmt.Default, EnableObjectArrayTypeCheck(false))
@@ -230,8 +230,8 @@ func TestSchemaValidator_TypeArray_Issue83(t *testing.T) {
 
 	require.NoError(t, json.Unmarshal([]byte(inputJSON), &input))
 	// default behavior: jsonschema
-	assert.NoError(t, AgainstSchema(schema, input, strfmt.Default))
+	require.NoError(t, AgainstSchema(schema, input, strfmt.Default))
 
 	// swagger behavior
-	assert.Error(t, AgainstSchema(schema, input, strfmt.Default, SwaggerSchema(true)))
+	require.Error(t, AgainstSchema(schema, input, strfmt.Default, SwaggerSchema(true)))
 }

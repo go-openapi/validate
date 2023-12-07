@@ -22,6 +22,7 @@ import (
 	"github.com/go-openapi/spec"
 	"github.com/go-openapi/strfmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // common validations: enum, allOf, anyOf, oneOf, not, definitions
@@ -71,7 +72,8 @@ func TestNumberParameterValidation(t *testing.T) {
 		// MultipleOf
 		err := validator.Validate(v[0])
 		assert.True(t, err.HasErrors())
-		assert.EqualError(t, multipleOfError(factorParam, v[0]), err.Errors[0].Error())
+		require.NotEmpty(t, err.Errors)
+		require.EqualError(t, multipleOfError(factorParam, v[0]), err.Errors[0].Error())
 
 		// Maximum
 		err = validator.Validate(v[1])
@@ -82,7 +84,8 @@ func TestNumberParameterValidation(t *testing.T) {
 		err = validator.Validate(v[2])
 
 		assert.True(t, err.HasErrors())
-		assert.EqualError(t, maxError(factorParam, v[1]), err.Errors[0].Error())
+		require.NotEmpty(t, err.Errors)
+		require.EqualError(t, maxError(factorParam, v[1]), err.Errors[0].Error())
 
 		// ExclusiveMaximum
 		factorParam.ExclusiveMaximum = true
@@ -90,14 +93,15 @@ func TestNumberParameterValidation(t *testing.T) {
 		validator = NewParamValidator(factorParam, strfmt.Default)
 		err = validator.Validate(v[1])
 		assert.True(t, err.HasErrors())
-		assert.EqualError(t, maxError(factorParam, v[1]), err.Errors[0].Error())
+		require.NotEmpty(t, err.Errors)
+		require.EqualError(t, maxError(factorParam, v[1]), err.Errors[0].Error())
 
 		// Minimum
 		err = validator.Validate(v[3])
 		assert.True(t, err == nil || err.IsValid())
 		err = validator.Validate(v[4])
 		assert.True(t, err.HasErrors())
-		assert.EqualError(t, minError(factorParam, v[4]), err.Errors[0].Error())
+		require.EqualError(t, minError(factorParam, v[4]), err.Errors[0].Error())
 
 		// ExclusiveMinimum
 		factorParam.ExclusiveMinimum = true
@@ -105,12 +109,14 @@ func TestNumberParameterValidation(t *testing.T) {
 		validator = NewParamValidator(factorParam, strfmt.Default)
 		err = validator.Validate(v[3])
 		assert.True(t, err.HasErrors())
-		assert.EqualError(t, minError(factorParam, v[3]), err.Errors[0].Error())
+		require.NotEmpty(t, err.Errors)
+		require.EqualError(t, minError(factorParam, v[3]), err.Errors[0].Error())
 
 		// Enum
 		err = validator.Validate(v[5])
 		assert.True(t, err.HasErrors())
-		assert.EqualError(t, enumFail(factorParam, v[5]), err.Errors[0].Error())
+		require.NotEmpty(t, err.Errors)
+		require.EqualError(t, enumFail(factorParam, v[5]), err.Errors[0].Error())
 
 		err = validator.Validate(v[6])
 		assert.True(t, err == nil || err.IsValid())
@@ -149,28 +155,33 @@ func TestStringParameterValidation(t *testing.T) {
 	data := ""
 	err := validator.Validate(data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, requiredError(nameParam, data), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, requiredError(nameParam, data), err.Errors[0].Error())
 	// MaxLength
 	data = "abcdef"
 	err = validator.Validate(data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, maxLengthError(nameParam, data), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, maxLengthError(nameParam, data), err.Errors[0].Error())
 	// MinLength
 	data = "a"
 	err = validator.Validate(data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, minLengthError(nameParam, data), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, minLengthError(nameParam, data), err.Errors[0].Error())
 	// Pattern
 	data = "a394"
 	err = validator.Validate(data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, patternFail(nameParam, data), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, patternFail(nameParam, data), err.Errors[0].Error())
 
 	// Enum
 	data = "abcde"
 	err = validator.Validate(data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, enumFail(nameParam, data), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, enumFail(nameParam, data), err.Errors[0].Error())
 
 	// Valid passes
 	err = validator.Validate("bbb")
@@ -203,21 +214,25 @@ func TestArrayParameterValidation(t *testing.T) {
 	data := []string{}
 	err := validator.Validate(data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, minItemsError(tagsParam, len(data)), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, minItemsError(tagsParam, len(data)), err.Errors[0].Error())
 	// MaxItems
 	data = []string{"a", "b", "c", "d", "e", "f"}
 	err = validator.Validate(data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, maxItemsError(tagsParam, len(data)), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, maxItemsError(tagsParam, len(data)), err.Errors[0].Error())
 	// UniqueItems
 	err = validator.Validate([]string{"a", "a"})
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, duplicatesError(tagsParam), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, duplicatesError(tagsParam), err.Errors[0].Error())
 
 	// Enum
 	err = validator.Validate([]string{"a", "b", "c"})
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, enumFail(tagsParam, []string{"a", "b", "c"}), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, enumFail(tagsParam, []string{"a", "b", "c"}), err.Errors[0].Error())
 
 	// Items
 	strItems := spec.NewItems().WithMinLength(3).WithMaxLength(5).WithPattern(`^[a-z]+$`).Typed(stringType, "")
@@ -226,7 +241,8 @@ func TestArrayParameterValidation(t *testing.T) {
 	data = []string{"aa", "bbb", "ccc"}
 	err = validator.Validate(data)
 	assert.True(t, err.HasErrors())
-	assert.EqualError(t, minLengthErrorItems("tags.0", tagsParam.In, strItems, data[0]), err.Errors[0].Error())
+	require.NotEmpty(t, err.Errors)
+	require.EqualError(t, minLengthErrorItems("tags.0", tagsParam.In, strItems, data[0]), err.Errors[0].Error())
 
 	// Not required in a parameter or items
 	// Additional items
