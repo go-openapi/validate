@@ -213,11 +213,6 @@ func TestSpec_Issue6(t *testing.T) {
 
 // check if invalid patterns are indeed invalidated
 func TestSpec_Issue18(t *testing.T) {
-	if !enableLongTests {
-		skipNotify(t)
-		t.SkipNow()
-	}
-
 	files, _ := filepath.Glob(filepath.Join("fixtures", "bugs", "18", "*.json"))
 	for _, path := range files {
 		t.Logf("Tested spec=%s", path)
@@ -409,72 +404,207 @@ func TestSpec_ValidateRequiredDefinitions(t *testing.T) {
 }
 
 func TestSpec_ValidateParameters(t *testing.T) {
-	doc, _ := loads.Analyzed(PetStoreJSONMessage, "")
-	validator := NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
-	validator.spec = doc
-	validator.analyzer = analysis.New(doc.Spec())
-	res := validator.validateParameters()
-	assert.Empty(t, res.Errors)
+	validatorForDoc := func(doc *loads.Document) *SpecValidator {
+		// build a spec validator for some doc
+		validator := NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
+		validator.spec = doc
+		validator.analyzer = analysis.New(doc.Spec())
 
-	sw := doc.Spec()
-	sw.Paths.Paths["/pets"].Get.Parameters = append(sw.Paths.Paths["/pets"].Get.Parameters, *spec.QueryParam("limit").Typed(stringType, ""))
-	res = validator.validateParameters()
-	assert.NotEmpty(t, res.Errors)
-
-	doc, _ = loads.Analyzed(PetStoreJSONMessage, "")
-	sw = doc.Spec()
-	sw.Paths.Paths["/pets"].Post.Parameters = append(sw.Paths.Paths["/pets"].Post.Parameters, *spec.BodyParam("fake", spec.RefProperty("#/definitions/Pet")))
-	validator = NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
-	validator.spec = doc
-	validator.analyzer = analysis.New(doc.Spec())
-	res = validator.validateParameters()
-	assert.NotEmpty(t, res.Errors)
-	assert.Len(t, res.Errors, 1)
-	assert.Contains(t, res.Errors[0].Error(), "has more than 1 body param")
-
-	doc, _ = loads.Analyzed(PetStoreJSONMessage, "")
-	sw = doc.Spec()
-	pp := sw.Paths.Paths["/pets/{id}"]
-	pp.Delete = nil
-	var nameParams []spec.Parameter
-	for _, p := range pp.Parameters {
-		if p.Name == "id" {
-			p.Name = "name"
-			nameParams = append(nameParams, p)
-		}
+		return validator
 	}
-	pp.Parameters = nameParams
-	sw.Paths.Paths["/pets/{name}"] = pp
 
-	validator = NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
-	validator.spec = doc
-	validator.analyzer = analysis.New(doc.Spec())
-	res = validator.validateParameters()
-	assert.NotEmpty(t, res.Errors)
-	assert.Len(t, res.Errors, 1)
-	assert.Contains(t, res.Errors[0].Error(), "overlaps with")
+	t.Run("should validate classic PetStore", func(t *testing.T) {
+		doc, err := loads.Analyzed(PetStoreJSONMessage, "")
+		require.NoError(t, err)
+		validator := validatorForDoc(doc)
 
-	// Disable strict path param uniqueness and ensure there is no error
-	validator.Options.StrictPathParamUniqueness = false
-	res = validator.validateParameters()
-	assert.Empty(t, res.Errors)
+		res := validator.validateParameters()
+		require.Empty(t, res.Errors)
+	})
 
-	doc, _ = loads.Analyzed(PetStoreJSONMessage, "")
-	validator = NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
-	validator.spec = doc
-	validator.analyzer = analysis.New(doc.Spec())
-	sw = doc.Spec()
-	pp = sw.Paths.Paths["/pets/{id}"]
-	pp.Delete = nil
-	pp.Get.Parameters = nameParams
-	pp.Parameters = nil
-	sw.Paths.Paths["/pets/{id}"] = pp
+	t.Run("should detect duplicate parameters", func(t *testing.T) {
+		doc, err := loads.Analyzed(PetStoreJSONMessage, "")
+		require.NoError(t, err)
 
-	res = validator.validateParameters()
-	assert.NotEmpty(t, res.Errors)
-	assert.Len(t, res.Errors, 2)
-	assert.Contains(t, res.Errors[1].Error(), "is not present in path \"/pets/{id}\"")
-	assert.Contains(t, res.Errors[0].Error(), "has no parameter definition")
+		sw := doc.Spec()
+		sw.Paths.Paths["/pets"].Get.Parameters = append(sw.Paths.Paths["/pets"].Get.Parameters, *spec.QueryParam("limit").Typed(stringType, ""))
+		validator := validatorForDoc(doc)
+
+		res := validator.validateParameters()
+		require.NotEmpty(t, res.Errors)
+		assert.Contains(t, res.Errors[0].Error(),
+			`duplicate parameter name "limit" for "query" in operation "getAllPets"`,
+		)
+	})
+
+	t.Run("should detect multiple parameters in body", func(t *testing.T) {
+		doc, err := loads.Analyzed(PetStoreJSONMessage, "")
+		require.NoError(t, err)
+
+		sw := doc.Spec()
+		sw.Paths.Paths["/pets"].Post.Parameters = append(sw.Paths.Paths["/pets"].Post.Parameters, *spec.BodyParam("fake", spec.RefProperty("#/definitions/Pet")))
+		validator := validatorForDoc(doc)
+
+		res := validator.validateParameters()
+		assert.NotEmpty(t, res.Errors)
+		require.Len(t, res.Errors, 1)
+		assert.Contains(t, res.Errors[0].Error(), "has more than 1 body param")
+	})
+
+	t.Run("should detect invalid parameter schema in (modified) classic PetStore", func(t *testing.T) {
+		fixture := filepath.Join("fixtures", "petstore", "swagger-invalid.json")
+
+		t.Run("with raw JSON", func(t *testing.T) {
+			// loading with full root document
+			jazon, err := os.ReadFile(fixture)
+			require.NoError(t, err)
+			doc, err := loads.Analyzed(jazon, "")
+			require.NoError(t, err)
+			validator := validatorForDoc(doc)
+
+			res := validator.validateParameters()
+			require.Len(t, res.Errors, 2)
+			assert.Contains(t, res.Errors[0].Error(),
+				`"/pets.POST.parameters.pet" must validate one and only one schema (oneOf). Found none valid`,
+			)
+			assert.Contains(t, res.Errors[1].Error(),
+				`/pets.POST.parameters.pet.schema.anyOf in body is a forbidden property`,
+			)
+		})
+		t.Run("with loads.Spec", func(t *testing.T) {
+			// loading like a regular user of this library
+			doc, err := loads.Spec(fixture)
+			require.NoError(t, err)
+
+			err = Spec(doc, strfmt.Default)
+			require.Error(t, err)
+			require.ErrorContains(t, err,
+				"definitions.newPet.anyOf in body is a forbidden property",
+			)
+		})
+
+		t.Run("with invalid Swagger schema", func(t *testing.T) {
+			doc, err := loads.Analyzed(PetStoreJSONMessage, "")
+			require.NoError(t, err)
+			validator := validatorForDoc(doc)
+			delete(validator.schema.Definitions, "parameter")
+
+			require.Panics(t, func() {
+				_ = validator.validateParameters()
+			})
+		})
+	})
+
+	t.Run("should detect duplicate parameters", func(t *testing.T) {
+		doc, err := loads.Analyzed(PetStoreJSONMessage, "")
+		require.NoError(t, err)
+
+		sw := doc.Spec()
+		pp := sw.Paths.Paths["/pets/{id}"]
+		pp.Delete = nil
+		var nameParams []spec.Parameter
+		for _, p := range pp.Parameters {
+			if p.Name == "id" {
+				p.Name = "name"
+				nameParams = append(nameParams, p)
+			}
+		}
+		pp.Parameters = nameParams
+		sw.Paths.Paths["/pets/{name}"] = pp
+		validator := validatorForDoc(doc)
+
+		res := validator.validateParameters()
+		assert.NotEmpty(t, res.Errors)
+		require.Len(t, res.Errors, 1)
+		assert.Contains(t, res.Errors[0].Error(), "overlaps with")
+
+		t.Run("should tolerate duplicate parameters, on option", func(t *testing.T) {
+			// Disable strict path param uniqueness and ensure there is no error
+			validator.Options.StrictPathParamUniqueness = false
+			res := validator.validateParameters()
+			require.Empty(t, res.Errors)
+		})
+	})
+
+	t.Run("should detect mismatch with path parameter", func(t *testing.T) {
+		doc, err := loads.Analyzed(PetStoreJSONMessage, "")
+		require.NoError(t, err)
+
+		sw := doc.Spec()
+		pp := sw.Paths.Paths["/pets/{id}"]
+		pp.Delete = nil
+		var nameParams []spec.Parameter
+		for _, p := range pp.Parameters {
+			if p.Name == "id" {
+				p.Name = "name"
+				nameParams = append(nameParams, p)
+			}
+		}
+		pp.Get.Parameters = nameParams
+		pp.Parameters = nil
+		sw.Paths.Paths["/pets/{id}"] = pp
+		validator := validatorForDoc(doc)
+
+		res := validator.validateParameters()
+		require.NotEmpty(t, res.Errors)
+		require.Len(t, res.Errors, 2)
+		assert.Contains(t, res.Errors[1].Error(),
+			`is not present in path "/pets/{id}"`,
+		)
+		assert.Contains(t, res.Errors[0].Error(),
+			"has no parameter definition",
+		)
+	})
+
+	t.Run("with issue go-swagger/go-swagger#2527", func(t *testing.T) {
+		basePath := filepath.Join("fixtures", "bugs", "2527")
+
+		t.Run("should detect mismatch between parameter and schema", func(t *testing.T) {
+			doc, err := loads.Spec(filepath.Join(basePath, "swagger.yml"))
+			require.NoError(t, err)
+
+			err = Spec(doc, strfmt.Default)
+			require.Error(t, err)
+			require.ErrorContains(t, err,
+				`/deposits.GET.parameters..enum in body is a forbidden property`,
+			)
+			require.ErrorContains(t, err,
+				`deposits.GET.parameters..type in body is a forbidden property`,
+			)
+			require.ErrorContains(t, err,
+				`/deposits.GET.parameters..name in body is required`,
+			)
+			require.ErrorContains(t, err,
+				`/deposits.GET.parameters..in in body is required`,
+			)
+		})
+
+		t.Run("should validate fixed spec", func(t *testing.T) {
+			doc, err := loads.Spec(filepath.Join(basePath, "swagger-fixed.yml"))
+			require.NoError(t, err)
+
+			require.NoError(t, Spec(doc, strfmt.Default))
+		})
+
+		t.Run("should detect missing name and in from refed parameter", func(t *testing.T) {
+			doc, err := loads.Spec(filepath.Join(basePath, "swagger-other.yml"))
+			require.NoError(t, err)
+
+			err = Spec(doc, strfmt.Default)
+			require.ErrorContains(t, err,
+				`"parameters.missingName" must validate one and only one schema (oneOf). Found none valid`,
+			)
+			require.ErrorContains(t, err,
+				`parameters.missingName.name in body is required`,
+			)
+			require.ErrorContains(t, err,
+				`"parameters.missingIn" must validate one and only one schema (oneOf). Found none valid`,
+			)
+			require.ErrorContains(t, err,
+				`parameters.missingIn.in in body is required`,
+			)
+		})
+	})
 }
 
 func TestSpec_ValidateItems(t *testing.T) {

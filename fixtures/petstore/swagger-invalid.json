@@ -218,7 +218,7 @@
       ]
     },
     "newPet": {
-      "allOf": [
+      "anyOf": [
         {
           "$ref": "#/definitions/Pet"
         },
