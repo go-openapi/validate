@@ -65,7 +65,7 @@ func TestStringValidation(t *testing.T) {
 	}
 
 	for _, v := range testCases {
-		err := FormatOf("id", "body", v.format, v.obj.String(), strfmt.Default)
+		err := FormatOf(testID, "body", v.format, v.obj.String(), strfmt.Default)
 		assert.Nil(t, err)
 	}
 }
