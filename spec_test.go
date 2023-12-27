@@ -604,6 +604,35 @@ func TestSpec_ValidateParameters(t *testing.T) {
 				`parameters.missingIn.in in body is required`,
 			)
 		})
+
+		t.Run("extra parameter JSONSchema validation should not result in duplicate errors", func(t *testing.T) {
+			t.Run("with spec validator", func(t *testing.T) {
+				doc, err := loads.Spec(filepath.Join(basePath, "swagger-schema-error.yml"))
+				require.NoError(t, err)
+
+				errs, warns := NewSpecValidator(doc.Schema(), strfmt.Default).Validate(doc)
+				require.Len(t, errs.Errors, 3)
+				require.Empty(t, warns.Errors)
+
+				var found1, found2, found3 int
+				for _, err := range errs.Errors {
+					switch {
+					case strings.Contains(err.Error(), `definitions.WrongSchema.descriptions in body is a forbidden property`):
+						found1++
+					case strings.Contains(err.Error(), `"definitions.WrongSchema.type" must validate at least one schema (anyOf)`):
+						found2++
+					case strings.Contains(err.Error(), `definitions.WrongSchema.type in body should be one of [array boolean integer null number object string]`):
+						found3++
+					}
+				}
+
+				t.Run("each message should appear exactly once", func(t *testing.T) {
+					require.Equal(t, 1, found1)
+					require.Equal(t, 1, found2)
+					require.Equal(t, 1, found3)
+				})
+			})
+		})
 	})
 }
 
