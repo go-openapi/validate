@@ -31,6 +31,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testID = "id"
+
 // Enable long running tests by using cmd line arg,
 // Usage: go test ... -args [-enable-long|-enable-go-swagger]
 //
@@ -504,7 +506,7 @@ func TestSpec_ValidateParameters(t *testing.T) {
 		pp.Delete = nil
 		var nameParams []spec.Parameter
 		for _, p := range pp.Parameters {
-			if p.Name == "id" {
+			if p.Name == testID {
 				p.Name = "name"
 				nameParams = append(nameParams, p)
 			}
@@ -535,7 +537,7 @@ func TestSpec_ValidateParameters(t *testing.T) {
 		pp.Delete = nil
 		var nameParams []spec.Parameter
 		for _, p := range pp.Parameters {
-			if p.Name == "id" {
+			if p.Name == testID {
 				p.Name = "name"
 				nameParams = append(nameParams, p)
 			}
