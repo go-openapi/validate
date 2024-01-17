@@ -26,10 +26,42 @@ import (
 )
 
 func TestHeaderValidator(t *testing.T) {
-	v := NewHeaderValidator("header", &spec.Header{}, strfmt.Default, SwaggerSchema(true))
+	t.Run("with no recycling", func(t *testing.T) {
+		v := NewHeaderValidator("header", &spec.Header{}, strfmt.Default, SwaggerSchema(true))
 
-	res := v.Validate(nil)
-	require.Nil(t, res)
+		res := v.Validate(nil)
+		require.Nil(t, res)
+	})
+
+	t.Run("with recycling", func(t *testing.T) {
+		v := NewHeaderValidator("header", &spec.Header{}, strfmt.Default,
+			SwaggerSchema(true), WithRecycleValidators(true), withRecycleResults(true),
+		)
+
+		t.Run("should validate nil data", func(t *testing.T) {
+			res := v.Validate(nil)
+			require.Nil(t, res)
+		})
+
+		t.Run("should validate only once", func(t *testing.T) {
+			// we should not do that: the pool chain list is populated with a duplicate: needs a reset
+			t.Cleanup(resetPools)
+			require.Panics(t, func() {
+				_ = v.Validate("header")
+			})
+		})
+		t.Run("should validate non nil data", func(t *testing.T) {
+			nv := NewHeaderValidator("header", &spec.Header{SimpleSchema: spec.SimpleSchema{Type: "string"}}, strfmt.Default,
+				SwaggerSchema(true), WithRecycleValidators(true), withRecycleResults(true),
+			)
+
+			res := nv.Validate("X-GO")
+			require.NotNil(t, res)
+			require.Empty(t, res.Errors)
+			require.True(t, res.wantsRedeemOnMerge)
+			poolOfResults.RedeemResult(res)
+		})
+	})
 }
 
 func TestParamValidator(t *testing.T) {
@@ -166,6 +198,21 @@ func TestBasicCommonValidator_EdgeCases(t *testing.T) {
 		require.NotNil(t, res)
 		assert.True(t, res.HasErrors())
 	})
+
+	t.Run("shoud validate empty Enum", func(t *testing.T) {
+		ev := newBasicCommonValidator(
+			"", "",
+			nil, nil, nil,
+		)
+		res := ev.Validate("a")
+		require.Nil(t, res)
+
+		res = ev.Validate(3)
+		require.Nil(t, res)
+
+		res = ev.Validate("b")
+		require.Nil(t, res)
+	})
 }
 
 func testCommonApply(t *testing.T, v *basicCommonValidator, sources []interface{}) {
@@ -175,25 +222,36 @@ func testCommonApply(t *testing.T, v *basicCommonValidator, sources []interface{
 }
 
 func TestBasicSliceValidator_EdgeCases(t *testing.T) {
-	// Apply
+	t.Run("should Apply", func(t *testing.T) {
+		v := newBasicSliceValidator(
+			"", "",
+			nil, nil, nil, false, nil, nil, strfmt.Default, nil,
+		)
 
-	v := newBasicSliceValidator(
-		"", "",
-		nil, nil, nil, false, nil, nil, strfmt.Default, nil,
-	)
+		// basicCommonValidator applies to: Parameter,Schema,Header
 
-	// basicCommonValidator applies to: Parameter,Schema,Header
+		sources := []interface{}{
+			new(spec.Parameter),
+			new(spec.Items),
+			new(spec.Header),
+		}
 
-	sources := []interface{}{
-		new(spec.Parameter),
-		new(spec.Items),
-		new(spec.Header),
-	}
+		testSliceApply(t, v, sources)
 
-	testSliceApply(t, v, sources)
+		assert.False(t, v.Applies(new(spec.Schema), reflect.Slice))
+		assert.False(t, v.Applies(new(spec.Parameter), reflect.String))
+	})
 
-	assert.False(t, v.Applies(new(spec.Schema), reflect.Slice))
-	assert.False(t, v.Applies(new(spec.Parameter), reflect.String))
+	t.Run("with recycling", func(t *testing.T) {
+		v := newBasicSliceValidator(
+			"", "",
+			nil, nil, nil, false, nil, nil, strfmt.Default,
+			&SchemaValidatorOptions{recycleValidators: true},
+		)
+
+		res := v.Validate([]int{})
+		require.Nil(t, res)
+	})
 }
 
 func testSliceApply(t *testing.T, v *basicSliceValidator, sources []interface{}) {

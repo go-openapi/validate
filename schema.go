@@ -39,10 +39,17 @@ type SchemaValidator struct {
 //
 // When no pre-parsed *spec.Schema structure is provided, it uses a JSON schema as default. See example.
 func AgainstSchema(schema *spec.Schema, data interface{}, formats strfmt.Registry, options ...Option) error {
-	res := NewSchemaValidator(schema, nil, "", formats, options...).Validate(data)
+	res := NewSchemaValidator(schema, nil, "", formats,
+		append(options, WithRecycleValidators(true), withRecycleResults(true))...,
+	).Validate(data)
+	defer func() {
+		poolOfResults.RedeemResult(res)
+	}()
+
 	if res.HasErrors() {
 		return errors.CompositeValidationError(res.Errors...)
 	}
+
 	return nil
 }
 
@@ -79,7 +86,13 @@ func newSchemaValidator(schema *spec.Schema, rootSchema interface{}, root string
 		opts = new(SchemaValidatorOptions)
 	}
 
-	s := new(SchemaValidator)
+	var s *SchemaValidator
+	if opts.recycleValidators {
+		s = poolOfSchemaValidators.BorrowValidator()
+	} else {
+		s = new(SchemaValidator)
+	}
+
 	s.Path = root
 	s.in = "body"
 	s.Schema = schema
@@ -118,9 +131,21 @@ func (s *SchemaValidator) Validate(data interface{}) *Result {
 		return emptyResult
 	}
 
-	result := new(Result)
-	result.data = data
-	if s.Schema != nil {
+	if s.Options.recycleValidators {
+		defer func() {
+			s.redeem() // one-time use validator
+		}()
+	}
+
+	var result *Result
+	if s.Options.recycleResult {
+		result = poolOfResults.BorrowResult()
+		result.data = data
+	} else {
+		result = &Result{data: data}
+	}
+
+	if s.Schema != nil && !s.Options.skipSchemataResult {
 		result.addRootObjectSchemata(s.Schema)
 	}
 
@@ -128,6 +153,12 @@ func (s *SchemaValidator) Validate(data interface{}) *Result {
 		// early exit with minimal validation
 		result.Merge(s.validators[0].Validate(data)) // type validator
 		result.Merge(s.validators[6].Validate(data)) // common validator
+
+		if s.Options.recycleValidators {
+			s.validators[0] = nil
+			s.validators[6] = nil
+			s.redeemChildren()
+		}
 
 		return result
 	}
@@ -174,8 +205,19 @@ func (s *SchemaValidator) Validate(data interface{}) *Result {
 		kind = tpe.Kind()
 	}
 
-	for _, v := range s.validators {
+	for idx, v := range s.validators {
 		if !v.Applies(s.Schema, kind) {
+			if s.Options.recycleValidators {
+				// Validate won't be called, so relinquish this validator
+				if redeemableChildren, ok := v.(interface{ redeemChildren() }); ok {
+					redeemableChildren.redeemChildren()
+				}
+				if redeemable, ok := v.(interface{ redeem() }); ok {
+					redeemable.redeem()
+				}
+				s.validators[idx] = nil // prevents further (unsafe) usage
+			}
+
 			continue
 		}
 
@@ -285,4 +327,23 @@ func (s *SchemaValidator) objectValidator() valueValidator {
 		s.KnownFormats,
 		s.Options,
 	)
+}
+
+func (s *SchemaValidator) redeem() {
+	poolOfSchemaValidators.RedeemValidator(s)
+}
+
+func (s *SchemaValidator) redeemChildren() {
+	for i, validator := range s.validators {
+		if validator == nil {
+			continue
+		}
+		if redeemableChildren, ok := validator.(interface{ redeemChildren() }); ok {
+			redeemableChildren.redeemChildren()
+		}
+		if redeemable, ok := validator.(interface{ redeem() }); ok {
+			redeemable.redeem()
+		}
+		s.validators[i] = nil // free up allocated children if not in pool
+	}
 }

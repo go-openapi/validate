@@ -49,7 +49,12 @@ func newItemsValidator(path, in string, items *spec.Items, root interface{}, for
 		opts = new(SchemaValidatorOptions)
 	}
 
-	iv := new(itemsValidator)
+	var iv *itemsValidator
+	if opts.recycleValidators {
+		iv = poolOfItemsValidators.BorrowValidator()
+	} else {
+		iv = new(itemsValidator)
+	}
 
 	iv.path = path
 	iv.in = in
@@ -69,13 +74,37 @@ func newItemsValidator(path, in string, items *spec.Items, root interface{}, for
 }
 
 func (i *itemsValidator) Validate(index int, data interface{}) *Result {
+	if i.Options.recycleValidators {
+		defer func() {
+			i.redeemChildren()
+			i.redeem()
+		}()
+	}
+
 	tpe := reflect.TypeOf(data)
 	kind := tpe.Kind()
-	mainResult := new(Result)
+	var mainResult *Result
+	if i.Options.recycleResult {
+		mainResult = poolOfResults.BorrowResult()
+	} else {
+		mainResult = new(Result)
+	}
+
 	path := fmt.Sprintf("%s.%d", i.path, index)
 
-	for _, validator := range i.validators {
+	for idx, validator := range i.validators {
 		if !validator.Applies(i.root, kind) {
+			if i.Options.recycleValidators {
+				// Validate won't be called, so relinquish this validator
+				if redeemableChildren, ok := validator.(interface{ redeemChildren() }); ok {
+					redeemableChildren.redeemChildren()
+				}
+				if redeemable, ok := validator.(interface{ redeem() }); ok {
+					redeemable.redeem()
+				}
+				i.validators[idx] = nil // prevents further (unsafe) usage
+			}
+
 			continue
 		}
 
@@ -167,6 +196,25 @@ func (i *itemsValidator) formatValidator() valueValidator {
 	)
 }
 
+func (i *itemsValidator) redeem() {
+	poolOfItemsValidators.RedeemValidator(i)
+}
+
+func (i *itemsValidator) redeemChildren() {
+	for idx, validator := range i.validators {
+		if validator == nil {
+			continue
+		}
+		if redeemableChildren, ok := validator.(interface{ redeemChildren() }); ok {
+			redeemableChildren.redeemChildren()
+		}
+		if redeemable, ok := validator.(interface{ redeem() }); ok {
+			redeemable.redeem()
+		}
+		i.validators[idx] = nil // free up allocated children if not in pool
+	}
+}
+
 type basicCommonValidator struct {
 	Path    string
 	In      string
@@ -180,7 +228,12 @@ func newBasicCommonValidator(path, in string, def interface{}, enum []interface{
 		opts = new(SchemaValidatorOptions)
 	}
 
-	b := new(basicCommonValidator)
+	var b *basicCommonValidator
+	if opts.recycleValidators {
+		b = poolOfBasicCommonValidators.BorrowValidator()
+	} else {
+		b = new(basicCommonValidator)
+	}
 
 	b.Path = path
 	b.In = in
@@ -205,6 +258,12 @@ func (b *basicCommonValidator) Applies(source interface{}, _ reflect.Kind) bool 
 }
 
 func (b *basicCommonValidator) Validate(data interface{}) (res *Result) {
+	if b.Options.recycleValidators {
+		defer func() {
+			b.redeem()
+		}()
+	}
+
 	if len(b.Enum) == 0 {
 		return nil
 	}
@@ -223,7 +282,11 @@ func (b *basicCommonValidator) Validate(data interface{}) (res *Result) {
 		}
 	}
 
-	return errorHelp.sErr(errors.EnumFail(b.Path, b.In, data, b.Enum))
+	return errorHelp.sErr(errors.EnumFail(b.Path, b.In, data, b.Enum), b.Options.recycleResult)
+}
+
+func (b *basicCommonValidator) redeem() {
+	poolOfBasicCommonValidators.RedeemValidator(b)
 }
 
 // A HeaderValidator has very limited subset of validations to apply
@@ -250,7 +313,12 @@ func newHeaderValidator(name string, header *spec.Header, formats strfmt.Registr
 		opts = new(SchemaValidatorOptions)
 	}
 
-	p := new(HeaderValidator)
+	var p *HeaderValidator
+	if opts.recycleValidators {
+		p = poolOfHeaderValidators.BorrowValidator()
+	} else {
+		p = new(HeaderValidator)
+	}
 
 	p.name = name
 	p.header = header
@@ -277,15 +345,40 @@ func newHeaderValidator(name string, header *spec.Header, formats strfmt.Registr
 
 // Validate the value of the header against its schema
 func (p *HeaderValidator) Validate(data interface{}) *Result {
+	if p.Options.recycleValidators {
+		defer func() {
+			p.redeemChildren()
+			p.redeem()
+		}()
+	}
+
 	if data == nil {
 		return nil
 	}
-	result := new(Result)
+
+	var result *Result
+	if p.Options.recycleResult {
+		result = poolOfResults.BorrowResult()
+	} else {
+		result = new(Result)
+	}
+
 	tpe := reflect.TypeOf(data)
 	kind := tpe.Kind()
 
-	for _, validator := range p.validators {
+	for idx, validator := range p.validators {
 		if !validator.Applies(p.header, kind) {
+			if p.Options.recycleValidators {
+				// Validate won't be called, so relinquish this validator
+				if redeemableChildren, ok := validator.(interface{ redeemChildren() }); ok {
+					redeemableChildren.redeemChildren()
+				}
+				if redeemable, ok := validator.(interface{ redeem() }); ok {
+					redeemable.redeem()
+				}
+				p.validators[idx] = nil // prevents further (unsafe) usage
+			}
+
 			continue
 		}
 
@@ -364,6 +457,25 @@ func (p *HeaderValidator) formatValidator() valueValidator {
 	)
 }
 
+func (p *HeaderValidator) redeem() {
+	poolOfHeaderValidators.RedeemValidator(p)
+}
+
+func (p *HeaderValidator) redeemChildren() {
+	for idx, validator := range p.validators {
+		if validator == nil {
+			continue
+		}
+		if redeemableChildren, ok := validator.(interface{ redeemChildren() }); ok {
+			redeemableChildren.redeemChildren()
+		}
+		if redeemable, ok := validator.(interface{ redeem() }); ok {
+			redeemable.redeem()
+		}
+		p.validators[idx] = nil // free up allocated children if not in pool
+	}
+}
+
 // A ParamValidator has very limited subset of validations to apply
 type ParamValidator struct {
 	param        *spec.Parameter
@@ -387,7 +499,12 @@ func newParamValidator(param *spec.Parameter, formats strfmt.Registry, opts *Sch
 		opts = new(SchemaValidatorOptions)
 	}
 
-	p := new(ParamValidator)
+	var p *ParamValidator
+	if opts.recycleValidators {
+		p = poolOfParamValidators.BorrowValidator()
+	} else {
+		p = new(ParamValidator)
+	}
 
 	p.param = param
 	p.KnownFormats = formats
@@ -416,13 +533,38 @@ func (p *ParamValidator) Validate(data interface{}) *Result {
 	if data == nil {
 		return nil
 	}
-	result := new(Result)
+
+	var result *Result
+	if p.Options.recycleResult {
+		result = poolOfResults.BorrowResult()
+	} else {
+		result = new(Result)
+	}
+
 	tpe := reflect.TypeOf(data)
 	kind := tpe.Kind()
 
+	if p.Options.recycleValidators {
+		defer func() {
+			p.redeemChildren()
+			p.redeem()
+		}()
+	}
+
 	// TODO: validate type
-	for _, validator := range p.validators {
+	for idx, validator := range p.validators {
 		if !validator.Applies(p.param, kind) {
+			if p.Options.recycleValidators {
+				// Validate won't be called, so relinquish this validator
+				if redeemableChildren, ok := validator.(interface{ redeemChildren() }); ok {
+					redeemableChildren.redeemChildren()
+				}
+				if redeemable, ok := validator.(interface{ redeem() }); ok {
+					redeemable.redeem()
+				}
+				p.validators[idx] = nil // prevents further (unsafe) usage
+			}
+
 			continue
 		}
 
@@ -502,18 +644,36 @@ func (p *ParamValidator) formatValidator() valueValidator {
 	)
 }
 
+func (p *ParamValidator) redeem() {
+	poolOfParamValidators.RedeemValidator(p)
+}
+
+func (p *ParamValidator) redeemChildren() {
+	for idx, validator := range p.validators {
+		if validator == nil {
+			continue
+		}
+		if redeemableChildren, ok := validator.(interface{ redeemChildren() }); ok {
+			redeemableChildren.redeemChildren()
+		}
+		if redeemable, ok := validator.(interface{ redeem() }); ok {
+			redeemable.redeem()
+		}
+		p.validators[idx] = nil // free up allocated children if not in pool
+	}
+}
+
 type basicSliceValidator struct {
-	Path           string
-	In             string
-	Default        interface{}
-	MaxItems       *int64
-	MinItems       *int64
-	UniqueItems    bool
-	Items          *spec.Items
-	Source         interface{}
-	itemsValidator *itemsValidator
-	KnownFormats   strfmt.Registry
-	Options        *SchemaValidatorOptions
+	Path         string
+	In           string
+	Default      interface{}
+	MaxItems     *int64
+	MinItems     *int64
+	UniqueItems  bool
+	Items        *spec.Items
+	Source       interface{}
+	KnownFormats strfmt.Registry
+	Options      *SchemaValidatorOptions
 }
 
 func newBasicSliceValidator(
@@ -525,7 +685,12 @@ func newBasicSliceValidator(
 		opts = new(SchemaValidatorOptions)
 	}
 
-	s := new(basicSliceValidator)
+	var s *basicSliceValidator
+	if opts.recycleValidators {
+		s = poolOfBasicSliceValidators.BorrowValidator()
+	} else {
+		s = new(basicSliceValidator)
+	}
 
 	s.Path = path
 	s.In = in
@@ -537,7 +702,6 @@ func newBasicSliceValidator(
 	s.Source = source
 	s.KnownFormats = formats
 	s.Options = opts
-	s.itemsValidator = nil
 
 	return s
 }
@@ -556,40 +720,49 @@ func (s *basicSliceValidator) Applies(source interface{}, kind reflect.Kind) boo
 }
 
 func (s *basicSliceValidator) Validate(data interface{}) *Result {
+	if s.Options.recycleValidators {
+		defer func() {
+			s.redeem()
+		}()
+	}
 	val := reflect.ValueOf(data)
 
 	size := int64(val.Len())
 	if s.MinItems != nil {
 		if err := MinItems(s.Path, s.In, size, *s.MinItems); err != nil {
-			return errorHelp.sErr(err)
+			return errorHelp.sErr(err, s.Options.recycleResult)
 		}
 	}
 
 	if s.MaxItems != nil {
 		if err := MaxItems(s.Path, s.In, size, *s.MaxItems); err != nil {
-			return errorHelp.sErr(err)
+			return errorHelp.sErr(err, s.Options.recycleResult)
 		}
 	}
 
 	if s.UniqueItems {
 		if err := UniqueItems(s.Path, s.In, data); err != nil {
-			return errorHelp.sErr(err)
+			return errorHelp.sErr(err, s.Options.recycleResult)
 		}
 	}
 
-	if s.itemsValidator == nil && s.Items != nil {
-		s.itemsValidator = newItemsValidator(s.Path, s.In, s.Items, s.Source, s.KnownFormats, s.Options)
+	if s.Items == nil {
+		return nil
 	}
 
-	if s.itemsValidator != nil {
-		for i := 0; i < int(size); i++ {
-			ele := val.Index(i)
-			if err := s.itemsValidator.Validate(i, ele.Interface()); err != nil && err.HasErrors() {
-				return err
-			}
+	for i := 0; i < int(size); i++ {
+		itemsValidator := newItemsValidator(s.Path, s.In, s.Items, s.Source, s.KnownFormats, s.Options)
+		ele := val.Index(i)
+		if err := itemsValidator.Validate(i, ele.Interface()); err != nil && err.HasErrors() {
+			return err
 		}
 	}
+
 	return nil
+}
+
+func (s *basicSliceValidator) redeem() {
+	poolOfBasicSliceValidators.RedeemValidator(s)
 }
 
 type numberValidator struct {
@@ -616,7 +789,12 @@ func newNumberValidator(
 		opts = new(SchemaValidatorOptions)
 	}
 
-	n := new(numberValidator)
+	var n *numberValidator
+	if opts.recycleValidators {
+		n = poolOfNumberValidators.BorrowValidator()
+	} else {
+		n = new(numberValidator)
+	}
 
 	n.Path = path
 	n.In = in
@@ -670,11 +848,22 @@ func (n *numberValidator) Applies(source interface{}, kind reflect.Kind) bool {
 //
 // TODO: default boundaries with MAX_SAFE_INTEGER are not checked (specific to json.Number?)
 func (n *numberValidator) Validate(val interface{}) *Result {
-	res := new(Result)
+	if n.Options.recycleValidators {
+		defer func() {
+			n.redeem()
+		}()
+	}
 
-	resMultiple := new(Result)
-	resMinimum := new(Result)
-	resMaximum := new(Result)
+	var res *Result
+	if n.Options.recycleResult {
+		res = poolOfResults.BorrowResult()
+	} else {
+		res = new(Result)
+	}
+
+	resMultiple := poolOfResults.BorrowResult()
+	resMinimum := poolOfResults.BorrowResult()
+	resMaximum := poolOfResults.BorrowResult()
 
 	// Used only to attempt to validate constraint on value,
 	// even though value or constraint specified do not match type and format
@@ -689,12 +878,12 @@ func (n *numberValidator) Validate(val interface{}) *Result {
 		if resMultiple.IsValid() {
 			// Constraint validated with compatible types
 			if err := MultipleOfNativeType(n.Path, n.In, val, *n.MultipleOf); err != nil {
-				resMultiple.Merge(errorHelp.sErr(err))
+				resMultiple.Merge(errorHelp.sErr(err, n.Options.recycleResult))
 			}
 		} else {
 			// Constraint nevertheless validated, converted as general number
 			if err := MultipleOf(n.Path, n.In, data, *n.MultipleOf); err != nil {
-				resMultiple.Merge(errorHelp.sErr(err))
+				resMultiple.Merge(errorHelp.sErr(err, n.Options.recycleResult))
 			}
 		}
 	}
@@ -705,12 +894,12 @@ func (n *numberValidator) Validate(val interface{}) *Result {
 		if resMaximum.IsValid() {
 			// Constraint validated with compatible types
 			if err := MaximumNativeType(n.Path, n.In, val, *n.Maximum, n.ExclusiveMaximum); err != nil {
-				resMaximum.Merge(errorHelp.sErr(err))
+				resMaximum.Merge(errorHelp.sErr(err, n.Options.recycleResult))
 			}
 		} else {
 			// Constraint nevertheless validated, converted as general number
 			if err := Maximum(n.Path, n.In, data, *n.Maximum, n.ExclusiveMaximum); err != nil {
-				resMaximum.Merge(errorHelp.sErr(err))
+				resMaximum.Merge(errorHelp.sErr(err, n.Options.recycleResult))
 			}
 		}
 	}
@@ -721,18 +910,22 @@ func (n *numberValidator) Validate(val interface{}) *Result {
 		if resMinimum.IsValid() {
 			// Constraint validated with compatible types
 			if err := MinimumNativeType(n.Path, n.In, val, *n.Minimum, n.ExclusiveMinimum); err != nil {
-				resMinimum.Merge(errorHelp.sErr(err))
+				resMinimum.Merge(errorHelp.sErr(err, n.Options.recycleResult))
 			}
 		} else {
 			// Constraint nevertheless validated, converted as general number
 			if err := Minimum(n.Path, n.In, data, *n.Minimum, n.ExclusiveMinimum); err != nil {
-				resMinimum.Merge(errorHelp.sErr(err))
+				resMinimum.Merge(errorHelp.sErr(err, n.Options.recycleResult))
 			}
 		}
 	}
 	res.Merge(resMultiple, resMinimum, resMaximum)
 	res.Inc()
 	return res
+}
+
+func (n *numberValidator) redeem() {
+	poolOfNumberValidators.RedeemValidator(n)
 }
 
 type stringValidator struct {
@@ -755,7 +948,12 @@ func newStringValidator(
 		opts = new(SchemaValidatorOptions)
 	}
 
-	s := new(stringValidator)
+	var s *stringValidator
+	if opts.recycleValidators {
+		s = poolOfStringValidators.BorrowValidator()
+	} else {
+		s = new(stringValidator)
+	}
 
 	s.Path = path
 	s.In = in
@@ -784,33 +982,43 @@ func (s *stringValidator) Applies(source interface{}, kind reflect.Kind) bool {
 }
 
 func (s *stringValidator) Validate(val interface{}) *Result {
+	if s.Options.recycleValidators {
+		defer func() {
+			s.redeem()
+		}()
+	}
+
 	data, ok := val.(string)
 	if !ok {
-		return errorHelp.sErr(errors.InvalidType(s.Path, s.In, stringType, val))
+		return errorHelp.sErr(errors.InvalidType(s.Path, s.In, stringType, val), s.Options.recycleResult)
 	}
 
 	if s.Required && !s.AllowEmptyValue && (s.Default == nil || s.Default == "") {
 		if err := RequiredString(s.Path, s.In, data); err != nil {
-			return errorHelp.sErr(err)
+			return errorHelp.sErr(err, s.Options.recycleResult)
 		}
 	}
 
 	if s.MaxLength != nil {
 		if err := MaxLength(s.Path, s.In, data, *s.MaxLength); err != nil {
-			return errorHelp.sErr(err)
+			return errorHelp.sErr(err, s.Options.recycleResult)
 		}
 	}
 
 	if s.MinLength != nil {
 		if err := MinLength(s.Path, s.In, data, *s.MinLength); err != nil {
-			return errorHelp.sErr(err)
+			return errorHelp.sErr(err, s.Options.recycleResult)
 		}
 	}
 
 	if s.Pattern != "" {
 		if err := Pattern(s.Path, s.In, data, s.Pattern); err != nil {
-			return errorHelp.sErr(err)
+			return errorHelp.sErr(err, s.Options.recycleResult)
 		}
 	}
 	return nil
+}
+
+func (s *stringValidator) redeem() {
+	poolOfStringValidators.RedeemValidator(s)
 }

@@ -59,7 +59,8 @@ func (ex *exampleValidator) isVisited(path string) bool {
 //   - individual property
 //   - responses
 func (ex *exampleValidator) Validate() *Result {
-	errs := new(Result)
+	errs := poolOfResults.BorrowResult()
+
 	if ex == nil || ex.SpecValidator == nil {
 		return errs
 	}
@@ -74,7 +75,7 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 	// in: schemas, properties, object, items
 	// not in: headers, parameters without schema
 
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 	s := ex.SpecValidator
 
 	for method, pathItem := range s.expandedAnalyzer().Operations() {
@@ -105,6 +106,8 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 					if red.HasErrorsOrWarnings() {
 						res.AddWarnings(exampleValueItemsDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
+					} else {
+						poolOfResults.RedeemResult(red)
 					}
 				}
 
@@ -114,6 +117,8 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 					if red.HasErrorsOrWarnings() {
 						res.AddWarnings(exampleValueDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
+					} else {
+						poolOfResults.RedeemResult(red)
 					}
 				}
 			}
@@ -220,7 +225,7 @@ func (ex *exampleValidator) validateExampleValueSchemaAgainstSchema(path, in str
 	}
 	ex.beingVisited(path)
 	s := ex.SpecValidator
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 
 	if schema.Example != nil {
 		res.MergeAsWarnings(
@@ -266,7 +271,7 @@ func (ex *exampleValidator) validateExampleValueSchemaAgainstSchema(path, in str
 //
 
 func (ex *exampleValidator) validateExampleValueItemsAgainstSchema(path, in string, root interface{}, items *spec.Items) *Result {
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 	s := ex.SpecValidator
 	if items != nil {
 		if items.Example != nil {
@@ -275,7 +280,7 @@ func (ex *exampleValidator) validateExampleValueItemsAgainstSchema(path, in stri
 			)
 		}
 		if items.Items != nil {
-			res.Merge(ex.validateExampleValueItemsAgainstSchema(path+"[0].example", in, root, items.Items)) // TODO(fred): intern string
+			res.Merge(ex.validateExampleValueItemsAgainstSchema(path+"[0].example", in, root, items.Items))
 		}
 		if _, err := compileRegexp(items.Pattern); err != nil {
 			res.AddErrors(invalidPatternInMsg(path, in, items.Pattern))

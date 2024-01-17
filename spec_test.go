@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/analysis"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/loads/fmts"
@@ -910,4 +911,20 @@ func Test_Issue2137(t *testing.T) {
 		}
 	}
 	assert.True(t, found)
+}
+
+func Test_Examples(t *testing.T) {
+	fp := filepath.Join("fixtures", "bugs", "2649", "swagger.yaml")
+
+	doc, err := loads.Spec(fp)
+	require.NoError(t, err)
+	require.NotNil(t, doc)
+
+	validator := NewSpecValidator(doc.Schema(), strfmt.Default)
+	validator.Options.SkipSchemataResult = true
+
+	res, _ := validator.Validate(doc)
+	if !assert.Truef(t, res.IsValid(), "expected spec to be valid") {
+		spew.Dump(res.Errors)
+	}
 }

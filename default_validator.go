@@ -50,31 +50,25 @@ func isVisited(path string, visitedSchemas map[string]struct{}) bool {
 	}
 
 	// search for overlapping paths
-	frags := strings.Split(path, ".")
-	if len(frags) < 2 {
-		// shortcut exit on smaller paths
-		return found
-	}
-	last := len(frags) - 1
-	var currentFragStr, parent string
-	for i := range frags {
-		if i == 0 {
-			currentFragStr = frags[last]
-		} else {
-			currentFragStr = strings.Join([]string{frags[last-i], currentFragStr}, ".")
+	var (
+		parent string
+		suffix string
+	)
+	for i := len(path) - 2; i >= 0; i-- {
+		r := path[i]
+		if r != '.' {
+			continue
 		}
-		if i < last {
-			parent = strings.Join(frags[0:last-i], ".")
-		} else {
-			parent = ""
-		}
-		if strings.HasSuffix(parent, currentFragStr) {
-			found = true
-			break
+
+		parent = path[0:i]
+		suffix = path[i+1:]
+
+		if strings.HasSuffix(parent, suffix) {
+			return true
 		}
 	}
 
-	return found
+	return false
 }
 
 // beingVisited asserts a schema is being visited
@@ -89,7 +83,8 @@ func (d *defaultValidator) isVisited(path string) bool {
 
 // Validate validates the default values declared in the swagger spec
 func (d *defaultValidator) Validate() *Result {
-	errs := new(Result)
+	errs := poolOfResults.BorrowResult() // will redeem when merged
+
 	if d == nil || d.SpecValidator == nil {
 		return errs
 	}
@@ -102,7 +97,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 	// every default value that is specified must validate against the schema for that property
 	// headers, items, parameters, schema
 
-	res := new(Result)
+	res := poolOfResults.BorrowResult() // will redeem when merged
 	s := d.SpecValidator
 
 	for method, pathItem := range s.expandedAnalyzer().Operations() {
@@ -232,7 +227,7 @@ func (d *defaultValidator) validateDefaultValueSchemaAgainstSchema(path, in stri
 		return nil
 	}
 	d.beingVisited(path)
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 	s := d.SpecValidator
 
 	if schema.Default != nil {
@@ -278,7 +273,7 @@ func (d *defaultValidator) validateDefaultValueSchemaAgainstSchema(path, in stri
 // TODO: Temporary duplicated code. Need to refactor with examples
 
 func (d *defaultValidator) validateDefaultValueItemsAgainstSchema(path, in string, root interface{}, items *spec.Items) *Result {
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 	s := d.SpecValidator
 	if items != nil {
 		if items.Default != nil {

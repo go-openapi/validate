@@ -43,7 +43,12 @@ func newSliceValidator(path, in string,
 		opts = new(SchemaValidatorOptions)
 	}
 
-	v := new(schemaSliceValidator)
+	var v *schemaSliceValidator
+	if opts.recycleValidators {
+		v = poolOfSliceValidators.BorrowValidator()
+	} else {
+		v = new(schemaSliceValidator)
+	}
 
 	v.Path = path
 	v.In = in
@@ -70,7 +75,18 @@ func (s *schemaSliceValidator) Applies(source interface{}, kind reflect.Kind) bo
 }
 
 func (s *schemaSliceValidator) Validate(data interface{}) *Result {
-	result := new(Result)
+	if s.Options.recycleValidators {
+		defer func() {
+			s.redeem()
+		}()
+	}
+
+	var result *Result
+	if s.Options.recycleResult {
+		result = poolOfResults.BorrowResult()
+	} else {
+		result = new(Result)
+	}
 	if data == nil {
 		return result
 	}
@@ -78,8 +94,8 @@ func (s *schemaSliceValidator) Validate(data interface{}) *Result {
 	size := val.Len()
 
 	if s.Items != nil && s.Items.Schema != nil {
-		validator := newSchemaValidator(s.Items.Schema, s.Root, s.Path, s.KnownFormats, s.Options)
 		for i := 0; i < size; i++ {
+			validator := newSchemaValidator(s.Items.Schema, s.Root, s.Path, s.KnownFormats, s.Options)
 			validator.SetPath(fmt.Sprintf("%s.%d", s.Path, i))
 			value := val.Index(i)
 			result.mergeForSlice(val, i, validator.Validate(value.Interface()))
@@ -127,4 +143,8 @@ func (s *schemaSliceValidator) Validate(data interface{}) *Result {
 	}
 	result.Inc()
 	return result
+}
+
+func (s *schemaSliceValidator) redeem() {
+	poolOfSliceValidators.RedeemValidator(s)
 }

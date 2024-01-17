@@ -47,7 +47,12 @@ func newObjectValidator(path, in string,
 		opts = new(SchemaValidatorOptions)
 	}
 
-	v := new(objectValidator)
+	var v *objectValidator
+	if opts.recycleValidators {
+		v = poolOfObjectValidators.BorrowValidator()
+	} else {
+		v = new(objectValidator)
+	}
 
 	v.Path = path
 	v.In = in
@@ -96,30 +101,50 @@ func (o *objectValidator) isExample() bool {
 func (o *objectValidator) checkArrayMustHaveItems(res *Result, val map[string]interface{}) {
 	// for swagger 2.0 schemas, there is an additional constraint to have array items defined explicitly.
 	// with pure jsonschema draft 4, one may have arrays with undefined items (i.e. any type).
-	if t, typeFound := val[jsonType]; typeFound {
-		if tpe, ok := t.(string); ok && tpe == arrayType {
-			if item, itemsKeyFound := val[jsonItems]; !itemsKeyFound {
-				res.AddErrors(errors.Required(jsonItems, o.Path, item))
-			}
-		}
+	if val == nil {
+		return
 	}
+
+	t, typeFound := val[jsonType]
+	if !typeFound {
+		return
+	}
+
+	tpe, isString := t.(string)
+	if !isString || tpe != arrayType {
+		return
+	}
+
+	item, itemsKeyFound := val[jsonItems]
+	if itemsKeyFound {
+		return
+	}
+
+	res.AddErrors(errors.Required(jsonItems, o.Path, item))
 }
 
 func (o *objectValidator) checkItemsMustBeTypeArray(res *Result, val map[string]interface{}) {
+	if val == nil {
+		return
+	}
+
 	if o.isProperties() || o.isDefault() || o.isExample() {
 		return
 	}
 
-	if _, itemsKeyFound := val[jsonItems]; itemsKeyFound {
-		t, typeFound := val[jsonType]
-		if typeFound {
-			if tpe, ok := t.(string); !ok || tpe != arrayType {
-				res.AddErrors(errors.InvalidType(o.Path, o.In, arrayType, nil))
-			}
-		} else {
-			// there is no type
-			res.AddErrors(errors.Required(jsonType, o.Path, t))
-		}
+	_, itemsKeyFound := val[jsonItems]
+	if !itemsKeyFound {
+		return
+	}
+
+	t, typeFound := val[jsonType]
+	if !typeFound {
+		// there is no type
+		res.AddErrors(errors.Required(jsonType, o.Path, t))
+	}
+
+	if tpe, isString := t.(string); !isString || tpe != arrayType {
+		res.AddErrors(errors.InvalidType(o.Path, o.In, arrayType, nil))
 	}
 }
 
@@ -133,18 +158,35 @@ func (o *objectValidator) precheck(res *Result, val map[string]interface{}) {
 }
 
 func (o *objectValidator) Validate(data interface{}) *Result {
-	val := data.(map[string]interface{})
-	// TODO: guard against nil data
+	if o.Options.recycleValidators {
+		defer func() {
+			o.redeem()
+		}()
+	}
+
+	var val map[string]interface{}
+	if data != nil {
+		var ok bool
+		val, ok = data.(map[string]interface{})
+		if !ok {
+			return errorHelp.sErr(invalidObjectMsg(o.Path, o.In), o.Options.recycleResult)
+		}
+	}
 	numKeys := int64(len(val))
 
 	if o.MinProperties != nil && numKeys < *o.MinProperties {
-		return errorHelp.sErr(errors.TooFewProperties(o.Path, o.In, *o.MinProperties))
+		return errorHelp.sErr(errors.TooFewProperties(o.Path, o.In, *o.MinProperties), o.Options.recycleResult)
 	}
 	if o.MaxProperties != nil && numKeys > *o.MaxProperties {
-		return errorHelp.sErr(errors.TooManyProperties(o.Path, o.In, *o.MaxProperties))
+		return errorHelp.sErr(errors.TooManyProperties(o.Path, o.In, *o.MaxProperties), o.Options.recycleResult)
 	}
 
-	res := new(Result)
+	var res *Result
+	if o.Options.recycleResult {
+		res = poolOfResults.BorrowResult()
+	} else {
+		res = new(Result)
+	}
 
 	o.precheck(res, val)
 
@@ -294,7 +336,11 @@ func (o *objectValidator) validatePropertiesSchema(val map[string]interface{}, r
 
 	// Property types:
 	// - regular Property
-	pSchema := new(spec.Schema)
+	pSchema := poolOfSchemas.BorrowSchema() // recycle a spec.Schema object which lifespan extends only to the validation of properties
+	defer func() {
+		poolOfSchemas.RedeemSchema(pSchema)
+	}()
+
 	for pName := range o.Properties {
 		*pSchema = o.Properties[pName]
 		var rName string
@@ -317,7 +363,9 @@ func (o *objectValidator) validatePropertiesSchema(val map[string]interface{}, r
 			// if a default value is defined, creates the property from defaults
 			// NOTE: JSON schema does not enforce default values to be valid against schema. Swagger does.
 			createdFromDefaults[pName] = struct{}{}
-			res.addPropertySchemata(val, pName, pSchema) // this shallow-clones the content of the pSchema pointer
+			if !o.Options.skipSchemataResult {
+				res.addPropertySchemata(val, pName, pSchema) // this shallow-clones the content of the pSchema pointer
+			}
 		}
 	}
 
@@ -342,11 +390,19 @@ func (o *objectValidator) validatePropertiesSchema(val map[string]interface{}, r
 
 // TODO: succeededOnce is not used anywhere
 func (o *objectValidator) validatePatternProperty(key string, value interface{}, result *Result) (bool, bool, []string) {
+	if len(o.PatternProperties) == 0 {
+		return false, false, nil
+	}
+
 	matched := false
 	succeededOnce := false
 	patterns := make([]string, 0, len(o.PatternProperties))
 
-	schema := new(spec.Schema)
+	schema := poolOfSchemas.BorrowSchema()
+	defer func() {
+		poolOfSchemas.RedeemSchema(schema)
+	}()
+
 	for k := range o.PatternProperties {
 		re, err := compileRegexp(k)
 		if err != nil {
@@ -368,4 +424,8 @@ func (o *objectValidator) validatePatternProperty(key string, value interface{},
 	}
 
 	return matched, succeededOnce, patterns
+}
+
+func (o *objectValidator) redeem() {
+	poolOfObjectValidators.RedeemValidator(o)
 }

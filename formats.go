@@ -34,7 +34,12 @@ func newFormatValidator(path, in, format string, formats strfmt.Registry, opts *
 		opts = new(SchemaValidatorOptions)
 	}
 
-	f := new(formatValidator)
+	var f *formatValidator
+	if opts.recycleValidators {
+		f = poolOfFormatValidators.BorrowValidator()
+	} else {
+		f = new(formatValidator)
+	}
 
 	f.Path = path
 	f.In = in
@@ -69,11 +74,26 @@ func (f *formatValidator) Applies(source interface{}, kind reflect.Kind) bool {
 }
 
 func (f *formatValidator) Validate(val interface{}) *Result {
-	result := new(Result)
+	if f.Options.recycleValidators {
+		defer func() {
+			f.redeem()
+		}()
+	}
+
+	var result *Result
+	if f.Options.recycleResult {
+		result = poolOfResults.BorrowResult()
+	} else {
+		result = new(Result)
+	}
 
 	if err := FormatOf(f.Path, f.In, f.Format, val.(string), f.KnownFormats); err != nil {
 		result.AddErrors(err)
 	}
 
 	return result
+}
+
+func (f *formatValidator) redeem() {
+	poolOfFormatValidators.RedeemValidator(f)
 }

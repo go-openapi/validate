@@ -21,6 +21,7 @@ func Benchmark_KubernetesSpec(b *testing.B) {
 
 		for i := 0; i < b.N; i++ {
 			validator := NewSpecValidator(doc.Schema(), strfmt.Default)
+			validator.Options.SkipSchemataResult = true
 			res, _ := validator.Validate(doc)
 			if res == nil || !res.IsValid() {
 				b.FailNow()
