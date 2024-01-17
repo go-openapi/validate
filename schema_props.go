@@ -68,7 +68,12 @@ func newSchemaPropsValidator(
 		notValidator = newSchemaValidator(not, root, path, formats, opts)
 	}
 
-	s := new(schemaPropsValidator)
+	var s *schemaPropsValidator
+	if opts.recycleValidators {
+		s = poolOfSchemaPropsValidators.BorrowValidator()
+	} else {
+		s = new(schemaPropsValidator)
+	}
 
 	s.Path = path
 	s.In = in
@@ -94,14 +99,27 @@ func (s *schemaPropsValidator) Applies(source interface{}, _ reflect.Kind) bool 
 }
 
 func (s *schemaPropsValidator) Validate(data interface{}) *Result {
-	mainResult := new(Result)
+	var mainResult *Result
+	if s.Options.recycleValidators {
+		mainResult = poolOfResults.BorrowResult()
+	} else {
+		mainResult = new(Result)
+	}
 
 	// Intermediary error results
 
 	// IMPORTANT! messages from underlying validators
-	keepResultAnyOf := new(Result)
-	keepResultOneOf := new(Result)
-	keepResultAllOf := new(Result)
+	keepResultAnyOf := poolOfResults.BorrowResult()
+	keepResultOneOf := poolOfResults.BorrowResult()
+	keepResultAllOf := poolOfResults.BorrowResult()
+
+	if s.Options.recycleValidators {
+		defer func() {
+			s.redeem()
+
+			// results are redeemed when merged
+		}()
+	}
 
 	// Validates at least one in anyOf schemas
 	var firstSuccess *Result
@@ -116,7 +134,8 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 				bestFailures = nil
 				succeededOnce = true
 				firstSuccess = result
-				keepResultAnyOf = new(Result)
+				_ = keepResultAnyOf.cleared()
+
 				break
 			}
 			// MatchCount is used to select errors from the schema with most positive checks
@@ -130,6 +149,9 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 		}
 		if bestFailures != nil {
 			mainResult.Merge(bestFailures)
+			if firstSuccess != nil && firstSuccess.wantsRedeemOnMerge {
+				poolOfResults.RedeemResult(firstSuccess)
+			}
 		} else if firstSuccess != nil {
 			mainResult.Merge(firstSuccess)
 		}
@@ -151,7 +173,7 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 				if firstSuccess == nil {
 					firstSuccess = result
 				}
-				keepResultOneOf = new(Result)
+				_ = keepResultOneOf.cleared()
 				continue
 			}
 			// MatchCount is used to select errors from the schema with most positive checks
@@ -172,8 +194,14 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 			if bestFailures != nil {
 				mainResult.Merge(bestFailures)
 			}
+			if firstSuccess != nil && firstSuccess.wantsRedeemOnMerge {
+				poolOfResults.RedeemResult(firstSuccess)
+			}
 		} else if firstSuccess != nil {
 			mainResult.Merge(firstSuccess)
+			if bestFailures != nil && bestFailures.wantsRedeemOnMerge {
+				poolOfResults.RedeemResult(bestFailures)
+			}
 		}
 	}
 
@@ -236,4 +264,32 @@ func (s *schemaPropsValidator) Validate(data interface{}) *Result {
 	// In the end we retain best failures for schema validation
 	// plus, if any, composite errors which may explain special cases (tagged as IMPORTANT!).
 	return mainResult.Merge(keepResultAllOf, keepResultOneOf, keepResultAnyOf)
+}
+
+func (s *schemaPropsValidator) redeem() {
+	poolOfSchemaPropsValidators.RedeemValidator(s)
+}
+
+func (s *schemaPropsValidator) redeemChildren() {
+	for _, v := range s.anyOfValidators {
+		v.redeemChildren()
+		v.redeem()
+	}
+	s.anyOfValidators = nil
+	for _, v := range s.allOfValidators {
+		v.redeemChildren()
+		v.redeem()
+	}
+	s.allOfValidators = nil
+	for _, v := range s.oneOfValidators {
+		v.redeemChildren()
+		v.redeem()
+	}
+	s.oneOfValidators = nil
+
+	if s.notValidator != nil {
+		s.notValidator.redeemChildren()
+		s.notValidator.redeem()
+		s.notValidator = nil
+	}
 }

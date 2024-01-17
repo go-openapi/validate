@@ -68,6 +68,8 @@ func NewSpecValidator(schema *spec.Schema, formats strfmt.Registry) *SpecValidat
 	schemaOptions := new(SchemaValidatorOptions)
 	for _, o := range []Option{
 		SwaggerSchema(true),
+		WithRecycleValidators(true),
+		withRecycleResults(true),
 	} {
 		o(schemaOptions)
 	}
@@ -82,6 +84,7 @@ func NewSpecValidator(schema *spec.Schema, formats strfmt.Registry) *SpecValidat
 
 // Validate validates the swagger spec
 func (s *SpecValidator) Validate(data interface{}) (*Result, *Result) {
+	s.schemaOptions.skipSchemataResult = s.Options.SkipSchemataResult
 	var sd *loads.Document
 	errs, warnings := new(Result), new(Result)
 
@@ -97,7 +100,7 @@ func (s *SpecValidator) Validate(data interface{}) (*Result, *Result) {
 
 	// Raw spec unmarshalling errors
 	var obj interface{}
-	if err := json.Unmarshal(sd.Raw(), &obj); err != nil { // TODO(fred): skip this on option
+	if err := json.Unmarshal(sd.Raw(), &obj); err != nil {
 		// NOTE: under normal conditions, the *load.Document has been already unmarshalled
 		// So this one is just a paranoid check on the behavior of the spec package
 		panic(InvalidDocumentError)
@@ -157,7 +160,7 @@ func (s *SpecValidator) Validate(data interface{}) (*Result, *Result) {
 }
 
 func (s *SpecValidator) validateNonEmptyPathParamNames() *Result {
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 	if s.spec.Spec().Paths == nil {
 		// There is no Paths object: error
 		res.AddErrors(noValidPathMsg())
@@ -191,7 +194,7 @@ func (s *SpecValidator) validateDuplicateOperationIDs() *Result {
 		// fallback on possible incomplete picture because of previous errors
 		analyzer = s.analyzer
 	}
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 	known := make(map[string]int)
 	for _, v := range analyzer.OperationIDs() {
 		if v != "" {
@@ -213,7 +216,7 @@ type dupProp struct {
 
 func (s *SpecValidator) validateDuplicatePropertyNames() *Result {
 	// definition can't declare a property that's already defined by one of its ancestors
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 	for k, sch := range s.spec.Spec().Definitions {
 		if len(sch.AllOf) == 0 {
 			continue
@@ -262,7 +265,7 @@ func (s *SpecValidator) validateSchemaPropertyNames(nm string, sch spec.Schema, 
 
 	schn := nm
 	schc := &sch
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 
 	for schc.Ref.String() != "" {
 		// gather property names
@@ -299,7 +302,7 @@ func (s *SpecValidator) validateSchemaPropertyNames(nm string, sch spec.Schema, 
 }
 
 func (s *SpecValidator) validateCircularAncestry(nm string, sch spec.Schema, knowns map[string]struct{}) ([]string, *Result) {
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 
 	if sch.Ref.String() == "" && len(sch.AllOf) == 0 { // Safeguard. We should not be able to actually get there
 		return nil, res
@@ -349,7 +352,7 @@ func (s *SpecValidator) validateCircularAncestry(nm string, sch spec.Schema, kno
 
 func (s *SpecValidator) validateItems() *Result {
 	// validate parameter, items, schema and response objects for presence of item if type is array
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 
 	for method, pi := range s.analyzer.Operations() {
 		for path, op := range pi {
@@ -408,7 +411,7 @@ func (s *SpecValidator) validateItems() *Result {
 
 // Verifies constraints on array type
 func (s *SpecValidator) validateSchemaItems(schema spec.Schema, prefix, opID string) *Result {
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 	if !schema.Type.Contains(arrayType) {
 		return res
 	}
@@ -432,7 +435,7 @@ func (s *SpecValidator) validateSchemaItems(schema spec.Schema, prefix, opID str
 func (s *SpecValidator) validatePathParamPresence(path string, fromPath, fromOperation []string) *Result {
 	// Each defined operation path parameters must correspond to a named element in the API's path pattern.
 	// (For example, you cannot have a path parameter named id for the following path /pets/{petId} but you must have a path parameter named petId.)
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 	for _, l := range fromPath {
 		var matched bool
 		for _, r := range fromOperation {
@@ -488,7 +491,7 @@ func (s *SpecValidator) validateReferencedParameters() *Result {
 	if len(expected) == 0 {
 		return nil
 	}
-	result := new(Result)
+	result := poolOfResults.BorrowResult()
 	for k := range expected {
 		result.AddWarnings(unusedParamMsg(k))
 	}
@@ -513,7 +516,7 @@ func (s *SpecValidator) validateReferencedResponses() *Result {
 	if len(expected) == 0 {
 		return nil
 	}
-	result := new(Result)
+	result := poolOfResults.BorrowResult()
 	for k := range expected {
 		result.AddWarnings(unusedResponseMsg(k))
 	}
@@ -548,7 +551,7 @@ func (s *SpecValidator) validateReferencedDefinitions() *Result {
 
 func (s *SpecValidator) validateRequiredDefinitions() *Result {
 	// Each property listed in the required array must be defined in the properties of the model
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 
 DEFINITIONS:
 	for d, schema := range s.spec.Spec().Definitions {
@@ -567,7 +570,7 @@ DEFINITIONS:
 
 func (s *SpecValidator) validateRequiredProperties(path, in string, v *spec.Schema) *Result {
 	// Takes care of recursive property definitions, which may be nested in additionalProperties schemas
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 	propertyMatch := false
 	patternMatch := false
 	additionalPropertiesMatch := false
@@ -633,7 +636,7 @@ func (s *SpecValidator) validateParameters() *Result {
 	// - parameters with pattern property must specify valid patterns
 	// - $ref in parameters must resolve
 	// - path param must be required
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 	rexGarbledPathSegment := mustCompileRegexp(`.*[{}\s]+.*`)
 	for method, pi := range s.expandedAnalyzer().Operations() {
 		methodPaths := make(map[string]map[string]string)
@@ -765,7 +768,7 @@ func (s *SpecValidator) validateParameters() *Result {
 
 func (s *SpecValidator) validateReferencesValid() *Result {
 	// each reference must point to a valid object
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 	for _, r := range s.analyzer.AllRefs() {
 		if !r.IsValidURI(s.spec.SpecFilePath()) { // Safeguard - spec should always yield a valid URI
 			res.AddErrors(invalidRefMsg(r.String()))
@@ -791,7 +794,7 @@ func (s *SpecValidator) checkUniqueParams(path, method string, op *spec.Operatio
 	// However, there are some issues with such a factorization:
 	// - analysis does not seem to fully expand params
 	// - param keys may be altered by x-go-name
-	res := new(Result)
+	res := poolOfResults.BorrowResult()
 	pnames := make(map[string]struct{})
 
 	if op.Parameters != nil { // Safeguard

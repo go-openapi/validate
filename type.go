@@ -38,7 +38,12 @@ func newTypeValidator(path, in string, typ spec.StringOrArray, nullable bool, fo
 		opts = new(SchemaValidatorOptions)
 	}
 
-	t := new(typeValidator)
+	var t *typeValidator
+	if opts.recycleValidators {
+		t = poolOfTypeValidators.BorrowValidator()
+	} else {
+		t = new(typeValidator)
+	}
 
 	t.Path = path
 	t.In = in
@@ -157,10 +162,16 @@ func (t *typeValidator) Applies(source interface{}, _ reflect.Kind) bool {
 }
 
 func (t *typeValidator) Validate(data interface{}) *Result {
+	if t.Options.recycleValidators {
+		defer func() {
+			t.redeem()
+		}()
+	}
+
 	if data == nil {
 		// nil or zero value for the passed structure require Type: null
 		if len(t.Type) > 0 && !t.Type.Contains(nullType) && !t.Nullable { // TODO: if a property is not required it also passes this
-			return errorHelp.sErr(errors.InvalidType(t.Path, t.In, strings.Join(t.Type, ","), nullType))
+			return errorHelp.sErr(errors.InvalidType(t.Path, t.In, strings.Join(t.Type, ","), nullType), t.Options.recycleResult)
 		}
 
 		return emptyResult
@@ -183,7 +194,7 @@ func (t *typeValidator) Validate(data interface{}) *Result {
 
 	if kind != reflect.String && kind != reflect.Slice && t.Format != "" && !(t.Type.Contains(schType) || format == t.Format || isFloatInt || isIntFloat || isLowerInt || isLowerFloat) {
 		// TODO: test case
-		return errorHelp.sErr(errors.InvalidType(t.Path, t.In, t.Format, format))
+		return errorHelp.sErr(errors.InvalidType(t.Path, t.In, t.Format, format), t.Options.recycleResult)
 	}
 
 	if !(t.Type.Contains(numberType) || t.Type.Contains(integerType)) && t.Format != "" && (kind == reflect.String || kind == reflect.Slice) {
@@ -191,8 +202,12 @@ func (t *typeValidator) Validate(data interface{}) *Result {
 	}
 
 	if !(t.Type.Contains(schType) || isFloatInt || isIntFloat) {
-		return errorHelp.sErr(errors.InvalidType(t.Path, t.In, strings.Join(t.Type, ","), schType))
+		return errorHelp.sErr(errors.InvalidType(t.Path, t.In, strings.Join(t.Type, ","), schType), t.Options.recycleResult)
 	}
 
 	return emptyResult
+}
+
+func (t *typeValidator) redeem() {
+	poolOfTypeValidators.RedeemValidator(t)
 }
