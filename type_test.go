@@ -16,12 +16,14 @@ package validate
 
 import (
 	"io"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type expectedJSONType struct {
@@ -263,7 +265,14 @@ func TestType_schemaInfoForType(t *testing.T) {
 		*/
 	}
 
-	v := &typeValidator{}
+	v := newTypeValidator(
+		"", "", nil, false, "", nil,
+	)
+
+	t.Run("should not apply", func(t *testing.T) {
+		require.False(t, v.Applies("x", reflect.Map))
+	})
+
 	for _, x := range testTypes {
 		value := x.value
 

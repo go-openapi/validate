@@ -849,7 +849,7 @@ func TestSpec_ValidationTypeMismatch(t *testing.T) {
 	assert.Contains(t, warnings, `validation keywords of parameter "id" in path "/test/{id}/array" don't match its type array`)
 }
 
-func loadAndValidate(t *testing.T, fp string, early ...bool) (*Result, *Result) {
+func loadAndValidate(t testing.TB, fp string, early ...bool) (*Result, *Result) {
 	doc, err := loads.Spec(fp)
 	require.NoError(t, err)
 	require.NotNil(t, doc)

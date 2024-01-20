@@ -23,6 +23,8 @@ import (
 	"github.com/go-openapi/spec"
 )
 
+var emptyResult = &Result{MatchCount: 1}
+
 // Result represents a validation result set, composed of
 // errors and warnings.
 //
@@ -227,12 +229,14 @@ func (r *Result) addRootObjectSchemata(s *spec.Schema) {
 }
 
 // addPropertySchemata adds the given schemata for the object and field.
-// The slice schemata might be reused. I.e. do not modify it after being added to a result.
+//
+// Since the slice schemata might be reused, it is shallow-cloned before saving it into the result.
 func (r *Result) addPropertySchemata(obj map[string]interface{}, fld string, schema *spec.Schema) {
 	if r.fieldSchemata == nil {
 		r.fieldSchemata = make([]fieldSchemata, 0, len(obj))
 	}
-	r.fieldSchemata = append(r.fieldSchemata, fieldSchemata{obj: obj, field: fld, schemata: schemata{one: schema}})
+	clone := *schema
+	r.fieldSchemata = append(r.fieldSchemata, fieldSchemata{obj: obj, field: fld, schemata: schemata{one: &clone}})
 }
 
 /*

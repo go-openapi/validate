@@ -24,7 +24,7 @@ import (
 // to simulate with specs
 // (this one is a trivial, just to check all methods are filled)
 func TestSliceValidator_EdgeCases(t *testing.T) {
-	s := schemaSliceValidator{}
+	s := newSliceValidator("", "", nil, nil, false, nil, nil, nil, nil, nil)
 	s.SetPath("path")
 	assert.Equal(t, "path", s.Path)
 

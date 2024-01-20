@@ -17,6 +17,7 @@ package validate
 import (
 	"testing"
 
+	"github.com/go-openapi/strfmt"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,7 +25,8 @@ import (
 // to simulate with specs
 // (this one is a trivial, just to check all methods are filled)
 func TestSchemaPropsValidator_EdgeCases(t *testing.T) {
-	s := schemaPropsValidator{}
+	s := newSchemaPropsValidator(
+		"", "", nil, nil, nil, nil, nil, nil, strfmt.Default, nil)
 	s.SetPath("path")
 	assert.Equal(t, "path", s.Path)
 }

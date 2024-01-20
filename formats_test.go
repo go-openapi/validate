@@ -13,9 +13,10 @@ import (
 // Validator for string formats
 func TestFormatValidator_EdgeCases(t *testing.T) {
 	// Apply
-	v := formatValidator{
-		KnownFormats: strfmt.Default,
-	}
+	v := newFormatValidator(
+		"", "", "", strfmt.Default, nil,
+	)
+	v.SetPath("a.b.c")
 
 	// formatValidator applies to: Items, Parameter,Schema
 

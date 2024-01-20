@@ -53,20 +53,30 @@ func Spec(doc *loads.Document, formats strfmt.Registry) error {
 
 // SpecValidator validates a swagger 2.0 spec
 type SpecValidator struct {
-	schema       *spec.Schema // swagger 2.0 schema
-	spec         *loads.Document
-	analyzer     *analysis.Spec
-	expanded     *loads.Document
-	KnownFormats strfmt.Registry
-	Options      Opts // validation options
+	schema        *spec.Schema // swagger 2.0 schema
+	spec          *loads.Document
+	analyzer      *analysis.Spec
+	expanded      *loads.Document
+	KnownFormats  strfmt.Registry
+	Options       Opts // validation options
+	schemaOptions *SchemaValidatorOptions
 }
 
 // NewSpecValidator creates a new swagger spec validator instance
 func NewSpecValidator(schema *spec.Schema, formats strfmt.Registry) *SpecValidator {
+	// schema options that apply to all called validators
+	schemaOptions := new(SchemaValidatorOptions)
+	for _, o := range []Option{
+		SwaggerSchema(true),
+	} {
+		o(schemaOptions)
+	}
+
 	return &SpecValidator{
-		schema:       schema,
-		KnownFormats: formats,
-		Options:      defaultOpts,
+		schema:        schema,
+		KnownFormats:  formats,
+		Options:       defaultOpts,
+		schemaOptions: schemaOptions,
 	}
 }
 
@@ -85,12 +95,9 @@ func (s *SpecValidator) Validate(data interface{}) (*Result, *Result) {
 	s.spec = sd
 	s.analyzer = analysis.New(sd.Spec())
 
-	// Swagger schema validator
-	schv := NewSchemaValidator(s.schema, nil, "", s.KnownFormats, SwaggerSchema(true))
-	var obj interface{}
-
 	// Raw spec unmarshalling errors
-	if err := json.Unmarshal(sd.Raw(), &obj); err != nil {
+	var obj interface{}
+	if err := json.Unmarshal(sd.Raw(), &obj); err != nil { // TODO(fred): skip this on option
 		// NOTE: under normal conditions, the *load.Document has been already unmarshalled
 		// So this one is just a paranoid check on the behavior of the spec package
 		panic(InvalidDocumentError)
@@ -103,6 +110,8 @@ func (s *SpecValidator) Validate(data interface{}) (*Result, *Result) {
 		warnings.AddErrors(errs.Warnings...)
 	}()
 
+	// Swagger schema validator
+	schv := newSchemaValidator(s.schema, nil, "", s.KnownFormats, s.schemaOptions)
 	errs.Merge(schv.Validate(obj)) // error -
 	// There may be a point in continuing to try and determine more accurate errors
 	if !s.Options.ContinueOnErrors && errs.HasErrors() {
@@ -130,13 +139,13 @@ func (s *SpecValidator) Validate(data interface{}) (*Result, *Result) {
 	}
 
 	// Values provided as default MUST validate their schema
-	df := &defaultValidator{SpecValidator: s}
+	df := &defaultValidator{SpecValidator: s, schemaOptions: s.schemaOptions}
 	errs.Merge(df.Validate())
 
 	// Values provided as examples MUST validate their schema
 	// Value provided as examples in a response without schema generate a warning
 	// Known limitations: examples in responses for mime type not application/json are ignored (warning)
-	ex := &exampleValidator{SpecValidator: s}
+	ex := &exampleValidator{SpecValidator: s, schemaOptions: s.schemaOptions}
 	errs.Merge(ex.Validate())
 
 	errs.Merge(s.validateNonEmptyPathParamNames())
@@ -152,18 +161,23 @@ func (s *SpecValidator) validateNonEmptyPathParamNames() *Result {
 	if s.spec.Spec().Paths == nil {
 		// There is no Paths object: error
 		res.AddErrors(noValidPathMsg())
-	} else {
-		if s.spec.Spec().Paths.Paths == nil {
-			// Paths may be empty: warning
-			res.AddWarnings(noValidPathMsg())
-		} else {
-			for k := range s.spec.Spec().Paths.Paths {
-				if strings.Contains(k, "{}") {
-					res.AddErrors(emptyPathParameterMsg(k))
-				}
-			}
+
+		return res
+	}
+
+	if s.spec.Spec().Paths.Paths == nil {
+		// Paths may be empty: warning
+		res.AddWarnings(noValidPathMsg())
+
+		return res
+	}
+
+	for k := range s.spec.Spec().Paths.Paths {
+		if strings.Contains(k, "{}") {
+			res.AddErrors(emptyPathParameterMsg(k))
 		}
 	}
+
 	return res
 }
 
@@ -664,8 +678,8 @@ func (s *SpecValidator) validateParameters() *Result {
 			}
 
 			for _, pr := range paramHelp.safeExpandedParamsFor(path, method, op.ID, res, s) {
-				// An expanded parameter must validate its schema (an unexpanded $ref always pass high-level schema validation)
-				schv := NewSchemaValidator(&paramSchema, s.schema, fmt.Sprintf("%s.%s.parameters.%s", path, method, pr.Name), s.KnownFormats, SwaggerSchema(true))
+				// An expanded parameter must validate its schema (an unexpanded $ref always passes high-level schema validation)
+				schv := newSchemaValidator(&paramSchema, s.schema, fmt.Sprintf("%s.%s.parameters.%s", path, method, pr.Name), s.KnownFormats, s.schemaOptions)
 				obj := swag.ToDynamicJSON(pr)
 				paramValidationResult := schv.Validate(obj)
 				res.Merge(paramValidationResult)
