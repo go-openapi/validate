@@ -36,7 +36,7 @@ const testID = "id"
 // Enable long running tests by using cmd line arg,
 // Usage: go test ... -args [-enable-long|-enable-go-swagger]
 //
-// -enable-long:       enable spec_test.go:TestIssue18 and messages_test.go:Test_Quality*
+// -enable-long:       enable messages_test.go:Test_Quality*
 // -enable-go-swagger: enable non-regression tests against go-swagger fixtures (validation status) in swagger_test.go:Test_GoSwagger  (running about 110 specs...)
 //
 // If none enabled, these tests are skipped
