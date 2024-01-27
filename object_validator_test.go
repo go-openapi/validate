@@ -123,7 +123,7 @@ func TestObjectValidatorPatternProperties(t *testing.T) {
 		},
 	}
 
-	t.Run("shoud ignore invalid regexp in pattern properties", func(t *testing.T) {
+	t.Run("should ignore invalid regexp in pattern properties", func(t *testing.T) {
 		s := newObjectValidator("test", "body", nil, nil, nil, nil, nil, patternWithValid, nil, nil, nil)
 
 		res := s.Validate(map[string]interface{}{"valid": "test_string"})
@@ -131,7 +131,7 @@ func TestObjectValidatorPatternProperties(t *testing.T) {
 		require.Empty(t, res.Errors)
 	})
 
-	t.Run("shoud report forbidden property when invalid regexp in pattern properties", func(t *testing.T) {
+	t.Run("should report forbidden property when invalid regexp in pattern properties", func(t *testing.T) {
 		s := newObjectValidator("test", "body", nil, nil, nil, nil, nil, patternGarbled, nil, nil, nil)
 
 		res := s.Validate(map[string]interface{}{"valid": "test_string"})
@@ -139,7 +139,7 @@ func TestObjectValidatorPatternProperties(t *testing.T) {
 		require.Empty(t, res.Errors)
 	})
 
-	t.Run("shoud ignore invalid regexp in pattern properties of additional properties", func(t *testing.T) {
+	t.Run("should ignore invalid regexp in pattern properties of additional properties", func(t *testing.T) {
 		s := newObjectValidator("test", "body", nil, nil, nil, nil, &spec.SchemaOrBool{
 			Schema: &spec.Schema{},
 			Allows: false,
@@ -150,7 +150,7 @@ func TestObjectValidatorPatternProperties(t *testing.T) {
 		require.Empty(t, res.Errors)
 	})
 
-	t.Run("shoud report forbidden property when invalid regexp in pattern properties of additional properties", func(t *testing.T) {
+	t.Run("should report forbidden property when invalid regexp in pattern properties of additional properties", func(t *testing.T) {
 		s := newObjectValidator("test", "body", nil, nil, nil, nil, &spec.SchemaOrBool{
 			Schema: &spec.Schema{},
 			Allows: false,
@@ -173,7 +173,7 @@ func TestObjectValidatorNilData(t *testing.T) {
 }
 
 func TestObjectValidatorWithHeaderProperty(t *testing.T) {
-	t.Run("shoud report extra information about forbidden $ref in this context", func(t *testing.T) {
+	t.Run("should report extra information about forbidden $ref in this context", func(t *testing.T) {
 		s := newObjectValidator("test", "body", nil, nil, nil, nil, &spec.SchemaOrBool{
 			Schema: &spec.Schema{},
 			Allows: false,
@@ -200,7 +200,7 @@ func TestObjectValidatorWithHeaderProperty(t *testing.T) {
 		require.Equal(t, 2, found)
 	})
 
-	t.Run("shoud NOT report extra information when header is not detected", func(t *testing.T) {
+	t.Run("should NOT report extra information when header is not detected", func(t *testing.T) {
 		s := newObjectValidator("test", "body", nil, nil, nil, nil, &spec.SchemaOrBool{
 			Schema: &spec.Schema{},
 			Allows: false,

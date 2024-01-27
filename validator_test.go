@@ -155,7 +155,7 @@ func TestBasicCommonValidator_EdgeCases(t *testing.T) {
 
 	assert.False(t, v.Applies("A string", reflect.String))
 
-	t.Run("shoud validate Enum", func(t *testing.T) {
+	t.Run("should validate Enum", func(t *testing.T) {
 		res := v.Validate("a")
 		require.Nil(t, res)
 
