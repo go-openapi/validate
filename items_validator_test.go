@@ -118,7 +118,7 @@ func TestNumberItemsValidation(t *testing.T) {
 		items.Typed("integer", "int32")
 		parent := spec.QueryParam("factors").CollectionOf(items, "")
 		path := fmt.Sprintf("factors.%d", i)
-		validator := newItemsValidator(parent.Name, parent.In, items, parent, strfmt.Default)
+		validator := newItemsValidator(parent.Name, parent.In, items, parent, strfmt.Default, nil)
 
 		// MultipleOf
 		err := validator.Validate(i, v[0])
@@ -137,7 +137,7 @@ func TestNumberItemsValidation(t *testing.T) {
 		// ExclusiveMaximum
 		items.ExclusiveMaximum = true
 		// requires a new items validator because this is set a creation time
-		validator = newItemsValidator(parent.Name, parent.In, items, parent, strfmt.Default)
+		validator = newItemsValidator(parent.Name, parent.In, items, parent, strfmt.Default, nil)
 		err = validator.Validate(i, v[1])
 		assert.True(t, err.HasErrors())
 		require.NotEmpty(t, err.Errors)
@@ -154,7 +154,7 @@ func TestNumberItemsValidation(t *testing.T) {
 		// ExclusiveMinimum
 		items.ExclusiveMinimum = true
 		// requires a new items validator because this is set a creation time
-		validator = newItemsValidator(parent.Name, parent.In, items, parent, strfmt.Default)
+		validator = newItemsValidator(parent.Name, parent.In, items, parent, strfmt.Default, nil)
 		err = validator.Validate(i, v[3])
 		assert.True(t, err.HasErrors())
 		require.NotEmpty(t, err.Errors)
@@ -178,7 +178,7 @@ func TestStringItemsValidation(t *testing.T) {
 	items.WithEnum("aaa", "bbb", "ccc")
 	parent := spec.QueryParam("tags").CollectionOf(items, "")
 	path := parent.Name + ".1"
-	validator := newItemsValidator(parent.Name, parent.In, items, parent, strfmt.Default)
+	validator := newItemsValidator(parent.Name, parent.In, items, parent, strfmt.Default, nil)
 
 	// required
 	data := ""
@@ -225,7 +225,7 @@ func TestArrayItemsValidation(t *testing.T) {
 	items.WithEnum("aaa", "bbb", "ccc")
 	parent := spec.QueryParam("tags").CollectionOf(items, "")
 	path := parent.Name + ".1"
-	validator := newItemsValidator(parent.Name, parent.In, items, parent, strfmt.Default)
+	validator := newItemsValidator(parent.Name, parent.In, items, parent, strfmt.Default, nil)
 
 	// MinItems
 	data := []string{}
@@ -255,7 +255,7 @@ func TestArrayItemsValidation(t *testing.T) {
 	// Items
 	strItems := spec.NewItems().WithMinLength(3).WithMaxLength(5).WithPattern(`^[a-z]+$`).Typed(stringType, "")
 	items = spec.NewItems().CollectionOf(strItems, "").WithMinItems(1).WithMaxItems(5).UniqueValues()
-	validator = newItemsValidator(parent.Name, parent.In, items, parent, strfmt.Default)
+	validator = newItemsValidator(parent.Name, parent.In, items, parent, strfmt.Default, nil)
 
 	data = []string{"aa", "bbb", "ccc"}
 	err = validator.Validate(1, data)

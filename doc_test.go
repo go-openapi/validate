@@ -65,7 +65,7 @@ func ExampleSpec_second() {
 			fmt.Printf("This spec has some validation errors: %v\n", errs)
 		}
 	} else {
-		fmt.Println("Could not load this spec")
+		fmt.Println("Could not load this spec:", err)
 	}
 
 	// Output:

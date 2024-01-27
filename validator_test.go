@@ -20,27 +20,44 @@ import (
 	"testing"
 
 	"github.com/go-openapi/spec"
+	"github.com/go-openapi/strfmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestHeaderValidator(t *testing.T) {
+	v := NewHeaderValidator("header", &spec.Header{}, strfmt.Default, SwaggerSchema(true))
+
+	res := v.Validate(nil)
+	require.Nil(t, res)
+}
+
+func TestParamValidator(t *testing.T) {
+	v := NewParamValidator(&spec.Parameter{}, strfmt.Default, SwaggerSchema(true))
+
+	res := v.Validate(nil)
+	require.Nil(t, res)
+}
 
 func TestNumberValidator_EdgeCases(t *testing.T) {
 	// Apply
 	var min = float64(math.MinInt32 - 1)
 	var max = float64(math.MaxInt32 + 1)
 
-	v := numberValidator{
-		Path: "path",
-		In:   "in",
-		//Default:
-		//MultipleOf:
-		Maximum:          &max, // *float64
-		ExclusiveMaximum: false,
-		Minimum:          &min, // *float64
-		ExclusiveMinimum: false,
+	v := newNumberValidator(
+		"path",
+		"in",
+		nil,
+		nil,
+		&max, // *float64
+		false,
+		&min, // *float64
+		false,
 		// Allows for more accurate behavior regarding integers
-		Type:   "integer",
-		Format: "int32",
-	}
+		"integer",
+		"int32",
+		nil,
+	)
 
 	// numberValidator applies to: Parameter,Schema,Items,Header
 
@@ -51,7 +68,7 @@ func TestNumberValidator_EdgeCases(t *testing.T) {
 		new(spec.Header),
 	}
 
-	testNumberApply(t, &v, sources)
+	testNumberApply(t, v, sources)
 
 	assert.False(t, v.Applies(float64(32), reflect.Float64))
 
@@ -90,7 +107,9 @@ func testNumberApply(t *testing.T, v *numberValidator, sources []interface{}) {
 func TestStringValidator_EdgeCases(t *testing.T) {
 	// Apply
 
-	v := stringValidator{}
+	v := newStringValidator(
+		"", "", nil, false, false, nil, nil, "", nil,
+	)
 
 	// stringValidator applies to: Parameter,Schema,Items,Header
 
@@ -101,10 +120,9 @@ func TestStringValidator_EdgeCases(t *testing.T) {
 		new(spec.Header),
 	}
 
-	testStringApply(t, &v, sources)
+	testStringApply(t, v, sources)
 
 	assert.False(t, v.Applies("A string", reflect.String))
-
 }
 
 func testStringApply(t *testing.T, v *stringValidator, sources []interface{}) {
@@ -120,7 +138,10 @@ func testStringApply(t *testing.T, v *stringValidator, sources []interface{}) {
 func TestBasicCommonValidator_EdgeCases(t *testing.T) {
 	// Apply
 
-	v := basicCommonValidator{}
+	v := newBasicCommonValidator(
+		"", "",
+		nil, []interface{}{"a", nil, 3}, nil,
+	)
 
 	// basicCommonValidator applies to: Parameter,Schema,Header
 
@@ -130,10 +151,21 @@ func TestBasicCommonValidator_EdgeCases(t *testing.T) {
 		new(spec.Header),
 	}
 
-	testCommonApply(t, &v, sources)
+	testCommonApply(t, v, sources)
 
 	assert.False(t, v.Applies("A string", reflect.String))
 
+	t.Run("should validate Enum", func(t *testing.T) {
+		res := v.Validate("a")
+		require.Nil(t, res)
+
+		res = v.Validate(3)
+		require.Nil(t, res)
+
+		res = v.Validate("b")
+		require.NotNil(t, res)
+		assert.True(t, res.HasErrors())
+	})
 }
 
 func testCommonApply(t *testing.T, v *basicCommonValidator, sources []interface{}) {
@@ -145,7 +177,10 @@ func testCommonApply(t *testing.T, v *basicCommonValidator, sources []interface{
 func TestBasicSliceValidator_EdgeCases(t *testing.T) {
 	// Apply
 
-	v := basicSliceValidator{}
+	v := newBasicSliceValidator(
+		"", "",
+		nil, nil, nil, false, nil, nil, strfmt.Default, nil,
+	)
 
 	// basicCommonValidator applies to: Parameter,Schema,Header
 
@@ -155,11 +190,10 @@ func TestBasicSliceValidator_EdgeCases(t *testing.T) {
 		new(spec.Header),
 	}
 
-	testSliceApply(t, &v, sources)
+	testSliceApply(t, v, sources)
 
 	assert.False(t, v.Applies(new(spec.Schema), reflect.Slice))
 	assert.False(t, v.Applies(new(spec.Parameter), reflect.String))
-
 }
 
 func testSliceApply(t *testing.T, v *basicSliceValidator, sources []interface{}) {

@@ -25,48 +25,61 @@ import (
 // According to Swagger spec, default values MUST validate their schema.
 type defaultValidator struct {
 	SpecValidator  *SpecValidator
-	visitedSchemas map[string]bool
+	visitedSchemas map[string]struct{}
+	schemaOptions  *SchemaValidatorOptions
 }
 
 // resetVisited resets the internal state of visited schemas
 func (d *defaultValidator) resetVisited() {
-	d.visitedSchemas = map[string]bool{}
+	if d.visitedSchemas == nil {
+		d.visitedSchemas = make(map[string]struct{})
+
+		return
+	}
+
+	// TODO(go1.21): clear(ex.visitedSchemas)
+	for k := range d.visitedSchemas {
+		delete(d.visitedSchemas, k)
+	}
 }
 
-func isVisited(path string, visitedSchemas map[string]bool) bool {
-	found := visitedSchemas[path]
-	if !found {
-		// search for overlapping paths
-		frags := strings.Split(path, ".")
-		if len(frags) < 2 {
-			// shortcut exit on smaller paths
-			return found
+func isVisited(path string, visitedSchemas map[string]struct{}) bool {
+	_, found := visitedSchemas[path]
+	if found {
+		return true
+	}
+
+	// search for overlapping paths
+	frags := strings.Split(path, ".")
+	if len(frags) < 2 {
+		// shortcut exit on smaller paths
+		return found
+	}
+	last := len(frags) - 1
+	var currentFragStr, parent string
+	for i := range frags {
+		if i == 0 {
+			currentFragStr = frags[last]
+		} else {
+			currentFragStr = strings.Join([]string{frags[last-i], currentFragStr}, ".")
 		}
-		last := len(frags) - 1
-		var currentFragStr, parent string
-		for i := range frags {
-			if i == 0 {
-				currentFragStr = frags[last]
-			} else {
-				currentFragStr = strings.Join([]string{frags[last-i], currentFragStr}, ".")
-			}
-			if i < last {
-				parent = strings.Join(frags[0:last-i], ".")
-			} else {
-				parent = ""
-			}
-			if strings.HasSuffix(parent, currentFragStr) {
-				found = true
-				break
-			}
+		if i < last {
+			parent = strings.Join(frags[0:last-i], ".")
+		} else {
+			parent = ""
+		}
+		if strings.HasSuffix(parent, currentFragStr) {
+			found = true
+			break
 		}
 	}
+
 	return found
 }
 
 // beingVisited asserts a schema is being visited
 func (d *defaultValidator) beingVisited(path string) {
-	d.visitedSchemas[path] = true
+	d.visitedSchemas[path] = struct{}{}
 }
 
 // isVisited tells if a path has already been visited
@@ -75,8 +88,8 @@ func (d *defaultValidator) isVisited(path string) bool {
 }
 
 // Validate validates the default values declared in the swagger spec
-func (d *defaultValidator) Validate() (errs *Result) {
-	errs = new(Result)
+func (d *defaultValidator) Validate() *Result {
+	errs := new(Result)
 	if d == nil || d.SpecValidator == nil {
 		return errs
 	}
@@ -107,7 +120,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 				// default values provided must validate against their inline definition (no explicit schema)
 				if param.Default != nil && param.Schema == nil {
 					// check param default value is valid
-					red := NewParamValidator(&param, s.KnownFormats).Validate(param.Default) //#nosec
+					red := newParamValidator(&param, s.KnownFormats, d.schemaOptions).Validate(param.Default) //#nosec
 					if red.HasErrorsOrWarnings() {
 						res.AddErrors(defaultValueDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
@@ -176,7 +189,7 @@ func (d *defaultValidator) validateDefaultInResponse(resp *spec.Response, respon
 			d.resetVisited()
 
 			if h.Default != nil {
-				red := NewHeaderValidator(nm, &h, s.KnownFormats).Validate(h.Default) //#nosec
+				red := newHeaderValidator(nm, &h, s.KnownFormats, d.schemaOptions).Validate(h.Default) //#nosec
 				if red.HasErrorsOrWarnings() {
 					res.AddErrors(defaultValueHeaderDoesNotValidateMsg(operationID, nm, responseName))
 					res.Merge(red)
@@ -223,7 +236,9 @@ func (d *defaultValidator) validateDefaultValueSchemaAgainstSchema(path, in stri
 	s := d.SpecValidator
 
 	if schema.Default != nil {
-		res.Merge(NewSchemaValidator(schema, s.spec.Spec(), path+".default", s.KnownFormats, SwaggerSchema(true)).Validate(schema.Default))
+		res.Merge(
+			newSchemaValidator(schema, s.spec.Spec(), path+".default", s.KnownFormats, d.schemaOptions).Validate(schema.Default),
+		)
 	}
 	if schema.Items != nil {
 		if schema.Items.Schema != nil {
@@ -267,7 +282,9 @@ func (d *defaultValidator) validateDefaultValueItemsAgainstSchema(path, in strin
 	s := d.SpecValidator
 	if items != nil {
 		if items.Default != nil {
-			res.Merge(newItemsValidator(path, in, items, root, s.KnownFormats).Validate(0, items.Default))
+			res.Merge(
+				newItemsValidator(path, in, items, root, s.KnownFormats, d.schemaOptions).Validate(0, items.Default),
+			)
 		}
 		if items.Items != nil {
 			res.Merge(d.validateDefaultValueItemsAgainstSchema(path+"[0].default", in, root, items.Items))
