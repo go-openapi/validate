@@ -928,3 +928,16 @@ func Test_Examples(t *testing.T) {
 		spew.Dump(res.Errors)
 	}
 }
+
+func Test_2866(t *testing.T) {
+	// exercises fixture from go-swagger/go-swagger#2866, a test in go-swagger
+	// that used to be problematic when using memory pools.
+
+	fp := filepath.Join("fixtures", "bugs", "2866", "2866.yaml")
+
+	doc, err := loads.Spec(fp)
+	require.NoError(t, err)
+	require.NotNil(t, doc)
+
+	require.NoError(t, Spec(doc, strfmt.Default))
+}

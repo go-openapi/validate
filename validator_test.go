@@ -59,7 +59,7 @@ func TestHeaderValidator(t *testing.T) {
 			require.NotNil(t, res)
 			require.Empty(t, res.Errors)
 			require.True(t, res.wantsRedeemOnMerge)
-			poolOfResults.RedeemResult(res)
+			pools.poolOfResults.RedeemResult(res)
 		})
 	})
 }

@@ -121,7 +121,7 @@ func (r *Result) Merge(others ...*Result) *Result {
 		r.mergeWithoutRootSchemata(other)
 		r.rootObjectSchemata.Append(other.rootObjectSchemata)
 		if other.wantsRedeemOnMerge {
-			poolOfResults.RedeemResult(other)
+			pools.poolOfResults.RedeemResult(other)
 		}
 	}
 	return r
@@ -201,7 +201,7 @@ func (r *Result) mergeForField(obj map[string]interface{}, field string, other *
 		})
 	}
 	if other.wantsRedeemOnMerge {
-		poolOfResults.RedeemResult(other)
+		pools.poolOfResults.RedeemResult(other)
 	}
 
 	return r
@@ -227,7 +227,7 @@ func (r *Result) mergeForSlice(slice reflect.Value, i int, other *Result) *Resul
 		})
 	}
 	if other.wantsRedeemOnMerge {
-		poolOfResults.RedeemResult(other)
+		pools.poolOfResults.RedeemResult(other)
 	}
 
 	return r
@@ -298,7 +298,7 @@ func (r *Result) MergeAsErrors(others ...*Result) *Result {
 			r.AddErrors(other.Warnings...)
 			r.MatchCount += other.MatchCount
 			if other.wantsRedeemOnMerge {
-				poolOfResults.RedeemResult(other)
+				pools.poolOfResults.RedeemResult(other)
 			}
 		}
 	}
@@ -316,7 +316,7 @@ func (r *Result) MergeAsWarnings(others ...*Result) *Result {
 			r.AddWarnings(other.Warnings...)
 			r.MatchCount += other.MatchCount
 			if other.wantsRedeemOnMerge {
-				poolOfResults.RedeemResult(other)
+				pools.poolOfResults.RedeemResult(other)
 			}
 		}
 	}
@@ -390,7 +390,7 @@ func (r *Result) keepRelevantErrors() *Result {
 	}
 	var strippedResult *Result
 	if r.wantsRedeemOnMerge {
-		strippedResult = poolOfResults.BorrowResult()
+		strippedResult = pools.poolOfResults.BorrowResult()
 	} else {
 		strippedResult = new(Result)
 	}

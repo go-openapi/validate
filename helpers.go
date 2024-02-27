@@ -105,7 +105,7 @@ func (h *errorHelper) sErr(err errors.Error, recycle bool) *Result {
 	// Builds a Result from standard errors.Error
 	var result *Result
 	if recycle {
-		result = poolOfResults.BorrowResult()
+		result = pools.poolOfResults.BorrowResult()
 	} else {
 		result = new(Result)
 	}
@@ -314,6 +314,7 @@ func (r *responseHelper) expandResponseRef(
 		errorHelp.addPointerError(res, err, response.Ref.String(), path)
 		return nil, res
 	}
+
 	return response, res
 }
 
