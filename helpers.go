@@ -233,7 +233,7 @@ func (h *paramHelper) safeExpandedParamsFor(path, method, operationID string, re
 		operation.Parameters = resolvedParams
 
 		for _, ppr := range s.expandedAnalyzer().SafeParamsFor(method, path,
-			func(p spec.Parameter, err error) bool {
+			func(_ spec.Parameter, err error) bool {
 				// since params have already been expanded, there are few causes for error
 				res.AddErrors(someParametersBrokenMsg(path, method, operationID))
 				// original error from analyzer
