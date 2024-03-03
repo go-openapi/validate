@@ -128,7 +128,7 @@ func wantSwaggerTest(info os.FileInfo) bool {
 // Just validates all fixtures in ./fixtures/go-swagger (excluded codegen cases)
 func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnLoad map[string]bool, haltOnErrors bool) {
 	err := filepath.Walk(path,
-		func(path string, info os.FileInfo, err error) error {
+		func(path string, info os.FileInfo, _ error) error {
 			t.Run(path, func(t *testing.T) {
 				if !DebugTest { // when running in dev mode, run serially
 					t.Parallel()

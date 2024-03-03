@@ -211,7 +211,7 @@ func checkMustHalt(t *testing.T, haltOnErrors bool) {
 }
 
 func testWalkSpecs(t *testing.T, tested ExpectedMap, haltOnErrors, continueOnErrors bool) filepath.WalkFunc {
-	return func(path string, info os.FileInfo, err error) error {
+	return func(path string, info os.FileInfo, _ error) error {
 		thisTest, found := tested.Get(info.Name())
 
 		if info.IsDir() || !found { // skip
@@ -255,6 +255,7 @@ func recapTest(t *testing.T, config ExpectedMap) {
 	}
 }
 func reportTest(t *testing.T, path string, res *Result, expectedMessages []ExpectedMessage, msgtype string, continueOnErrors bool) {
+	const expected = "Expected "
 	// Prints out a recap of error messages. To be enabled during development / test iterations
 	verifiedErrors := make([]string, 0, 50)
 	lines := make([]string, 0, 50)
@@ -263,17 +264,17 @@ func reportTest(t *testing.T, path string, res *Result, expectedMessages []Expec
 	}
 	t.Logf("DEVMODE:Recap of returned %s messages while validating %s ", msgtype, path)
 	for _, v := range verifiedErrors {
-		status := fmt.Sprintf("Unexpected %s", msgtype)
+		status := "Unexpected " + msgtype
 		for _, s := range expectedMessages {
 			if (s.WithContinueOnErrors && continueOnErrors) || !s.WithContinueOnErrors {
 				if s.IsRegexp {
 					if matched, _ := regexp.MatchString(s.Message, v); matched {
-						status = fmt.Sprintf("Expected %s", msgtype)
+						status = expected + msgtype
 						break
 					}
 				} else {
 					if strings.Contains(v, s.Message) {
-						status = fmt.Sprintf("Expected %s", msgtype)
+						status = expected + msgtype
 						break
 					}
 				}
@@ -284,21 +285,21 @@ func reportTest(t *testing.T, path string, res *Result, expectedMessages []Expec
 
 	for _, s := range expectedMessages {
 		if (s.WithContinueOnErrors && continueOnErrors) || !s.WithContinueOnErrors {
-			status := fmt.Sprintf("Missing %s", msgtype)
+			status := "Missing " + msgtype
 			for _, v := range verifiedErrors {
 				if s.IsRegexp {
 					if matched, _ := regexp.MatchString(s.Message, v); matched {
-						status = fmt.Sprintf("Expected %s", msgtype)
+						status = expected + msgtype
 						break
 					}
 				} else {
 					if strings.Contains(v, s.Message) {
-						status = fmt.Sprintf("Expected %s", msgtype)
+						status = expected + msgtype
 						break
 					}
 				}
 			}
-			if status != fmt.Sprintf("Expected %s", msgtype) {
+			if status != expected+msgtype {
 				lines = append(lines, fmt.Sprintf("[%s]%s", status, s.Message))
 			}
 		}

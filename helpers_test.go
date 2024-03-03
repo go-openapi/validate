@@ -15,7 +15,7 @@
 package validate
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,7 +24,7 @@ import (
 
 func TestHelpers_addPointerError(t *testing.T) {
 	res := new(Result)
-	r := errorHelp.addPointerError(res, fmt.Errorf("my error"), "my ref", "path")
+	r := errorHelp.addPointerError(res, errors.New("my error"), "my ref", "path")
 	require.NotEmpty(t, r.Errors)
 	msg := r.Errors[0].Error()
 	assert.Contains(t, msg, "could not resolve reference in path to $ref my ref: my error")
