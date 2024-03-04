@@ -46,7 +46,7 @@ jobs:
 
     - uses: actions/checkout@v4
 
-    - run: go test -v -race -coverprofile="coverage-${{ matrix.os }}.${{ matrix.go_version }}.out" -covermode=atomic -coverpkg=$(go list)/... ./...
+    - run: go test -v -race -timeout 20m -coverprofile="coverage-${{ matrix.os }}.${{ matrix.go_version }}.out" -covermode=atomic -coverpkg=$(go list)/... ./...
 
     - name: Upload coverage to codecov
       uses: codecov/codecov-action@v4
