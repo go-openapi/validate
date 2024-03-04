@@ -51,16 +51,6 @@ func TestSchemaPropsValidator_EdgeCases(t *testing.T) {
 			res := s.Validate(data)
 			require.NotNil(t, res)
 			require.Empty(t, res.Errors)
-
-			/* TODO(fred)
-			t.Run("validator should run once", func(t *testing.T) {
-				// we should not do that: the pool chain list is populated with a duplicate: needs a reset
-				t.Cleanup(resetPools)
-				require.NotPanics(t, func() {
-					_ = s.Validate(data)
-				})
-			})
-			*/
 		})
 
 		t.Run("should NOT validate unformatted string", func(t *testing.T) {
