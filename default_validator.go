@@ -54,7 +54,8 @@ func isVisited(path string, visitedSchemas map[string]struct{}) bool {
 		parent string
 		suffix string
 	)
-	for i := len(path) - 2; i >= 0; i-- {
+	const backtrackFromEnd = 2
+	for i := len(path) - backtrackFromEnd; i >= 0; i-- {
 		r := path[i]
 		if r != '.' {
 			continue

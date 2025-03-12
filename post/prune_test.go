@@ -16,7 +16,6 @@ package post
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -76,7 +75,7 @@ func TestPrune(t *testing.T) {
 
 	validator := validate.NewSchemaValidator(schema, nil, "", strfmt.Default)
 	r := validator.Validate(x)
-	assert.False(t, r.HasErrors(), fmt.Sprintf("unexpected validation error: %v", r.AsError()))
+	assert.Falsef(t, r.HasErrors(), "unexpected validation error: %v", r.AsError())
 
 	Prune(r)
 	t.Logf("After: %v", x)

@@ -31,7 +31,10 @@ func TestDebug(t *testing.T) {
 		skipNotify(t)
 		t.SkipNow()
 	}
-	tmpFile, _ := os.CreateTemp("", "debug-test")
+
+	// standard lib t.TempDir() is still subject to an issue https://github.com/golang/go/issues/71544
+	// Hence: usetesting linter disabled
+	tmpFile, _ := os.CreateTemp("", "debug-test") //nolint:usetesting
 	tmpName := tmpFile.Name()
 	defer func() {
 		Debug = false

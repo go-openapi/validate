@@ -22,19 +22,31 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	errOne        = errors.New("one Error")
+	errAnother    = errors.New("another Error")
+	errNew        = errors.New("new Error")
+	errAdditional = errors.New("additional Error")
+	errImportant  = errors.New("IMPORTANT!Another Error")
+
+	errOneWarning       = errors.New("one Warning")
+	errNewWarning       = errors.New("new Warning")
+	errImportantWarning = errors.New("IMPORTANT!Another Warning")
+)
+
 // Test AddError() uniqueness
 func TestResult_AddError(t *testing.T) {
 	r := Result{}
-	r.AddErrors(errors.New("one error"))
-	r.AddErrors(errors.New("another error"))
-	r.AddErrors(errors.New("one error"))
-	r.AddErrors(errors.New("one error"))
-	r.AddErrors(errors.New("one error"))
-	r.AddErrors(errors.New("one error"), errors.New("another error"))
+	r.AddErrors(errOne)
+	r.AddErrors(errAnother)
+	r.AddErrors(errOne)
+	r.AddErrors(errOne)
+	r.AddErrors(errOne)
+	r.AddErrors(errOne, errAnother)
 
 	assert.Len(t, r.Errors, 2)
-	assert.Contains(t, r.Errors, errors.New("one error"))
-	assert.Contains(t, r.Errors, errors.New("another error"))
+	assert.Contains(t, r.Errors, errOne)
+	assert.Contains(t, r.Errors, errAnother)
 }
 
 func TestResult_AddNilError(t *testing.T) {
@@ -42,26 +54,26 @@ func TestResult_AddNilError(t *testing.T) {
 	r.AddErrors(nil)
 	assert.Empty(t, r.Errors)
 
-	errArray := []error{errors.New("one Error"), nil, errors.New("another error")}
+	errArray := []error{errOne, nil, errAnother}
 	r.AddErrors(errArray...)
 	assert.Len(t, r.Errors, 2)
 }
 
 func TestResult_AddWarnings(t *testing.T) {
 	r := Result{}
-	r.AddErrors(errors.New("one Error"))
+	r.AddErrors(errOne)
 	assert.Len(t, r.Errors, 1)
 	assert.Empty(t, r.Warnings)
 
-	r.AddWarnings(errors.New("one Warning"))
+	r.AddWarnings(errOneWarning)
 	assert.Len(t, r.Errors, 1)
 	assert.Len(t, r.Warnings, 1)
 }
 
 func TestResult_Merge(t *testing.T) {
 	r := Result{}
-	r.AddErrors(errors.New("one Error"))
-	r.AddWarnings(errors.New("one Warning"))
+	r.AddErrors(errOne)
+	r.AddWarnings(errOneWarning)
 	r.Inc()
 	assert.Len(t, r.Errors, 1)
 	assert.Len(t, r.Warnings, 1)
@@ -69,8 +81,8 @@ func TestResult_Merge(t *testing.T) {
 
 	// Merge with same
 	r2 := Result{}
-	r2.AddErrors(errors.New("one Error"))
-	r2.AddWarnings(errors.New("one Warning"))
+	r2.AddErrors(errOne)
+	r2.AddWarnings(errOneWarning)
 	r2.Inc()
 
 	r.Merge(&r2)
@@ -81,8 +93,8 @@ func TestResult_Merge(t *testing.T) {
 
 	// Merge with new
 	r3 := Result{}
-	r3.AddErrors(errors.New("new Error"))
-	r3.AddWarnings(errors.New("new Warning"))
+	r3.AddErrors(errNew)
+	r3.AddWarnings(errNewWarning)
 	r3.Inc()
 
 	r.Merge(&r3)
@@ -94,20 +106,20 @@ func TestResult_Merge(t *testing.T) {
 
 func errorFixture() (Result, Result, Result) {
 	r := Result{}
-	r.AddErrors(errors.New("one Error"))
-	r.AddWarnings(errors.New("one Warning"))
+	r.AddErrors(errOne)
+	r.AddWarnings(errOneWarning)
 	r.Inc()
 
 	// same
 	r2 := Result{}
-	r2.AddErrors(errors.New("one Error"))
-	r2.AddWarnings(errors.New("one Warning"))
+	r2.AddErrors(errOne)
+	r2.AddWarnings(errOneWarning)
 	r2.Inc()
 
 	// new
 	r3 := Result{}
-	r3.AddErrors(errors.New("new Error"))
-	r3.AddWarnings(errors.New("new Warning"))
+	r3.AddErrors(errNew)
+	r3.AddWarnings(errNewWarning)
 	r3.Inc()
 	return r, r2, r3
 }
@@ -144,11 +156,11 @@ func TestResult_IsValid(t *testing.T) {
 	assert.True(t, r.IsValid())
 	assert.False(t, r.HasErrors())
 
-	r.AddWarnings(errors.New("one Warning"))
+	r.AddWarnings(errOneWarning)
 	assert.True(t, r.IsValid())
 	assert.False(t, r.HasErrors())
 
-	r.AddErrors(errors.New("one Error"))
+	r.AddErrors(errOne)
 	assert.False(t, r.IsValid())
 	assert.True(t, r.HasErrors())
 }
@@ -158,10 +170,10 @@ func TestResult_HasWarnings(t *testing.T) {
 
 	assert.False(t, r.HasWarnings())
 
-	r.AddErrors(errors.New("one Error"))
+	r.AddErrors(errOne)
 	assert.False(t, r.HasWarnings())
 
-	r.AddWarnings(errors.New("one Warning"))
+	r.AddWarnings(errOneWarning)
 	assert.True(t, r.HasWarnings())
 }
 
@@ -171,10 +183,10 @@ func TestResult_HasErrorsOrWarnings(t *testing.T) {
 
 	assert.False(t, r.HasErrorsOrWarnings())
 
-	r.AddErrors(errors.New("one Error"))
+	r.AddErrors(errOne)
 	assert.True(t, r.HasErrorsOrWarnings())
 
-	r2.AddWarnings(errors.New("one Warning"))
+	r2.AddWarnings(errOneWarning)
 	assert.True(t, r2.HasErrorsOrWarnings())
 
 	r.Merge(&r2)
@@ -183,10 +195,10 @@ func TestResult_HasErrorsOrWarnings(t *testing.T) {
 
 func TestResult_keepRelevantErrors(t *testing.T) {
 	r := Result{}
-	r.AddErrors(errors.New("one Error"))
-	r.AddErrors(errors.New("IMPORTANT!Another Error"))
-	r.AddWarnings(errors.New("one warning"))
-	r.AddWarnings(errors.New("IMPORTANT!Another warning"))
+	r.AddErrors(errOne)
+	r.AddErrors(errImportant)
+	r.AddWarnings(errOneWarning)
+	r.AddWarnings(errImportantWarning)
 	assert.Len(t, r.keepRelevantErrors().Errors, 1)
 	assert.Len(t, r.keepRelevantErrors().Warnings, 1)
 }
@@ -194,8 +206,8 @@ func TestResult_keepRelevantErrors(t *testing.T) {
 func TestResult_AsError(t *testing.T) {
 	r := Result{}
 	require.NoError(t, r.AsError())
-	r.AddErrors(errors.New("one Error"))
-	r.AddErrors(errors.New("additional Error"))
+	r.AddErrors(errOne)
+	r.AddErrors(errAdditional)
 	res := r.AsError()
 	require.Error(t, res)
 

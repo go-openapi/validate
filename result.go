@@ -371,6 +371,14 @@ func (r *Result) AddWarnings(warnings ...error) {
 	}
 }
 
+func isImportant(err error) bool {
+	return strings.HasPrefix(err.Error(), "IMPORTANT!")
+}
+
+func stripImportantTag(err error) error {
+	return stderrors.New(strings.TrimPrefix(err.Error(), "IMPORTANT!")) //nolint:err113
+}
+
 func (r *Result) keepRelevantErrors() *Result {
 	// TODO: this one is going to disapear...
 	// keepRelevantErrors strips a result from standard errors and keeps
@@ -386,14 +394,14 @@ func (r *Result) keepRelevantErrors() *Result {
 	// placeholders.
 	strippedErrors := []error{}
 	for _, e := range r.Errors {
-		if strings.HasPrefix(e.Error(), "IMPORTANT!") {
-			strippedErrors = append(strippedErrors, stderrors.New(strings.TrimPrefix(e.Error(), "IMPORTANT!")))
+		if isImportant(e) {
+			strippedErrors = append(strippedErrors, stripImportantTag(e))
 		}
 	}
 	strippedWarnings := []error{}
 	for _, e := range r.Warnings {
-		if strings.HasPrefix(e.Error(), "IMPORTANT!") {
-			strippedWarnings = append(strippedWarnings, stderrors.New(strings.TrimPrefix(e.Error(), "IMPORTANT!")))
+		if isImportant(e) {
+			strippedWarnings = append(strippedWarnings, stripImportantTag(e))
 		}
 	}
 	var strippedResult *Result

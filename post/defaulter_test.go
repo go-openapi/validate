@@ -16,7 +16,6 @@ package post
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -39,7 +38,7 @@ func TestDefaulter(t *testing.T) {
 	t.Logf("Before: %v", x)
 
 	r := validator.Validate(x)
-	assert.False(t, r.HasErrors(), fmt.Sprintf("unexpected validation error: %v", r.AsError()))
+	assert.Falsef(t, r.HasErrors(), "unexpected validation error: %v", r.AsError())
 
 	ApplyDefaults(r)
 	t.Logf("After: %v", x)
@@ -79,7 +78,7 @@ func TestDefaulterSimple(t *testing.T) {
 	x := map[string]interface{}{}
 	t.Logf("Before: %v", x)
 	r := validator.Validate(x)
-	assert.False(t, r.HasErrors(), fmt.Sprintf("unexpected validation error: %v", r.AsError()))
+	assert.Falsef(t, r.HasErrors(), "unexpected validation error: %v", r.AsError())
 
 	ApplyDefaults(r)
 	t.Logf("After: %v", x)
@@ -102,7 +101,7 @@ func BenchmarkDefaulting(b *testing.B) {
 		validator := validate.NewSchemaValidator(schema, nil, "", strfmt.Default)
 		x := defaulterFixtureInput()
 		r := validator.Validate(x)
-		assert.False(b, r.HasErrors(), fmt.Sprintf("unexpected validation error: %v", r.AsError()))
+		assert.Falsef(b, r.HasErrors(), "unexpected validation error: %v", r.AsError())
 		ApplyDefaults(r)
 	}
 }

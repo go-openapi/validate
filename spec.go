@@ -685,7 +685,7 @@ func (s *SpecValidator) validateParameters() *Result {
 			// clone it once to avoid expanding a global schema (e.g. swagger spec)
 			paramSchema, err := deepCloneSchema(origSchema)
 			if err != nil {
-				panic(fmt.Errorf("can't clone schema: %v", err))
+				panic(fmt.Errorf("can't clone schema: %w", err))
 			}
 
 			for _, pr := range paramHelp.safeExpandedParamsFor(path, method, op.ID, res, s) {

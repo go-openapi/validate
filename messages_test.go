@@ -307,7 +307,7 @@ func reportTest(t *testing.T, path string, res *Result, expectedMessages []Expec
 	if len(lines) > 0 {
 		sort.Strings(lines)
 		for _, line := range lines {
-			t.Logf(line)
+			t.Log(line)
 		}
 	}
 }

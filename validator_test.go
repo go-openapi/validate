@@ -73,17 +73,17 @@ func TestParamValidator(t *testing.T) {
 
 func TestNumberValidator_EdgeCases(t *testing.T) {
 	// Apply
-	var min = float64(math.MinInt32 - 1)
-	var max = float64(math.MaxInt32 + 1)
+	var minimum = float64(math.MinInt32 - 1)
+	var maximum = float64(math.MaxInt32 + 1)
 
 	v := newNumberValidator(
 		"path",
 		"in",
 		nil,
 		nil,
-		&max, // *float64
+		&maximum, // *float64
 		false,
-		&min, // *float64
+		&minimum, // *float64
 		false,
 		// Allows for more accurate behavior regarding integers
 		"integer",
