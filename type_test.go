@@ -32,6 +32,7 @@ type expectedJSONType struct {
 	expectedSwaggerFormat string
 }
 
+//nolint:testifylint
 func TestType_schemaInfoForType(t *testing.T) {
 	testTypes := []expectedJSONType{
 		{
