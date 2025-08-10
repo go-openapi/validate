@@ -273,7 +273,7 @@ func (h *paramHelper) checkExpandedParam(pr *spec.Parameter, path, in, operation
 	simpleZero := spec.SimpleSchema{}
 	// Try to explain why... best guess
 	switch {
-	case pr.In == swaggerBody && (pr.SimpleSchema != simpleZero && pr.SimpleSchema.Type != objectType):
+	case pr.In == swaggerBody && (pr.SimpleSchema != simpleZero && pr.Type != objectType):
 		if isRef {
 			// Most likely, a $ref with a sibling is an unwanted situation: in itself this is a warning...
 			// but we detect it because of the following error:
