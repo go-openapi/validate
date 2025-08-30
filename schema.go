@@ -21,7 +21,7 @@ import (
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/spec"
 	"github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
 )
 
 // SchemaValidator validates data against a JSON schema
@@ -176,7 +176,15 @@ func (s *SchemaValidator) Validate(data interface{}) *Result {
 		// this means that all strfmt types passed here (e.g. strfmt.Datetime, etc..)
 		// are converted here to strings, and structs are systematically converted
 		// to map[string]interface{}.
-		d = swag.ToDynamicJSON(data)
+		var dd any
+		if err := jsonutils.FromDynamicJSON(data, &dd); err != nil {
+			result.AddErrors(err)
+			result.Inc()
+
+			return result
+		}
+
+		d = dd
 	}
 
 	// TODO: this part should be handed over to type validator

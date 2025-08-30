@@ -25,7 +25,7 @@ import (
 
 	"github.com/go-openapi/spec"
 	"github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/stringutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -93,15 +93,15 @@ var extendedFixtures = []string{
 }
 
 func isEnabled(nm string) bool {
-	return swag.ContainsStringsCI(enabled(), nm)
+	return stringutils.ContainsStringsCI(enabled(), nm)
 }
 
 func isOptionalEnabled(nm string) bool {
-	return swag.ContainsStringsCI(optionalFixtures, nm)
+	return stringutils.ContainsStringsCI(optionalFixtures, nm)
 }
 
 func isExtendedEnabled(nm string) bool {
-	return swag.ContainsStringsCI(extendedFixtures, nm)
+	return stringutils.ContainsStringsCI(extendedFixtures, nm)
 }
 
 func TestJSONSchemaSuite(t *testing.T) {
