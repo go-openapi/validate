@@ -21,7 +21,8 @@ import (
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/spec"
 	"github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/conv"
+	"github.com/go-openapi/swag/fileutils"
 )
 
 type typeValidator struct {
@@ -100,7 +101,7 @@ func (t *typeValidator) Validate(data interface{}) *Result {
 	// TODO: check json.Number (see schema.go)
 	isLowerInt := t.Format == integerFormatInt64 && format == integerFormatInt32
 	isLowerFloat := t.Format == numberFormatFloat64 && format == numberFormatFloat32
-	isFloatInt := schType == numberType && swag.IsFloat64AJSONInteger(val.Float()) && t.Type.Contains(integerType)
+	isFloatInt := schType == numberType && conv.IsFloat64AJSONInteger(val.Float()) && t.Type.Contains(integerType)
 	isIntFloat := schType == integerType && t.Type.Contains(numberType)
 
 	if kind != reflect.String && kind != reflect.Slice && t.Format != "" && !t.Type.Contains(schType) && format != t.Format && !isFloatInt && !isIntFloat && !isLowerInt && !isLowerFloat {
@@ -134,7 +135,7 @@ func (t *typeValidator) schemaInfoForType(data interface{}) (string, string) {
 		return stringType, stringFormatDateTime
 	case strfmt.Duration, *strfmt.Duration:
 		return stringType, stringFormatDuration
-	case swag.File, *swag.File:
+	case fileutils.File, *fileutils.File:
 		return fileType, ""
 	case strfmt.Email, *strfmt.Email:
 		return stringType, stringFormatEmail

@@ -28,7 +28,7 @@ import (
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/spec"
 	"github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
 )
 
 // Spec validates an OpenAPI 2.0 specification document.
@@ -696,7 +696,13 @@ func (s *SpecValidator) validateParameters() *Result {
 			for _, pr := range paramHelp.safeExpandedParamsFor(path, method, op.ID, res, s) {
 				// An expanded parameter must validate the Parameter schema (an unexpanded $ref always passes high-level schema validation)
 				schv := newSchemaValidator(&paramSchema, s.schema, fmt.Sprintf("%s.%s.parameters.%s", path, method, pr.Name), s.KnownFormats, s.schemaOptions)
-				obj := swag.ToDynamicJSON(pr)
+				var obj any
+				if err := jsonutils.FromDynamicJSON(pr, &obj); err != nil {
+					res.AddErrors(err)
+
+					return res
+				}
+
 				res.Merge(schv.Validate(obj))
 
 				// Validate pattern regexp for parameters with a Pattern property

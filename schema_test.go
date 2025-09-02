@@ -25,7 +25,7 @@ import (
 
 	"github.com/go-openapi/spec"
 	"github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/conv"
 )
 
 func TestSchemaValidator_Validate_Pattern(t *testing.T) {
@@ -171,7 +171,7 @@ func TestSchemaValidator_EdgeCases(t *testing.T) {
 	r = s.Validate(j)
 	assert.True(t, r.IsValid())
 
-	bignum := swag.FormatFloat64(math.MaxFloat64)
+	bignum := conv.FormatFloat(math.MaxFloat64)
 	j = json.Number(bignum)
 	r = s.Validate(j)
 	assert.False(t, r.IsValid())
