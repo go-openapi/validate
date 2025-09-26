@@ -22,7 +22,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/analysis"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/loads/fmts"
@@ -925,7 +924,7 @@ func Test_Examples(t *testing.T) {
 
 	res, _ := validator.Validate(doc)
 	if !assert.Truef(t, res.IsValid(), "expected spec to be valid") {
-		spew.Dump(res.Errors)
+		t.Logf("%#v", res.Errors)
 	}
 }
 

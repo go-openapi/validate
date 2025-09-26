@@ -19,7 +19,7 @@ func Benchmark_KubernetesSpec(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			validator := NewSpecValidator(doc.Schema(), strfmt.Default)
 			validator.Options.SkipSchemataResult = true
 			res, _ := validator.Validate(doc)

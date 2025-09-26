@@ -36,20 +36,20 @@ func (e valueError) Error() string {
 const ErrValue valueError = "value validation error"
 
 // Enum validates if the data is a member of the enum
-func Enum(path, in string, data interface{}, enum interface{}) *errors.Validation {
+func Enum(path, in string, data any, enum any) *errors.Validation {
 	return EnumCase(path, in, data, enum, true)
 }
 
 // EnumCase validates if the data is a member of the enum and may respect case-sensitivity for strings
-func EnumCase(path, in string, data interface{}, enum interface{}, caseSensitive bool) *errors.Validation {
+func EnumCase(path, in string, data any, enum any, caseSensitive bool) *errors.Validation {
 	val := reflect.ValueOf(enum)
 	if val.Kind() != reflect.Slice {
 		return nil
 	}
 
 	dataString := convertEnumCaseStringKind(data, caseSensitive)
-	var values []interface{}
-	for i := 0; i < val.Len(); i++ {
+	values := make([]any, 0, val.Len())
+	for i := range val.Len() {
 		ele := val.Index(i)
 		enumValue := ele.Interface()
 		if data != nil {
@@ -78,7 +78,7 @@ func EnumCase(path, in string, data interface{}, enum interface{}, caseSensitive
 }
 
 // convertEnumCaseStringKind converts interface if it is kind of string and case insensitivity is set
-func convertEnumCaseStringKind(value interface{}, caseSensitive bool) *string {
+func convertEnumCaseStringKind(value any, caseSensitive bool) *string {
 	if caseSensitive {
 		return nil
 	}
@@ -109,13 +109,13 @@ func MaxItems(path, in string, size, maximum int64) *errors.Validation {
 }
 
 // UniqueItems validates that the provided slice has unique elements
-func UniqueItems(path, in string, data interface{}) *errors.Validation {
+func UniqueItems(path, in string, data any) *errors.Validation {
 	val := reflect.ValueOf(data)
 	if val.Kind() != reflect.Slice {
 		return nil
 	}
-	var unique []interface{}
-	for i := 0; i < val.Len(); i++ {
+	unique := make([]any, 0, val.Len())
+	for i := range val.Len() {
 		v := val.Index(i).Interface()
 		for _, u := range unique {
 			if reflect.DeepEqual(v, u) {
@@ -146,7 +146,7 @@ func MaxLength(path, in, data string, maxLength int64) *errors.Validation {
 }
 
 // ReadOnly validates an interface for readonly
-func ReadOnly(ctx context.Context, path, in string, data interface{}) *errors.Validation {
+func ReadOnly(ctx context.Context, path, in string, data any) *errors.Validation {
 
 	// read only is only validated when operationType is request
 	if op := extractOperationType(ctx); op != request {
@@ -167,7 +167,7 @@ func ReadOnly(ctx context.Context, path, in string, data interface{}) *errors.Va
 }
 
 // Required validates an interface for requiredness
-func Required(path, in string, data interface{}) *errors.Validation {
+func Required(path, in string, data any) *errors.Validation {
 	val := reflect.ValueOf(data)
 	if val.IsValid() {
 		if reflect.DeepEqual(reflect.Zero(val.Type()).Interface(), val.Interface()) {
@@ -322,7 +322,7 @@ func FormatOf(path, in, format, data string, registry strfmt.Registry) *errors.V
 // which means there may be a loss during conversions (e.g. for very large integers)
 //
 // TODO: Normally, a JSON MAX_SAFE_INTEGER check would ensure conversion remains loss-free
-func MaximumNativeType(path, in string, val interface{}, maximum float64, exclusive bool) *errors.Validation {
+func MaximumNativeType(path, in string, val any, maximum float64, exclusive bool) *errors.Validation {
 	kind := reflect.ValueOf(val).Type().Kind()
 	switch kind { //nolint:exhaustive
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -352,7 +352,7 @@ func MaximumNativeType(path, in string, val interface{}, maximum float64, exclus
 // which means there may be a loss during conversions (e.g. for very large integers)
 //
 // TODO: Normally, a JSON MAX_SAFE_INTEGER check would ensure conversion remains loss-free
-func MinimumNativeType(path, in string, val interface{}, minimum float64, exclusive bool) *errors.Validation {
+func MinimumNativeType(path, in string, val any, minimum float64, exclusive bool) *errors.Validation {
 	kind := reflect.ValueOf(val).Type().Kind()
 	switch kind { //nolint:exhaustive
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -382,7 +382,7 @@ func MinimumNativeType(path, in string, val interface{}, minimum float64, exclus
 // which means there may be a loss during conversions (e.g. for very large integers)
 //
 // TODO: Normally, a JSON MAX_SAFE_INTEGER check would ensure conversion remains loss-free
-func MultipleOfNativeType(path, in string, val interface{}, multipleOf float64) *errors.Validation {
+func MultipleOfNativeType(path, in string, val any, multipleOf float64) *errors.Validation {
 	kind := reflect.ValueOf(val).Type().Kind()
 	switch kind { //nolint:exhaustive
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -403,7 +403,7 @@ func MultipleOfNativeType(path, in string, val interface{}, multipleOf float64) 
 // the range defined by Type and Format, that is, may be converted without loss.
 //
 // NOTE: this check is about type capacity and not formal verification such as: 1.0 != 1L
-func IsValueValidAgainstRange(val interface{}, typeName, format, prefix, path string) error {
+func IsValueValidAgainstRange(val any, typeName, format, prefix, path string) error {
 	kind := reflect.ValueOf(val).Type().Kind()
 
 	// What is the string representation of val
