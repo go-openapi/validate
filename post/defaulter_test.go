@@ -42,7 +42,7 @@ func TestDefaulter(t *testing.T) {
 
 	ApplyDefaults(r)
 	t.Logf("After: %v", x)
-	var expected interface{}
+	var expected any
 	err = json.Unmarshal([]byte(`{
 		"existing": 100,
 		"int": 42,
@@ -75,14 +75,14 @@ func TestDefaulterSimple(t *testing.T) {
 		},
 	}
 	validator := validate.NewSchemaValidator(&schema, nil, "", strfmt.Default)
-	x := map[string]interface{}{}
+	x := make(map[string]any)
 	t.Logf("Before: %v", x)
 	r := validator.Validate(x)
 	assert.Falsef(t, r.HasErrors(), "unexpected validation error: %v", r.AsError())
 
 	ApplyDefaults(r)
 	t.Logf("After: %v", x)
-	var expected interface{}
+	var expected any
 	err := json.Unmarshal([]byte(`{
 		"int": 42,
 		"str": "Hello"
@@ -97,7 +97,7 @@ func BenchmarkDefaulting(b *testing.B) {
 	schema, err := defaulterFixture()
 	require.NoError(b, err)
 
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		validator := validate.NewSchemaValidator(schema, nil, "", strfmt.Default)
 		x := defaulterFixtureInput()
 		r := validator.Validate(x)
@@ -106,13 +106,13 @@ func BenchmarkDefaulting(b *testing.B) {
 	}
 }
 
-func defaulterFixtureInput() map[string]interface{} {
-	return map[string]interface{}{
+func defaulterFixtureInput() map[string]any {
+	return map[string]any{
 		"existing": float64(100),
-		"nested":   map[string]interface{}{},
-		"all":      map[string]interface{}{},
-		"any":      map[string]interface{}{},
-		"one":      map[string]interface{}{},
+		"nested":   map[string]any{},
+		"all":      map[string]any{},
+		"any":      map[string]any{},
+		"one":      map[string]any{},
 	}
 }
 

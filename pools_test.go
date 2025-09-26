@@ -16,7 +16,7 @@ func Test_ParallelPool(t *testing.T) {
 	fixture3 := filepath.Join("fixtures", "bugs", "43", "fixture-43.yaml")
 
 	t.Run("should validate in parallel", func(t *testing.T) {
-		for i := 0; i < 20; i++ {
+		for range 20 {
 			t.Run("validating fixture 1", func(t *testing.T) {
 				t.Parallel()
 

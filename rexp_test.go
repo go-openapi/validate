@@ -75,7 +75,7 @@ func TestRace_compileRegexp(t *testing.T) {
 		assert.IsType(t, vrex, rex)
 	}
 
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		ii := i
 		t.Run(patterns[ii%3], func(t *testing.T) {
 			t.Parallel()
@@ -99,7 +99,7 @@ func TestRace_mustCompileRegexp(t *testing.T) {
 		assert.IsType(t, vrex, rex)
 	}
 
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		ii := i
 		t.Run(patterns[ii%3], func(t *testing.T) {
 			t.Parallel()

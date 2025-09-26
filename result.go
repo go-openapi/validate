@@ -518,7 +518,7 @@ func (s *schemata) Slice() []*spec.Schema {
 	return s.multiple
 }
 
-// appendSchemata appends the schemata in other to s. It mutates s in-place.
+// Append appends the schemata in other to s. It mutates s in-place.
 func (s *schemata) Append(other schemata) {
 	if other.one == nil && len(other.multiple) == 0 {
 		return
@@ -560,7 +560,7 @@ func (s schemata) Clone() schemata {
 
 	if len(s.multiple) > 0 {
 		clone.multiple = make([]*spec.Schema, len(s.multiple))
-		for idx := 0; idx < len(s.multiple); idx++ {
+		for idx := range len(s.multiple) {
 			sp := new(spec.Schema)
 			*sp = *s.multiple[idx]
 			clone.multiple[idx] = sp
