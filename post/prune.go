@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
+
 // Copyright 2018 go-swagger maintainers
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,21 +27,21 @@ func Prune(r *validate.Result) {
 	prune(r.Data(), r)
 }
 
-func prune(data interface{}, result *validate.Result) {
+func prune(data any, result *validate.Result) {
 	switch obj := data.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		pruneObject(obj, result)
 		for _, val := range obj {
 			prune(val, result)
 		}
-	case []interface{}:
+	case []any:
 		for _, item := range obj {
 			prune(item, result)
 		}
 	}
 }
 
-func pruneObject(obj map[string]interface{}, result *validate.Result) {
+func pruneObject(obj map[string]any, result *validate.Result) {
 	fieldSchemata := result.FieldSchemata()
 	for field := range obj {
 		if schemata, ok := fieldSchemata[validate.NewFieldKey(obj, field)]; !ok || len(schemata) == 0 {

@@ -1,16 +1,5 @@
-// Copyright 2015 go-swagger maintainers
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
 
 package post
 
@@ -34,38 +23,38 @@ func TestPrune(t *testing.T) {
 	schema, err := pruningFixture()
 	require.NoError(t, err)
 
-	x := map[string]interface{}{
+	x := map[string]any{
 		"foo": 42,
 		"bar": 42,
 		"x":   42,
-		"nested": map[string]interface{}{
+		"nested": map[string]any{
 			"x": 42,
-			"inner": map[string]interface{}{
+			"inner": map[string]any{
 				"foo": 42,
 				"bar": 42,
 				"x":   42,
 			},
 		},
-		"all": map[string]interface{}{
+		"all": map[string]any{
 			"foo": 42,
 			"bar": 42,
 			"x":   42,
 		},
-		"any": map[string]interface{}{
+		"any": map[string]any{
 			"foo": 42,
 			"bar": 42,
 			"x":   42,
 		},
-		"one": map[string]interface{}{
+		"one": map[string]any{
 			"bar": 42,
 			"x":   42,
 		},
-		"array": []interface{}{
-			map[string]interface{}{
+		"array": []any{
+			map[string]any{
 				"foo": 42,
 				"bar": 123,
 			},
-			map[string]interface{}{
+			map[string]any{
 				"x": 42,
 				"y": 123,
 			},
@@ -79,31 +68,31 @@ func TestPrune(t *testing.T) {
 
 	Prune(r)
 	t.Logf("After: %v", x)
-	expected := map[string]interface{}{
+	expected := map[string]any{
 		"foo": 42,
 		"bar": 42,
-		"nested": map[string]interface{}{
-			"inner": map[string]interface{}{
+		"nested": map[string]any{
+			"inner": map[string]any{
 				"foo": 42,
 				"bar": 42,
 			},
 		},
-		"all": map[string]interface{}{
+		"all": map[string]any{
 			"foo": 42,
 			"bar": 42,
 		},
-		"any": map[string]interface{}{
+		"any": map[string]any{
 			// intentionally only list one: the first matching
 			"foo": 42,
 		},
-		"one": map[string]interface{}{
+		"one": map[string]any{
 			"bar": 42,
 		},
-		"array": []interface{}{
-			map[string]interface{}{
+		"array": []any{
+			map[string]any{
 				"foo": 42,
 			},
-			map[string]interface{}{},
+			map[string]any{},
 		},
 	}
 	assert.Equal(t, expected, x)

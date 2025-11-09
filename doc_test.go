@@ -1,16 +1,5 @@
-// Copyright 2015 go-swagger maintainers
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
 
 package validate_test
 
@@ -150,7 +139,7 @@ func ExampleAgainstSchema() {
 	schema := new(spec.Schema)
 	_ = json.Unmarshal([]byte(schemaJSON), schema)
 
-	input := map[string]interface{}{}
+	input := map[string]any{}
 
 	// JSON data to validate
 	inputJSON := `{"name": "Ivan","address-1": "sesame street"}`
@@ -169,13 +158,13 @@ func ExampleAgainstSchema() {
 
 func TestValidate_Issue112(t *testing.T) {
 	t.Run("returns no error on body includes `items` key", func(t *testing.T) {
-		body := map[string]interface{}{"items1": nil}
+		body := map[string]any{"items1": nil}
 		err := validate.AgainstSchema(getSimpleSchema(), body, strfmt.Default)
 		require.NoError(t, err)
 	})
 
 	t.Run("returns no error when body includes `items` key", func(t *testing.T) {
-		body := map[string]interface{}{"items": nil}
+		body := map[string]any{"items": nil}
 		err := validate.AgainstSchema(getSimpleSchema(), body, strfmt.Default)
 		require.NoError(t, err)
 	})

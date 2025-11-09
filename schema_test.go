@@ -1,16 +1,5 @@
-// Copyright 2015 go-swagger maintainers
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
 
 package validate
 
@@ -51,7 +40,7 @@ func TestSchemaValidator_Validate_Pattern(t *testing.T) {
 	schema := new(spec.Schema)
 	require.NoError(t, json.Unmarshal([]byte(schemaJSON), schema))
 
-	var input map[string]interface{}
+	var input map[string]any
 	var inputJSON = `{"name": "Ivan"}`
 
 	require.NoError(t, json.Unmarshal([]byte(inputJSON), &input))
@@ -88,7 +77,7 @@ func TestSchemaValidator_PatternProperties(t *testing.T) {
 	schema := new(spec.Schema)
 	require.NoError(t, json.Unmarshal([]byte(schemaJSON), schema))
 
-	var input map[string]interface{}
+	var input map[string]any
 
 	// ok
 	var inputJSON = `{"name": "Ivan","address-1": "sesame street"}`
@@ -119,7 +108,7 @@ func schemaValidatorPanicker() {
 	schema := new(spec.Schema)
 	_ = json.Unmarshal([]byte(schemaJSON), schema)
 
-	var input map[string]interface{}
+	var input map[string]any
 
 	// ok
 	var inputJSON = `{"name": "Ivan","address-1": "sesame street"}`
@@ -201,7 +190,7 @@ func TestSchemaValidator_SchemaOptions(t *testing.T) {
 	schema := new(spec.Schema)
 	require.NoError(t, json.Unmarshal([]byte(schemaJSON), schema))
 
-	var input map[string]interface{}
+	var input map[string]any
 	var inputJSON = `{"spec": {"items": ["foo", "bar"], "replicas": 1}}`
 	require.NoError(t, json.Unmarshal([]byte(inputJSON), &input))
 
@@ -225,7 +214,7 @@ func TestSchemaValidator_TypeArray_Issue83(t *testing.T) {
 	schema := new(spec.Schema)
 	require.NoError(t, json.Unmarshal([]byte(schemaJSON), schema))
 
-	var input map[string]interface{}
+	var input map[string]any
 	var inputJSON = `{"type": "array"}`
 
 	require.NoError(t, json.Unmarshal([]byte(inputJSON), &input))

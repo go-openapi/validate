@@ -1,16 +1,5 @@
-// Copyright 2015 go-swagger maintainers
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
 
 package validate
 
@@ -26,7 +15,7 @@ import (
 )
 
 func TestValues_ValidateIntEnum(t *testing.T) {
-	enumValues := []interface{}{1, 2, 3}
+	enumValues := []any{1, 2, 3}
 
 	require.Error(t, Enum("test", "body", int64(5), enumValues))
 	require.Nil(t, Enum("test", "body", int64(1), enumValues))
@@ -76,7 +65,7 @@ func TestValues_ValidateEnumCaseInsensitive(t *testing.T) {
 }
 
 func TestValues_ValidateUniqueItems(t *testing.T) {
-	itemsNonUnique := []interface{}{
+	itemsNonUnique := []any{
 		[]int32{1, 2, 3, 4, 4, 5},
 		[]string{"aa", "bb", "cc", "cc", "dd"},
 	}
@@ -84,7 +73,7 @@ func TestValues_ValidateUniqueItems(t *testing.T) {
 		require.Error(t, UniqueItems("test", "body", v))
 	}
 
-	itemsUnique := []interface{}{
+	itemsUnique := []any{
 		[]int32{1, 2, 3},
 		"I'm a string",
 		map[string]int{
@@ -117,18 +106,18 @@ func TestValues_ReadOnly(t *testing.T) {
 		in   = "body"
 	)
 
-	ReadOnlySuccess := []interface{}{
+	ReadOnlySuccess := []any{
 		"",
 		0,
 		nil,
 	}
 
 	// fail only when operation type is request
-	ReadOnlyFail := []interface{}{
+	ReadOnlyFail := []any{
 		" ",
 		"bla-bla-bla",
 		2,
-		[]interface{}{21, []int{}, "testString"},
+		[]any{21, []int{}, "testString"},
 	}
 
 	t.Run("No operation context", func(t *testing.T) {
@@ -168,7 +157,7 @@ func TestValues_ValidateRequired(t *testing.T) {
 		in   = "body"
 	)
 
-	RequiredFail := []interface{}{
+	RequiredFail := []any{
 		"",
 		0,
 		nil,
@@ -178,11 +167,11 @@ func TestValues_ValidateRequired(t *testing.T) {
 		require.Error(t, Required(path, in, v))
 	}
 
-	RequiredSuccess := []interface{}{
+	RequiredSuccess := []any{
 		" ",
 		"bla-bla-bla",
 		2,
-		[]interface{}{21, []int{}, "testString"},
+		[]any{21, []int{}, "testString"},
 	}
 
 	for _, v := range RequiredSuccess {

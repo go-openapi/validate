@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
+
 // Copyright 2017 go-swagger maintainers
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,14 +27,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func itemsFixture() map[string]interface{} {
-	return map[string]interface{}{
+func itemsFixture() map[string]any {
+	return map[string]any{
 		"type":  "array",
 		"items": "dummy",
 	}
 }
 
-func expectAllValid(t *testing.T, ov EntityValidator, dataValid, dataInvalid map[string]interface{}) {
+func expectAllValid(t *testing.T, ov EntityValidator, dataValid, dataInvalid map[string]any) {
 	res := ov.Validate(dataValid)
 	assert.Empty(t, res.Errors)
 
@@ -39,7 +42,7 @@ func expectAllValid(t *testing.T, ov EntityValidator, dataValid, dataInvalid map
 	assert.Empty(t, res.Errors)
 }
 
-func expectOnlyInvalid(t *testing.T, ov EntityValidator, dataValid, dataInvalid map[string]interface{}) {
+func expectOnlyInvalid(t *testing.T, ov EntityValidator, dataValid, dataInvalid map[string]any) {
 	res := ov.Validate(dataValid)
 	assert.Empty(t, res.Errors)
 
@@ -50,7 +53,7 @@ func expectOnlyInvalid(t *testing.T, ov EntityValidator, dataValid, dataInvalid 
 func TestItemsMustBeTypeArray(t *testing.T) {
 	ov := newObjectValidator("", "", nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	dataValid := itemsFixture()
-	dataInvalid := map[string]interface{}{
+	dataInvalid := map[string]any{
 		"type":  "object",
 		"items": "dummy",
 	}
@@ -63,7 +66,7 @@ func TestItemsMustBeTypeArray(t *testing.T) {
 func TestItemsMustHaveType(t *testing.T) {
 	ov := newObjectValidator("", "", nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	dataValid := itemsFixture()
-	dataInvalid := map[string]interface{}{
+	dataInvalid := map[string]any{
 		"items": "dummy",
 	}
 	expectAllValid(t, ov, dataValid, dataInvalid)
@@ -75,7 +78,7 @@ func TestItemsMustHaveType(t *testing.T) {
 func TestTypeArrayMustHaveItems(t *testing.T) {
 	ov := newObjectValidator("", "", nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	dataValid := itemsFixture()
-	dataInvalid := map[string]interface{}{
+	dataInvalid := map[string]any{
 		"type": "array",
 		"key":  "dummy",
 	}
@@ -126,7 +129,7 @@ func TestObjectValidatorPatternProperties(t *testing.T) {
 	t.Run("should ignore invalid regexp in pattern properties", func(t *testing.T) {
 		s := newObjectValidator("test", "body", nil, nil, nil, nil, nil, patternWithValid, nil, nil, nil)
 
-		res := s.Validate(map[string]interface{}{"valid": "test_string"})
+		res := s.Validate(map[string]any{"valid": "test_string"})
 		require.NotNil(t, res)
 		require.Empty(t, res.Errors)
 	})
@@ -134,7 +137,7 @@ func TestObjectValidatorPatternProperties(t *testing.T) {
 	t.Run("should report forbidden property when invalid regexp in pattern properties", func(t *testing.T) {
 		s := newObjectValidator("test", "body", nil, nil, nil, nil, nil, patternGarbled, nil, nil, nil)
 
-		res := s.Validate(map[string]interface{}{"valid": "test_string"})
+		res := s.Validate(map[string]any{"valid": "test_string"})
 		require.NotNil(t, res)
 		require.Empty(t, res.Errors)
 	})
@@ -145,7 +148,7 @@ func TestObjectValidatorPatternProperties(t *testing.T) {
 			Allows: false,
 		}, patternWithValid, nil, nil, nil)
 
-		res := s.Validate(map[string]interface{}{"valid": "test_string"})
+		res := s.Validate(map[string]any{"valid": "test_string"})
 		require.NotNil(t, res)
 		require.Empty(t, res.Errors)
 	})
@@ -156,7 +159,7 @@ func TestObjectValidatorPatternProperties(t *testing.T) {
 			Allows: false,
 		}, patternGarbled, nil, nil, nil)
 
-		res := s.Validate(map[string]interface{}{"valid": "test_string"})
+		res := s.Validate(map[string]any{"valid": "test_string"})
 		require.NotNil(t, res)
 		require.Len(t, res.Errors, 1)
 		require.ErrorContains(t, res.Errors[0], "forbidden property")
@@ -209,9 +212,9 @@ func TestObjectValidatorWithHeaderProperty(t *testing.T) {
 			Allows: false,
 		}, nil, nil, nil, nil)
 
-		res := s.Validate(map[string]interface{}{
-			"headers": map[string]interface{}{
-				"X-Custom": map[string]interface{}{
+		res := s.Validate(map[string]any{
+			"headers": map[string]any{
+				"X-Custom": map[string]any{
 					"$ref": "#/definitions/myHeader",
 				},
 			},
@@ -237,9 +240,9 @@ func TestObjectValidatorWithHeaderProperty(t *testing.T) {
 		}, nil, nil, nil, nil)
 
 		t.Run("when key is not headers", func(t *testing.T) {
-			res := s.Validate(map[string]interface{}{
-				"Headers": map[string]interface{}{
-					"X-Custom": map[string]interface{}{
+			res := s.Validate(map[string]any{
+				"Headers": map[string]any{
+					"X-Custom": map[string]any{
 						"$ref": "#/definitions/myHeader",
 					},
 				},
@@ -249,7 +252,7 @@ func TestObjectValidatorWithHeaderProperty(t *testing.T) {
 		})
 
 		t.Run("when key is not the expected map", func(t *testing.T) {
-			res := s.Validate(map[string]interface{}{
+			res := s.Validate(map[string]any{
 				"headers": map[string]string{
 					"X-Custom": "#/definitions/myHeader",
 				},
@@ -259,8 +262,8 @@ func TestObjectValidatorWithHeaderProperty(t *testing.T) {
 		})
 
 		t.Run("when key content not the expected map", func(t *testing.T) {
-			res := s.Validate(map[string]interface{}{
-				"headers": map[string]interface{}{
+			res := s.Validate(map[string]any{
+				"headers": map[string]any{
 					"X-Custom": 1,
 				},
 			})
@@ -269,8 +272,8 @@ func TestObjectValidatorWithHeaderProperty(t *testing.T) {
 		})
 
 		t.Run("when key content not the expected map", func(t *testing.T) {
-			res := s.Validate(map[string]interface{}{
-				"headers": map[string]interface{}{
+			res := s.Validate(map[string]any{
+				"headers": map[string]any{
 					"X-Custom": nil,
 				},
 			})
@@ -279,9 +282,9 @@ func TestObjectValidatorWithHeaderProperty(t *testing.T) {
 		})
 
 		t.Run("when header is not a valid $ref", func(t *testing.T) {
-			res := s.Validate(map[string]interface{}{
-				"headers": map[string]interface{}{
-					"X-Custom": map[string]interface{}{
+			res := s.Validate(map[string]any{
+				"headers": map[string]any{
+					"X-Custom": map[string]any{
 						"$ref": 1,
 					},
 				},
@@ -291,9 +294,9 @@ func TestObjectValidatorWithHeaderProperty(t *testing.T) {
 		})
 
 		t.Run("when header is not a $ref", func(t *testing.T) {
-			res := s.Validate(map[string]interface{}{
-				"headers": map[string]interface{}{
-					"X-Custom": map[string]interface{}{
+			res := s.Validate(map[string]any{
+				"headers": map[string]any{
+					"X-Custom": map[string]any{
 						"ref": "#/definitions/myHeader",
 					},
 				},

@@ -1,16 +1,5 @@
-// Copyright 2015 go-swagger maintainers
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
 
 package validate
 
@@ -93,7 +82,7 @@ func TestNumberValidator_EdgeCases(t *testing.T) {
 
 	// numberValidator applies to: Parameter,Schema,Items,Header
 
-	sources := []interface{}{
+	sources := []any{
 		new(spec.Parameter),
 		new(spec.Schema),
 		new(spec.Items),
@@ -115,7 +104,7 @@ func TestNumberValidator_EdgeCases(t *testing.T) {
 	assert.True(t, res.HasErrors())
 }
 
-func testNumberApply(t *testing.T, v *numberValidator, sources []interface{}) {
+func testNumberApply(t *testing.T, v *numberValidator, sources []any) {
 	for _, source := range sources {
 		// numberValidator does not applies to:
 		assert.False(t, v.Applies(source, reflect.String))
@@ -145,7 +134,7 @@ func TestStringValidator_EdgeCases(t *testing.T) {
 
 	// stringValidator applies to: Parameter,Schema,Items,Header
 
-	sources := []interface{}{
+	sources := []any{
 		new(spec.Parameter),
 		new(spec.Schema),
 		new(spec.Items),
@@ -157,7 +146,7 @@ func TestStringValidator_EdgeCases(t *testing.T) {
 	assert.False(t, v.Applies("A string", reflect.String))
 }
 
-func testStringApply(t *testing.T, v *stringValidator, sources []interface{}) {
+func testStringApply(t *testing.T, v *stringValidator, sources []any) {
 	for _, source := range sources {
 		// numberValidator does not applies to:
 		assert.False(t, v.Applies(source, reflect.Struct))
@@ -172,12 +161,12 @@ func TestBasicCommonValidator_EdgeCases(t *testing.T) {
 
 	v := newBasicCommonValidator(
 		"", "",
-		nil, []interface{}{"a", nil, 3}, nil,
+		nil, []any{"a", nil, 3}, nil,
 	)
 
 	// basicCommonValidator applies to: Parameter,Schema,Header
 
-	sources := []interface{}{
+	sources := []any{
 		new(spec.Parameter),
 		new(spec.Schema),
 		new(spec.Header),
@@ -215,7 +204,7 @@ func TestBasicCommonValidator_EdgeCases(t *testing.T) {
 	})
 }
 
-func testCommonApply(t *testing.T, v *basicCommonValidator, sources []interface{}) {
+func testCommonApply(t *testing.T, v *basicCommonValidator, sources []any) {
 	for _, source := range sources {
 		assert.True(t, v.Applies(source, reflect.String))
 	}
@@ -230,7 +219,7 @@ func TestBasicSliceValidator_EdgeCases(t *testing.T) {
 
 		// basicCommonValidator applies to: Parameter,Schema,Header
 
-		sources := []interface{}{
+		sources := []any{
 			new(spec.Parameter),
 			new(spec.Items),
 			new(spec.Header),
@@ -254,7 +243,7 @@ func TestBasicSliceValidator_EdgeCases(t *testing.T) {
 	})
 }
 
-func testSliceApply(t *testing.T, v *basicSliceValidator, sources []interface{}) {
+func testSliceApply(t *testing.T, v *basicSliceValidator, sources []any) {
 	for _, source := range sources {
 		assert.True(t, v.Applies(source, reflect.Slice))
 	}
