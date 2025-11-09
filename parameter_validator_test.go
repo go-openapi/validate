@@ -1,16 +1,5 @@
-// Copyright 2015 go-swagger maintainers
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
 
 package validate
 
@@ -27,19 +16,19 @@ import (
 
 // common validations: enum, allOf, anyOf, oneOf, not, definitions
 
-func maxError(param *spec.Parameter, data interface{}) *errors.Validation {
+func maxError(param *spec.Parameter, data any) *errors.Validation {
 	return errors.ExceedsMaximum(param.Name, param.In, *param.Maximum, param.ExclusiveMaximum, data)
 }
 
-func minError(param *spec.Parameter, data interface{}) *errors.Validation {
+func minError(param *spec.Parameter, data any) *errors.Validation {
 	return errors.ExceedsMinimum(param.Name, param.In, *param.Minimum, param.ExclusiveMinimum, data)
 }
 
-func multipleOfError(param *spec.Parameter, data interface{}) *errors.Validation {
+func multipleOfError(param *spec.Parameter, data any) *errors.Validation {
 	return errors.NotMultipleOf(param.Name, param.In, *param.MultipleOf, data)
 }
 
-func makeFloat(data interface{}) float64 {
+func makeFloat(data any) float64 {
 	val := reflect.ValueOf(data)
 	knd := val.Kind()
 	switch {
@@ -54,7 +43,7 @@ func makeFloat(data interface{}) float64 {
 
 func TestNumberParameterValidation(t *testing.T) {
 
-	values := [][]interface{}{
+	values := [][]any{
 		{23, 49, 56, 21, 14, 35, 28, 7, 42},
 		{uint(23), uint(49), uint(56), uint(21), uint(14), uint(35), uint(28), uint(7), uint(42)},
 		{float64(23), float64(49), float64(56), float64(21), float64(14), float64(35), float64(28), float64(7), float64(42)},
@@ -130,19 +119,19 @@ func TestNumberParameterValidation(t *testing.T) {
 	// Definitions
 }
 
-func maxLengthError(param *spec.Parameter, data interface{}) *errors.Validation {
+func maxLengthError(param *spec.Parameter, data any) *errors.Validation {
 	return errors.TooLong(param.Name, param.In, *param.MaxLength, data)
 }
 
-func minLengthError(param *spec.Parameter, data interface{}) *errors.Validation {
+func minLengthError(param *spec.Parameter, data any) *errors.Validation {
 	return errors.TooShort(param.Name, param.In, *param.MinLength, data)
 }
 
-func patternFail(param *spec.Parameter, data interface{}) *errors.Validation {
+func patternFail(param *spec.Parameter, data any) *errors.Validation {
 	return errors.FailedPattern(param.Name, param.In, param.Pattern, data)
 }
 
-func enumFail(param *spec.Parameter, data interface{}) *errors.Validation {
+func enumFail(param *spec.Parameter, data any) *errors.Validation {
 	return errors.EnumFail(param.Name, param.In, data, param.Enum)
 }
 
@@ -195,10 +184,10 @@ func TestStringParameterValidation(t *testing.T) {
 	// Definitions
 }
 
-func minItemsError(param *spec.Parameter, data interface{}) *errors.Validation {
+func minItemsError(param *spec.Parameter, data any) *errors.Validation {
 	return errors.TooFewItems(param.Name, param.In, *param.MinItems, data)
 }
-func maxItemsError(param *spec.Parameter, data interface{}) *errors.Validation {
+func maxItemsError(param *spec.Parameter, data any) *errors.Validation {
 	return errors.TooManyItems(param.Name, param.In, *param.MaxItems, data)
 }
 func duplicatesError(param *spec.Parameter) *errors.Validation {

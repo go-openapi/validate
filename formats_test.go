@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
+
 package validate
 
 import (
@@ -27,7 +30,7 @@ func TestFormatValidator_EdgeCases(t *testing.T) {
 	i := spec.Items{}
 	i.Typed(stringType, "datetime")
 
-	sources := []interface{}{&p, &s, &i}
+	sources := []any{&p, &s, &i}
 
 	for _, source := range sources {
 		// Default formats for strings

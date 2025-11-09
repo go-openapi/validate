@@ -1,16 +1,5 @@
-// Copyright 2015 go-swagger maintainers
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
 
 package validate
 
@@ -51,19 +40,19 @@ func stringItems() *spec.Items {
 	return spec.NewItems().Typed(stringType, "")
 }
 
-func requiredError(param *spec.Parameter, data interface{}) *errors.Validation {
+func requiredError(param *spec.Parameter, data any) *errors.Validation {
 	return errors.Required(param.Name, param.In, data)
 }
 
-func maxErrorItems(path, in string, items *spec.Items, data interface{}) *errors.Validation {
+func maxErrorItems(path, in string, items *spec.Items, data any) *errors.Validation {
 	return errors.ExceedsMaximum(path, in, *items.Maximum, items.ExclusiveMaximum, data)
 }
 
-func minErrorItems(path, in string, items *spec.Items, data interface{}) *errors.Validation {
+func minErrorItems(path, in string, items *spec.Items, data any) *errors.Validation {
 	return errors.ExceedsMinimum(path, in, *items.Minimum, items.ExclusiveMinimum, data)
 }
 
-func multipleOfErrorItems(path, in string, items *spec.Items, data interface{}) *errors.Validation {
+func multipleOfErrorItems(path, in string, items *spec.Items, data any) *errors.Validation {
 	return errors.NotMultipleOf(path, in, *items.MultipleOf, data)
 }
 
@@ -73,27 +62,27 @@ func requiredErrorItems(path, in string) *errors.Validation {
 }
 */
 
-func maxLengthErrorItems(path, in string, items *spec.Items, data interface{}) *errors.Validation {
+func maxLengthErrorItems(path, in string, items *spec.Items, data any) *errors.Validation {
 	return errors.TooLong(path, in, *items.MaxLength, data)
 }
 
-func minLengthErrorItems(path, in string, items *spec.Items, data interface{}) *errors.Validation {
+func minLengthErrorItems(path, in string, items *spec.Items, data any) *errors.Validation {
 	return errors.TooShort(path, in, *items.MinLength, data)
 }
 
-func patternFailItems(path, in string, items *spec.Items, data interface{}) *errors.Validation {
+func patternFailItems(path, in string, items *spec.Items, data any) *errors.Validation {
 	return errors.FailedPattern(path, in, items.Pattern, data)
 }
 
-func enumFailItems(path, in string, items *spec.Items, data interface{}) *errors.Validation {
+func enumFailItems(path, in string, items *spec.Items, data any) *errors.Validation {
 	return errors.EnumFail(path, in, data, items.Enum)
 }
 
-func minItemsErrorItems(path, in string, items *spec.Items, data interface{}) *errors.Validation {
+func minItemsErrorItems(path, in string, items *spec.Items, data any) *errors.Validation {
 	return errors.TooFewItems(path, in, *items.MinItems, data)
 }
 
-func maxItemsErrorItems(path, in string, items *spec.Items, data interface{}) *errors.Validation {
+func maxItemsErrorItems(path, in string, items *spec.Items, data any) *errors.Validation {
 	return errors.TooManyItems(path, in, *items.MaxItems, data)
 }
 
@@ -103,7 +92,7 @@ func duplicatesErrorItems(path, in string) *errors.Validation {
 
 func TestNumberItemsValidation(t *testing.T) {
 
-	values := [][]interface{}{
+	values := [][]any{
 		{23, 49, 56, 21, 14, 35, 28, 7, 42},
 		{uint(23), uint(49), uint(56), uint(21), uint(14), uint(35), uint(28), uint(7), uint(42)},
 		{float64(23), float64(49), float64(56), float64(21), float64(14), float64(35), float64(28), float64(7), float64(42)},
