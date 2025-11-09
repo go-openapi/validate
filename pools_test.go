@@ -9,8 +9,8 @@ import (
 
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/testify/v2/require"
 	"github.com/go-openapi/validate"
-	"github.com/stretchr/testify/require"
 )
 
 func Test_ParallelPool(t *testing.T) {
