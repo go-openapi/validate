@@ -12,9 +12,9 @@ import (
 
 	"github.com/go-openapi/loads" // Spec loading
 	"github.com/go-openapi/spec"
-	"github.com/go-openapi/strfmt"   // OpenAPI format extensions
+	"github.com/go-openapi/strfmt" // OpenAPI format extensions
+	"github.com/go-openapi/testify/v2/require"
 	"github.com/go-openapi/validate" // This package
-	"github.com/stretchr/testify/require"
 )
 
 func ExampleSpec() {

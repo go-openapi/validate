@@ -8,8 +8,8 @@ import (
 
 	"github.com/go-openapi/spec"
 	"github.com/go-openapi/strfmt"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/go-openapi/testify/v2/assert"
+	"github.com/go-openapi/testify/v2/require"
 )
 
 // Test edge cases in schema_props_validator which are difficult

@@ -6,7 +6,7 @@ package validate
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/go-openapi/testify/v2/assert"
 )
 
 // Test edge cases in slice_validator which are difficult

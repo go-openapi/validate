@@ -12,8 +12,8 @@ import (
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag/fileutils"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/go-openapi/testify/v2/assert"
+	"github.com/go-openapi/testify/v2/require"
 )
 
 type expectedJSONType struct {
@@ -22,7 +22,6 @@ type expectedJSONType struct {
 	expectedSwaggerFormat string
 }
 
-//nolint:testifylint
 func TestType_schemaInfoForType(t *testing.T) {
 	testTypes := []expectedJSONType{
 		{
