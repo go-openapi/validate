@@ -22,7 +22,7 @@ func init() {
 }
 
 func skipNotifyGoSwagger(t *testing.T) {
-	t.Log("To enable this long running test, use -args -enable-go-swagger in your go test command line")
+	t.Log("A reduced set of fixtures is set. To enable the full list with a long running test, use -args -enable-go-swagger in your go test command line")
 }
 
 // Exercise validate will all tests cases from package go-swagger
@@ -31,14 +31,40 @@ func skipNotifyGoSwagger(t *testing.T) {
 //
 // TODO: move this list to a YAML fixture config file
 func Test_GoSwaggerTestCases(t *testing.T) {
-	if !enableGoSwaggerTests {
-		skipNotifyGoSwagger(t)
-		t.SkipNow()
-	}
 	// A list of test cases which fail on "swagger validate" at spec load time
 	expectedLoadFailures := map[string]bool{
 		"fixtures/go-swagger/bugs/342/fixture-342.yaml":   false,
 		"fixtures/go-swagger/bugs/342/fixture-342-2.yaml": true,
+	}
+
+	if !enableGoSwaggerTests {
+		// this is the reduced test run on CI
+		skipNotifyGoSwagger(t)
+
+		expectedFailures := map[string]bool{
+			"fixtures/go-swagger/bugs/1010/swagger.yml":         true,
+			"fixtures/go-swagger/bugs/103/swagger.json":         true,
+			"fixtures/go-swagger/bugs/106/swagger.json":         true,
+			"fixtures/go-swagger/bugs/1171/swagger.yaml":        true,
+			"fixtures/go-swagger/bugs/1238/swagger.yaml":        true,
+			"fixtures/go-swagger/bugs/1289/fixture-1289-2.yaml": true,
+			"fixtures/go-swagger/bugs/1289/fixture-1289.yaml":   true,
+			"fixtures/go-swagger/bugs/193/spec2.json":           true,
+			"fixtures/go-swagger/bugs/195/swagger.json":         true,
+			"fixtures/go-swagger/bugs/248/swagger.json":         true,
+			"fixtures/go-swagger/bugs/249/swagger.json":         true,
+			"fixtures/go-swagger/bugs/342/fixture-342-2.yaml":   true,
+			"fixtures/go-swagger/bugs/342/fixture-342.yaml":     true,
+			"fixtures/go-swagger/bugs/423/swagger.json":         true,
+			"fixtures/go-swagger/bugs/453/swagger.yml":          true,
+			"fixtures/go-swagger/bugs/455/swagger.yml":          true,
+			"fixtures/go-swagger/bugs/628/swagger.yml":          true,
+			"fixtures/go-swagger/bugs/733/swagger.json":         false,
+		}
+
+		testGoSwaggerSpecs(t, filepath.Join(".", "fixtures", "go-swagger"), expectedFailures, expectedLoadFailures, true)
+
+		return
 	}
 
 	// A list of test cases which fail on "swagger validate"
