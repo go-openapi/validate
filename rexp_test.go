@@ -25,7 +25,7 @@ import (
 	"github.com/go-openapi/testify/v2/require"
 )
 
-// Save repeated regexp compilation
+// Save repeated regexp compilation.
 func Test_compileRegexp(t *testing.T) {
 	vrex := new(re.Regexp)
 
@@ -44,7 +44,7 @@ func Test_compileRegexp(t *testing.T) {
 	assert.IsType(t, vrex, irex)
 }
 
-// Save repeated regexp compilation, with panic on error
+// Save repeated regexp compilation, with panic on error.
 func testPanic() {
 	mustCompileRegexp(".[*InvalidTestRegexp.*")
 }

@@ -19,10 +19,10 @@ import (
 )
 
 var (
-	// PetStore20 json doc for swagger 2.0 pet store
+	// PetStore20 json doc for swagger 2.0 pet store.
 	PetStore20 string
 
-	// PetStoreJSONMessage json raw message for Petstore20
+	// PetStoreJSONMessage json raw message for Petstore20.
 	PetStoreJSONMessage json.RawMessage
 )
 
@@ -91,7 +91,6 @@ func duplicatesErrorItems(path, in string) *errors.Validation {
 }
 
 func TestNumberItemsValidation(t *testing.T) {
-
 	values := [][]any{
 		{23, 49, 56, 21, 14, 35, 28, 7, 42},
 		{uint(23), uint(49), uint(56), uint(21), uint(14), uint(35), uint(28), uint(7), uint(42)},
@@ -111,15 +110,15 @@ func TestNumberItemsValidation(t *testing.T) {
 
 		// MultipleOf
 		err := validator.Validate(i, v[0])
-		assert.True(t, err.HasErrors())
+		assert.TrueT(t, err.HasErrors())
 		require.NotEmpty(t, err.Errors)
 		require.EqualError(t, multipleOfErrorItems(path, validator.in, items, v[0]), err.Errors[0].Error())
 
 		// Maximum
 		err = validator.Validate(i, v[1])
-		assert.True(t, err == nil || err.IsValid())
+		assert.TrueT(t, err == nil || err.IsValid())
 		err = validator.Validate(i, v[2])
-		assert.True(t, err.HasErrors())
+		assert.TrueT(t, err.HasErrors())
 		require.NotEmpty(t, err.Errors)
 		require.EqualError(t, maxErrorItems(path, validator.in, items, v[2]), err.Errors[0].Error())
 
@@ -128,15 +127,15 @@ func TestNumberItemsValidation(t *testing.T) {
 		// requires a new items validator because this is set a creation time
 		validator = newItemsValidator(parent.Name, parent.In, items, parent, strfmt.Default, nil)
 		err = validator.Validate(i, v[1])
-		assert.True(t, err.HasErrors())
+		assert.TrueT(t, err.HasErrors())
 		require.NotEmpty(t, err.Errors)
 		require.EqualError(t, maxErrorItems(path, validator.in, items, v[1]), err.Errors[0].Error())
 
 		// Minimum
 		err = validator.Validate(i, v[3])
-		assert.True(t, err == nil || err.IsValid())
+		assert.TrueT(t, err == nil || err.IsValid())
 		err = validator.Validate(i, v[4])
-		assert.True(t, err.HasErrors())
+		assert.TrueT(t, err.HasErrors())
 		require.NotEmpty(t, err.Errors)
 		require.EqualError(t, minErrorItems(path, validator.in, items, v[4]), err.Errors[0].Error())
 
@@ -145,21 +144,20 @@ func TestNumberItemsValidation(t *testing.T) {
 		// requires a new items validator because this is set a creation time
 		validator = newItemsValidator(parent.Name, parent.In, items, parent, strfmt.Default, nil)
 		err = validator.Validate(i, v[3])
-		assert.True(t, err.HasErrors())
+		assert.TrueT(t, err.HasErrors())
 		require.NotEmpty(t, err.Errors)
 		require.EqualError(t, minErrorItems(path, validator.in, items, v[3]), err.Errors[0].Error())
 
 		// Enum
 		err = validator.Validate(i, v[5])
-		assert.True(t, err.HasErrors())
+		assert.TrueT(t, err.HasErrors())
 		require.NotEmpty(t, err.Errors)
 		require.EqualError(t, enumFailItems(path, validator.in, items, v[5]), err.Errors[0].Error())
 
 		// Valid passes
 		err = validator.Validate(i, v[6])
-		assert.True(t, err == nil || err.IsValid())
+		assert.TrueT(t, err == nil || err.IsValid())
 	}
-
 }
 
 func TestStringItemsValidation(t *testing.T) {
@@ -172,41 +170,41 @@ func TestStringItemsValidation(t *testing.T) {
 	// required
 	data := ""
 	err := validator.Validate(1, data)
-	assert.True(t, err.HasErrors())
+	assert.TrueT(t, err.HasErrors())
 	require.NotEmpty(t, err.Errors)
 	require.EqualError(t, minLengthErrorItems(path, validator.in, items, data), err.Errors[0].Error())
 
 	// MaxLength
 	data = "abcdef"
 	err = validator.Validate(1, data)
-	assert.True(t, err.HasErrors())
+	assert.TrueT(t, err.HasErrors())
 	require.NotEmpty(t, err.Errors)
 	require.EqualError(t, maxLengthErrorItems(path, validator.in, items, data), err.Errors[0].Error())
 
 	// MinLength
 	data = "a"
 	err = validator.Validate(1, data)
-	assert.True(t, err.HasErrors())
+	assert.TrueT(t, err.HasErrors())
 	require.NotEmpty(t, err.Errors)
 	require.EqualError(t, minLengthErrorItems(path, validator.in, items, data), err.Errors[0].Error())
 
 	// Pattern
 	data = "a394"
 	err = validator.Validate(1, data)
-	assert.True(t, err.HasErrors())
+	assert.TrueT(t, err.HasErrors())
 	require.NotEmpty(t, err.Errors)
 	require.EqualError(t, patternFailItems(path, validator.in, items, data), err.Errors[0].Error())
 
 	// Enum
 	data = "abcde"
 	err = validator.Validate(1, data)
-	assert.True(t, err.HasErrors())
+	assert.TrueT(t, err.HasErrors())
 	require.NotEmpty(t, err.Errors)
 	require.EqualError(t, enumFailItems(path, validator.in, items, data), err.Errors[0].Error())
 
 	// Valid passes
 	err = validator.Validate(1, "bbb")
-	assert.True(t, err == nil || err.IsValid())
+	assert.TrueT(t, err == nil || err.IsValid())
 }
 
 func TestArrayItemsValidation(t *testing.T) {
@@ -219,25 +217,25 @@ func TestArrayItemsValidation(t *testing.T) {
 	// MinItems
 	data := []string{}
 	err := validator.Validate(1, data)
-	assert.True(t, err.HasErrors())
+	assert.TrueT(t, err.HasErrors())
 	require.NotEmpty(t, err.Errors)
 	require.EqualError(t, minItemsErrorItems(path, validator.in, items, len(data)), err.Errors[0].Error())
 	// MaxItems
 	data = []string{"a", "b", "c", "d", "e", "f"}
 	err = validator.Validate(1, data)
-	assert.True(t, err.HasErrors())
+	assert.TrueT(t, err.HasErrors())
 	require.NotEmpty(t, err.Errors)
 	require.EqualError(t, maxItemsErrorItems(path, validator.in, items, len(data)), err.Errors[0].Error())
 	// UniqueItems
 	err = validator.Validate(1, []string{"a", "a"})
-	assert.True(t, err.HasErrors())
+	assert.TrueT(t, err.HasErrors())
 	require.NotEmpty(t, err.Errors)
 	require.EqualError(t, duplicatesErrorItems(path, validator.in), err.Errors[0].Error())
 
 	// Enum
 	data = []string{"a", "b", "c"}
 	err = validator.Validate(1, data)
-	assert.True(t, err.HasErrors())
+	assert.TrueT(t, err.HasErrors())
 	require.NotEmpty(t, err.Errors)
 	require.EqualError(t, enumFailItems(path, validator.in, items, data), err.Errors[0].Error())
 
@@ -248,7 +246,7 @@ func TestArrayItemsValidation(t *testing.T) {
 
 	data = []string{"aa", "bbb", "ccc"}
 	err = validator.Validate(1, data)
-	assert.True(t, err.HasErrors())
+	assert.TrueT(t, err.HasErrors())
 	require.NotEmpty(t, err.Errors)
 	require.EqualError(t, minLengthErrorItems(path+".0", parent.In, strItems, data[0]), err.Errors[0].Error())
 }

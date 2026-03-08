@@ -64,7 +64,7 @@ func TestPrune(t *testing.T) {
 
 	validator := validate.NewSchemaValidator(schema, nil, "", strfmt.Default)
 	r := validator.Validate(x)
-	assert.Falsef(t, r.HasErrors(), "unexpected validation error: %v", r.AsError())
+	assert.FalseTf(t, r.HasErrors(), "unexpected validation error: %v", r.AsError())
 
 	Prune(r)
 	t.Logf("After: %v", x)

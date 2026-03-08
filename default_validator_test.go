@@ -80,7 +80,7 @@ func TestDefault_ValidateDefaults(t *testing.T) {
 		// Special case: warning only
 		if tt == "parameter-required" {
 			warns := verifiedTestWarnings(res)
-			assert.Contains(t, warns, "limit in query has a default value and is required as parameter")
+			assert.SliceContainsT(t, warns, "limit in query has a default value and is required as parameter")
 		}
 
 		path = filepath.Join("fixtures", "validation", "default", "invalid-default-value-"+tt+jsonExt)
@@ -105,9 +105,9 @@ func TestDefault_EdgeCase(t *testing.T) {
 	// Testing guards
 	var myDefaultvalidator *defaultValidator
 	res := myDefaultvalidator.Validate()
-	assert.True(t, res.IsValid())
+	assert.TrueT(t, res.IsValid())
 
 	myDefaultvalidator = &defaultValidator{}
 	res = myDefaultvalidator.Validate()
-	assert.True(t, res.IsValid())
+	assert.TrueT(t, res.IsValid())
 }

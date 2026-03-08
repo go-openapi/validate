@@ -115,7 +115,7 @@ func ExampleSpecValidator_Validate_url() {
 
 func ExampleAgainstSchema() {
 	// Example using encoding/json as unmarshaller
-	var schemaJSON = `
+	schemaJSON := `
 {
     "properties": {
         "name": {

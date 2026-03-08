@@ -18,7 +18,7 @@ import (
 )
 
 func TestSchemaValidator_Validate_Pattern(t *testing.T) {
-	var schemaJSON = `
+	schemaJSON := `
 {
     "properties": {
         "name": {
@@ -41,7 +41,7 @@ func TestSchemaValidator_Validate_Pattern(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(schemaJSON), schema))
 
 	var input map[string]any
-	var inputJSON = `{"name": "Ivan"}`
+	inputJSON := `{"name": "Ivan"}`
 
 	require.NoError(t, json.Unmarshal([]byte(inputJSON), &input))
 	require.NoError(t, AgainstSchema(schema, input, strfmt.Default))
@@ -49,11 +49,10 @@ func TestSchemaValidator_Validate_Pattern(t *testing.T) {
 	input["place"] = json.Number("10")
 
 	require.Error(t, AgainstSchema(schema, input, strfmt.Default))
-
 }
 
 func TestSchemaValidator_PatternProperties(t *testing.T) {
-	var schemaJSON = `
+	schemaJSON := `
 {
     "properties": {
         "name": {
@@ -80,7 +79,7 @@ func TestSchemaValidator_PatternProperties(t *testing.T) {
 	var input map[string]any
 
 	// ok
-	var inputJSON = `{"name": "Ivan","address-1": "sesame street"}`
+	inputJSON := `{"name": "Ivan","address-1": "sesame street"}`
 	require.NoError(t, json.Unmarshal([]byte(inputJSON), &input))
 	require.NoError(t, AgainstSchema(schema, input, strfmt.Default))
 
@@ -92,7 +91,6 @@ func TestSchemaValidator_PatternProperties(t *testing.T) {
 	inputJSON = `{"name": "Ivan","address-1": "sesame street","address-A": "address"}`
 	require.NoError(t, json.Unmarshal([]byte(inputJSON), &input))
 	require.Error(t, AgainstSchema(schema, input, strfmt.Default))
-
 }
 
 func TestSchemaValidator_Panic(t *testing.T) {
@@ -100,7 +98,7 @@ func TestSchemaValidator_Panic(t *testing.T) {
 }
 
 func schemaValidatorPanicker() {
-	var schemaJSON = `
+	schemaJSON := `
 {
     "$ref": "#/pointer-to-nowhere"
 }`
@@ -111,70 +109,70 @@ func schemaValidatorPanicker() {
 	var input map[string]any
 
 	// ok
-	var inputJSON = `{"name": "Ivan","address-1": "sesame street"}`
+	inputJSON := `{"name": "Ivan","address-1": "sesame street"}`
 	_ = json.Unmarshal([]byte(inputJSON), &input)
 	// panics
 	_ = AgainstSchema(schema, input, strfmt.Default)
 }
 
 // Test edge cases in schemaValidator which are difficult
-// to simulate with specs
+// to simulate with specs.
 func TestSchemaValidator_EdgeCases(t *testing.T) {
 	var s *SchemaValidator
 
 	res := s.Validate("123")
 	assert.NotNil(t, res)
-	assert.True(t, res.IsValid())
+	assert.TrueT(t, res.IsValid())
 
 	s = NewSchemaValidator(nil, nil, "", strfmt.Default)
 	assert.Nil(t, s)
 
 	v := "ABC"
 	b := s.Applies(v, reflect.String)
-	assert.False(t, b)
+	assert.FalseT(t, b)
 
 	sp := spec.Schema{}
 	b = s.Applies(&sp, reflect.Struct)
-	assert.True(t, b)
+	assert.TrueT(t, b)
 
 	spp := spec.Float64Property()
 
 	s = NewSchemaValidator(spp, nil, "", strfmt.Default)
 
 	s.SetPath("path")
-	assert.Equal(t, "path", s.Path)
+	assert.EqualT(t, "path", s.Path)
 
 	r := s.Validate(nil)
 	assert.NotNil(t, r)
-	assert.False(t, r.IsValid())
+	assert.FalseT(t, r.IsValid())
 
 	// Validating json.Number data against number|float64
 	j := json.Number("123")
 	r = s.Validate(j)
-	assert.True(t, r.IsValid())
+	assert.TrueT(t, r.IsValid())
 
 	// Validating json.Number data against integer|int32
 	spp = spec.Int32Property()
 	s = NewSchemaValidator(spp, nil, "", strfmt.Default)
 	j = json.Number("123")
 	r = s.Validate(j)
-	assert.True(t, r.IsValid())
+	assert.TrueT(t, r.IsValid())
 
 	bignum := conv.FormatFloat(math.MaxFloat64)
 	j = json.Number(bignum)
 	r = s.Validate(j)
-	assert.False(t, r.IsValid())
+	assert.FalseT(t, r.IsValid())
 
 	// Validating incorrect json.Number data
 	spp = spec.Float64Property()
 	s = NewSchemaValidator(spp, nil, "", strfmt.Default)
 	j = json.Number("AXF")
 	r = s.Validate(j)
-	assert.False(t, r.IsValid())
+	assert.FalseT(t, r.IsValid())
 }
 
 func TestSchemaValidator_SchemaOptions(t *testing.T) {
-	var schemaJSON = `
+	schemaJSON := `
 {
 	"properties": {
 		"spec": {
@@ -191,22 +189,22 @@ func TestSchemaValidator_SchemaOptions(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(schemaJSON), schema))
 
 	var input map[string]any
-	var inputJSON = `{"spec": {"items": ["foo", "bar"], "replicas": 1}}`
+	inputJSON := `{"spec": {"items": ["foo", "bar"], "replicas": 1}}`
 	require.NoError(t, json.Unmarshal([]byte(inputJSON), &input))
 
 	// ok
 	s := NewSchemaValidator(schema, nil, "", strfmt.Default, EnableObjectArrayTypeCheck(false))
 	result := s.Validate(input)
-	assert.True(t, result.IsValid())
+	assert.TrueT(t, result.IsValid())
 
 	// fail
 	s = NewSchemaValidator(schema, nil, "", strfmt.Default, EnableObjectArrayTypeCheck(true))
 	result = s.Validate(input)
-	assert.False(t, result.IsValid())
+	assert.FalseT(t, result.IsValid())
 }
 
 func TestSchemaValidator_TypeArray_Issue83(t *testing.T) {
-	var schemaJSON = `
+	schemaJSON := `
 {
 	"type": "object"
 }`
@@ -215,7 +213,7 @@ func TestSchemaValidator_TypeArray_Issue83(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(schemaJSON), schema))
 
 	var input map[string]any
-	var inputJSON = `{"type": "array"}`
+	inputJSON := `{"type": "array"}`
 
 	require.NoError(t, json.Unmarshal([]byte(inputJSON), &input))
 	// default behavior: jsonschema

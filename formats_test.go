@@ -13,7 +13,7 @@ import (
 	"github.com/go-openapi/testify/v2/assert"
 )
 
-// Validator for string formats
+// Validator for string formats.
 func TestFormatValidator_EdgeCases(t *testing.T) {
 	// Apply
 	v := newFormatValidator(
@@ -34,13 +34,13 @@ func TestFormatValidator_EdgeCases(t *testing.T) {
 
 	for _, source := range sources {
 		// Default formats for strings
-		assert.True(t, v.Applies(source, reflect.String))
+		assert.TrueT(t, v.Applies(source, reflect.String))
 		// Do not apply for number formats
-		assert.False(t, v.Applies(source, reflect.Int))
+		assert.FalseT(t, v.Applies(source, reflect.Int))
 	}
 
-	assert.False(t, v.Applies("A string", reflect.String))
-	assert.False(t, v.Applies(nil, reflect.String))
+	assert.FalseT(t, v.Applies("A string", reflect.String))
+	assert.FalseT(t, v.Applies(nil, reflect.String))
 }
 
 func TestStringValidation(t *testing.T) {

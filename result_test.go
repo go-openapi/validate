@@ -23,7 +23,7 @@ var (
 	errImportantWarning = errors.New("IMPORTANT!Another Warning")
 )
 
-// Test AddError() uniqueness
+// Test AddError() uniqueness.
 func TestResult_AddError(t *testing.T) {
 	r := Result{}
 	r.AddErrors(errOne)
@@ -66,7 +66,7 @@ func TestResult_Merge(t *testing.T) {
 	r.Inc()
 	assert.Len(t, r.Errors, 1)
 	assert.Len(t, r.Warnings, 1)
-	assert.Equal(t, 1, r.MatchCount)
+	assert.EqualT(t, 1, r.MatchCount)
 
 	// Merge with same
 	r2 := Result{}
@@ -78,7 +78,7 @@ func TestResult_Merge(t *testing.T) {
 
 	assert.Len(t, r.Errors, 1)
 	assert.Len(t, r.Warnings, 1)
-	assert.Equal(t, 2, r.MatchCount)
+	assert.EqualT(t, 2, r.MatchCount)
 
 	// Merge with new
 	r3 := Result{}
@@ -90,7 +90,7 @@ func TestResult_Merge(t *testing.T) {
 
 	assert.Len(t, r.Errors, 2)
 	assert.Len(t, r.Warnings, 2)
-	assert.Equal(t, 3, r.MatchCount)
+	assert.EqualT(t, 3, r.MatchCount)
 }
 
 func errorFixture() (Result, Result, Result) {
@@ -117,69 +117,69 @@ func TestResult_MergeAsErrors(t *testing.T) {
 	r, r2, r3 := errorFixture()
 	assert.Len(t, r.Errors, 1)
 	assert.Len(t, r.Warnings, 1)
-	assert.Equal(t, 1, r.MatchCount)
+	assert.EqualT(t, 1, r.MatchCount)
 
 	r.MergeAsErrors(&r2, &r3)
 
 	assert.Len(t, r.Errors, 4) // One Warning added to Errors
 	assert.Len(t, r.Warnings, 1)
-	assert.Equal(t, 3, r.MatchCount)
+	assert.EqualT(t, 3, r.MatchCount)
 }
 
 func TestResult_MergeAsWarnings(t *testing.T) {
 	r, r2, r3 := errorFixture()
 	assert.Len(t, r.Errors, 1)
 	assert.Len(t, r.Warnings, 1)
-	assert.Equal(t, 1, r.MatchCount)
+	assert.EqualT(t, 1, r.MatchCount)
 
 	r.MergeAsWarnings(&r2, &r3)
 
 	assert.Len(t, r.Errors, 1) // One Warning added to Errors
 	assert.Len(t, r.Warnings, 4)
-	assert.Equal(t, 3, r.MatchCount)
+	assert.EqualT(t, 3, r.MatchCount)
 }
 
 func TestResult_IsValid(t *testing.T) {
 	r := Result{}
 
-	assert.True(t, r.IsValid())
-	assert.False(t, r.HasErrors())
+	assert.TrueT(t, r.IsValid())
+	assert.FalseT(t, r.HasErrors())
 
 	r.AddWarnings(errOneWarning)
-	assert.True(t, r.IsValid())
-	assert.False(t, r.HasErrors())
+	assert.TrueT(t, r.IsValid())
+	assert.FalseT(t, r.HasErrors())
 
 	r.AddErrors(errOne)
-	assert.False(t, r.IsValid())
-	assert.True(t, r.HasErrors())
+	assert.FalseT(t, r.IsValid())
+	assert.TrueT(t, r.HasErrors())
 }
 
 func TestResult_HasWarnings(t *testing.T) {
 	r := Result{}
 
-	assert.False(t, r.HasWarnings())
+	assert.FalseT(t, r.HasWarnings())
 
 	r.AddErrors(errOne)
-	assert.False(t, r.HasWarnings())
+	assert.FalseT(t, r.HasWarnings())
 
 	r.AddWarnings(errOneWarning)
-	assert.True(t, r.HasWarnings())
+	assert.TrueT(t, r.HasWarnings())
 }
 
 func TestResult_HasErrorsOrWarnings(t *testing.T) {
 	r := Result{}
 	r2 := Result{}
 
-	assert.False(t, r.HasErrorsOrWarnings())
+	assert.FalseT(t, r.HasErrorsOrWarnings())
 
 	r.AddErrors(errOne)
-	assert.True(t, r.HasErrorsOrWarnings())
+	assert.TrueT(t, r.HasErrorsOrWarnings())
 
 	r2.AddWarnings(errOneWarning)
-	assert.True(t, r2.HasErrorsOrWarnings())
+	assert.TrueT(t, r2.HasErrorsOrWarnings())
 
 	r.Merge(&r2)
-	assert.True(t, r.HasErrorsOrWarnings())
+	assert.TrueT(t, r.HasErrorsOrWarnings())
 }
 
 func TestResult_keepRelevantErrors(t *testing.T) {
@@ -200,16 +200,16 @@ func TestResult_AsError(t *testing.T) {
 	res := r.AsError()
 	require.Error(t, res)
 
-	assert.Contains(t, res.Error(), "validation failure list:") // Expected from pkg errors
-	assert.Contains(t, res.Error(), "one Error")                // Expected from pkg errors
-	assert.Contains(t, res.Error(), "additional Error")         // Expected from pkg errors
+	assert.StringContainsT(t, res.Error(), "validation failure list:") // Expected from pkg errors
+	assert.StringContainsT(t, res.Error(), "one Error")                // Expected from pkg errors
+	assert.StringContainsT(t, res.Error(), "additional Error")         // Expected from pkg errors
 }
 
-// Test methods which suppport a call on a nil instance
+// Test methods which suppport a call on a nil instance.
 func TestResult_NilInstance(t *testing.T) {
 	var r *Result
-	assert.True(t, r.IsValid())
-	assert.False(t, r.HasErrors())
-	assert.False(t, r.HasWarnings())
-	assert.False(t, r.HasErrorsOrWarnings())
+	assert.TrueT(t, r.IsValid())
+	assert.FalseT(t, r.HasErrors())
+	assert.FalseT(t, r.HasWarnings())
+	assert.FalseT(t, r.HasErrorsOrWarnings())
 }

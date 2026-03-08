@@ -19,7 +19,7 @@ import (
 	"github.com/go-openapi/testify/v2/require"
 )
 
-// Data structure for jsonschema-suite fixtures
+// Data structure for jsonschema-suite fixtures.
 type schemaTestT struct {
 	Description string       `json:"description"`
 	Schema      *spec.Schema `json:"schema"`
@@ -27,12 +27,14 @@ type schemaTestT struct {
 		Description string `json:"description"`
 		Data        any    `json:"data"`
 		Valid       bool   `json:"valid"`
-	}
+	} `json:"tests"`
 }
 
-var jsonSchemaFixturesPath = filepath.Join("fixtures", "jsonschema_suite")
-var schemaFixturesPath = filepath.Join("fixtures", "schemas")
-var formatFixturesPath = filepath.Join("fixtures", "formats")
+var (
+	jsonSchemaFixturesPath = filepath.Join("fixtures", "jsonschema_suite")
+	schemaFixturesPath     = filepath.Join("fixtures", "schemas")
+	formatFixturesPath     = filepath.Join("fixtures", "formats")
+)
 
 func enabled() []string {
 	// Standard fixtures from JSON schema suite
@@ -187,7 +189,7 @@ func TestOptionalJSONSchemaSuite(t *testing.T) {
 	}
 }
 
-// Further testing with all formats recognized by strfmt
+// Further testing with all formats recognized by strfmt.
 func TestFormat_JSONSchemaExtended(t *testing.T) {
 	files, err := os.ReadDir(formatFixturesPath)
 	if err != nil {

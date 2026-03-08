@@ -14,14 +14,14 @@ func TestSchemaOptions(t *testing.T) {
 		opts := &SchemaValidatorOptions{}
 		setter := EnableObjectArrayTypeCheck(true)
 		setter(opts)
-		require.True(t, opts.EnableObjectArrayTypeCheck)
+		require.TrueT(t, opts.EnableObjectArrayTypeCheck)
 	})
 
 	t.Run("skipSchemataResult", func(t *testing.T) {
 		opts := &SchemaValidatorOptions{}
 		setter := WithSkipSchemataResult(true)
 		setter(opts)
-		require.True(t, opts.skipSchemataResult)
+		require.TrueT(t, opts.skipSchemataResult)
 	})
 
 	t.Run("default Options()", func(t *testing.T) {

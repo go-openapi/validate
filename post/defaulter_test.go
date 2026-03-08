@@ -27,12 +27,11 @@ func TestDefaulter(t *testing.T) {
 	t.Logf("Before: %v", x)
 
 	r := validator.Validate(x)
-	assert.Falsef(t, r.HasErrors(), "unexpected validation error: %v", r.AsError())
+	assert.FalseTf(t, r.HasErrors(), "unexpected validation error: %v", r.AsError())
 
 	ApplyDefaults(r)
 	t.Logf("After: %v", x)
-	var expected any
-	err = json.Unmarshal([]byte(`{
+	assert.JSONUnmarshalAsT[any](t, x, `{
 		"existing": 100,
 		"int": 42,
 		"str": "Hello",
@@ -41,9 +40,7 @@ func TestDefaulter(t *testing.T) {
 		"all": {"foo": 42, "bar": 42},
 		"any": {"foo": 42},
 		"one": {"bar": 42}
-	}`), &expected)
-	require.NoError(t, err)
-	assert.Equal(t, expected, x)
+	}`)
 }
 
 func TestDefaulterSimple(t *testing.T) {
@@ -67,17 +64,14 @@ func TestDefaulterSimple(t *testing.T) {
 	x := make(map[string]any)
 	t.Logf("Before: %v", x)
 	r := validator.Validate(x)
-	assert.Falsef(t, r.HasErrors(), "unexpected validation error: %v", r.AsError())
+	assert.FalseTf(t, r.HasErrors(), "unexpected validation error: %v", r.AsError())
 
 	ApplyDefaults(r)
 	t.Logf("After: %v", x)
-	var expected any
-	err := json.Unmarshal([]byte(`{
+	assert.JSONUnmarshalAsT[any](t, x, `{
 		"int": 42,
 		"str": "Hello"
-	}`), &expected)
-	require.NoError(t, err)
-	assert.Equal(t, expected, x)
+	}`)
 }
 
 func BenchmarkDefaulting(b *testing.B) {
@@ -90,7 +84,7 @@ func BenchmarkDefaulting(b *testing.B) {
 		validator := validate.NewSchemaValidator(schema, nil, "", strfmt.Default)
 		x := defaulterFixtureInput()
 		r := validator.Validate(x)
-		assert.Falsef(b, r.HasErrors(), "unexpected validation error: %v", r.AsError())
+		assert.FalseTf(b, r.HasErrors(), "unexpected validation error: %v", r.AsError())
 		ApplyDefaults(r)
 	}
 }

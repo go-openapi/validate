@@ -40,7 +40,7 @@ func TestType_schemaInfoForType(t *testing.T) {
 			expectedSwaggerFormat: "date-time",
 		},
 		{
-			// TODO: this exception is really prone to errors: should alias runtime.File in strfmt
+			// NOTE: this exception is really prone to errors: should alias runtime.File in strfmt
 			value:                 fileutils.File{},
 			expectedJSONType:      "file",
 			expectedSwaggerFormat: "",
@@ -159,7 +159,7 @@ func TestType_schemaInfoForType(t *testing.T) {
 		{
 			value:            uint16(12),
 			expectedJSONType: "integer",
-			// TODO: should be uint32
+			// NOTE: should be uint32
 			expectedSwaggerFormat: "int32",
 		},
 		{
@@ -170,7 +170,7 @@ func TestType_schemaInfoForType(t *testing.T) {
 		{
 			value:            uint32(12),
 			expectedJSONType: "integer",
-			// TODO: should be uint32
+			// NOTE: should be uint32
 			expectedSwaggerFormat: "int32",
 		},
 		{
@@ -181,7 +181,7 @@ func TestType_schemaInfoForType(t *testing.T) {
 		{
 			value:            uint(12),
 			expectedJSONType: "integer",
-			// TODO: should be uint64
+			// NOTE: should be uint64
 			expectedSwaggerFormat: "int64",
 		},
 		{
@@ -192,19 +192,19 @@ func TestType_schemaInfoForType(t *testing.T) {
 		{
 			value:            uint64(12),
 			expectedJSONType: "integer",
-			// TODO: should be uint64
+			// NOTE: should be uint64
 			expectedSwaggerFormat: "int64",
 		},
 		{
 			value:            float32(12),
 			expectedJSONType: "number",
-			// TODO: should be float
+			// NOTE: should be float
 			expectedSwaggerFormat: "float32",
 		},
 		{
 			value:            float64(12),
 			expectedJSONType: "number",
-			// TODO: should be double
+			// NOTE: should be double
 			expectedSwaggerFormat: "float64",
 		},
 		{
@@ -260,25 +260,25 @@ func TestType_schemaInfoForType(t *testing.T) {
 	)
 
 	t.Run("should not apply", func(t *testing.T) {
-		require.False(t, v.Applies("x", reflect.Map))
+		require.FalseT(t, v.Applies("x", reflect.Map))
 	})
 
 	for _, x := range testTypes {
 		value := x.value
 
 		jsonType, swaggerFormat := v.schemaInfoForType(value)
-		assert.Equal(t, x.expectedJSONType, jsonType)
-		assert.Equal(t, x.expectedSwaggerFormat, swaggerFormat)
+		assert.EqualT(t, x.expectedJSONType, jsonType)
+		assert.EqualT(t, x.expectedSwaggerFormat, swaggerFormat)
 
 		jsonType, swaggerFormat = v.schemaInfoForType(&value)
-		assert.Equal(t, x.expectedJSONType, jsonType)
-		assert.Equal(t, x.expectedSwaggerFormat, swaggerFormat)
+		assert.EqualT(t, x.expectedJSONType, jsonType)
+		assert.EqualT(t, x.expectedSwaggerFormat, swaggerFormat)
 	}
 
 	// Check file declarations as io.ReadCloser are properly detected
 	myFile := fileutils.File{}
 	var myReader io.ReadCloser = &myFile
 	jsonType, swaggerFormat := v.schemaInfoForType(myReader)
-	assert.Equal(t, "file", jsonType)
-	assert.Equal(t, "", swaggerFormat)
+	assert.EqualT(t, "file", jsonType)
+	assert.EqualT(t, "", swaggerFormat)
 }
