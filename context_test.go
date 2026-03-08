@@ -12,8 +12,7 @@ import (
 )
 
 func TestContext_ExtractOperationType(t *testing.T) {
-
-	var testCases = []struct {
+	testCases := []struct {
 		Ctx            context.Context //nolint: containedctx
 		ExpectedOpType operationType
 	}{
@@ -48,8 +47,7 @@ func TestContext_ExtractOperationType(t *testing.T) {
 		t.Run(fmt.Sprintf("TestCase #%d", idx), func(t *testing.T) {
 			t.Parallel()
 			op := extractOperationType(tc.Ctx)
-			assert.Equal(t, tc.ExpectedOpType, op)
+			assert.EqualT(t, tc.ExpectedOpType, op)
 		})
 	}
-
 }

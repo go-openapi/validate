@@ -29,7 +29,7 @@ func skipNotifyGoSwagger(t *testing.T) {
 // A copy of all fixtures available in go-swagger/go-swagger
 // is maintained in fixtures/go-swagger
 //
-// TODO: move this list to a YAML fixture config file
+// Proposal for enhancement: move this list to a YAML fixture config file.
 func Test_GoSwaggerTestCases(t *testing.T) {
 	if !enableGoSwaggerTests {
 		skipNotifyGoSwagger(t)
@@ -114,7 +114,7 @@ func wantSwaggerTest(info os.FileInfo) bool {
 }
 
 // A non regression test re "swagger validate" expectations.
-// Just validates all fixtures in ./fixtures/go-swagger (excluded codegen cases)
+// Just validates all fixtures in ./fixtures/go-swagger (excluded codegen cases).
 func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnLoad map[string]bool, haltOnErrors bool) {
 	err := filepath.Walk(path,
 		func(path string, info os.FileInfo, _ error) error {
@@ -150,9 +150,9 @@ func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnL
 				validator.SetContinueOnErrors(true)
 				res, _ := validator.Validate(doc)
 				if shouldFail {
-					assert.Falsef(t, res.IsValid(), "expected this spec to be invalid: %s", path)
+					assert.FalseTf(t, res.IsValid(), "expected this spec to be invalid: %s", path)
 				} else {
-					assert.Truef(t, res.IsValid(), "expected this spec to be valid: %s", path)
+					assert.TrueTf(t, res.IsValid(), "expected this spec to be valid: %s", path)
 				}
 				t.Logf("Errors reported by validation on %s", path)
 				for _, e := range res.Errors {

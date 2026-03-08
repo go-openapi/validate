@@ -102,9 +102,9 @@ func TestExample_EdgeCase(t *testing.T) {
 	// Testing guards
 	var myExampleValidator *exampleValidator
 	res := myExampleValidator.Validate()
-	assert.True(t, res.IsValid())
+	assert.TrueT(t, res.IsValid())
 
 	myExampleValidator = &exampleValidator{}
 	res = myExampleValidator.Validate()
-	assert.True(t, res.IsValid())
+	assert.TrueT(t, res.IsValid())
 }

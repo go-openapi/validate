@@ -39,14 +39,14 @@ func TestValues_ValidateNilEnum(t *testing.T) {
 	require.Error(t, Enum("test", "body", nil, enumValues))
 }
 
-// Check edge cases in Enum
+// Check edge cases in Enum.
 func TestValues_Enum_EdgeCases(t *testing.T) {
 	enumValues := "aa, bb, cc"
 
 	// No validation occurs: enumValues is not a slice
 	require.Nil(t, Enum("test", "body", int64(1), enumValues))
 
-	// TODO(TEST): edge case: value is not a concrete type
+	// NOTE(TEST): edge case: value is not a concrete type
 	// It's really a go internals challenge
 	// to figure a test case to demonstrate
 	// this case must be checked (!!)
@@ -129,7 +129,6 @@ func TestValues_ReadOnly(t *testing.T) {
 		for _, v := range ReadOnlyFail {
 			require.Nil(t, ReadOnly(ctx, path, in, v))
 		}
-
 	})
 	t.Run("operationType request", func(t *testing.T) {
 		ctx := WithOperationRequest(context.Background())
@@ -177,7 +176,6 @@ func TestValues_ValidateRequired(t *testing.T) {
 	for _, v := range RequiredSuccess {
 		require.Nil(t, Required(path, in, v))
 	}
-
 }
 
 func TestValues_ValidateRequiredNumber(t *testing.T) {
@@ -208,44 +206,44 @@ func TestValuMultipleOf(t *testing.T) {
 	require.Error(t, MultipleOf("test", "body", 9.34, -0.1))
 }
 
-// Test edge case for Pattern (in regular spec, no invalid regexp should reach there)
+// Test edge case for Pattern (in regular spec, no invalid regexp should reach there).
 func TestValues_Pattern_Edgecases(t *testing.T) {
 	require.Nil(t, Pattern("path", "in", "pick-a-boo", `.*-[a-z]-.*`))
 
 	t.Run("with invalid regexp", func(t *testing.T) {
 		err := Pattern("path", "in", "pick-a-boo", `.*-[a(-z]-^).*`)
 		require.Error(t, err)
-		assert.Equal(t, int(err.Code()), int(errors.PatternFailCode))
-		assert.Contains(t, err.Error(), "pattern is invalid")
+		assert.EqualT(t, int(err.Code()), int(errors.PatternFailCode))
+		assert.StringContainsT(t, err.Error(), "pattern is invalid")
 	})
 
 	t.Run("with valid regexp, invalid pattern", func(t *testing.T) {
 		err := Pattern("path", "in", "pick-8-boo", `.*-[a-z]-.*`)
 		require.Error(t, err)
-		assert.Equal(t, int(err.Code()), int(errors.PatternFailCode))
-		assert.NotContains(t, err.Error(), "pattern is invalid")
-		assert.Contains(t, err.Error(), "should match")
+		assert.EqualT(t, int(err.Code()), int(errors.PatternFailCode))
+		assert.StringNotContainsT(t, err.Error(), "pattern is invalid")
+		assert.StringContainsT(t, err.Error(), "should match")
 	})
 }
 
 // Test edge cases in FormatOf
-// not easily tested with full specs
+// not easily tested with full specs.
 func TestValues_FormatOf_EdgeCases(t *testing.T) {
 	var err *errors.Validation
 
 	err = FormatOf("path", "in", "bugz", "", nil)
 	require.Error(t, err)
-	assert.Equal(t, int(err.Code()), int(errors.InvalidTypeCode))
-	assert.Contains(t, err.Error(), "bugz is an invalid type name")
+	assert.EqualT(t, int(err.Code()), int(errors.InvalidTypeCode))
+	assert.StringContainsT(t, err.Error(), "bugz is an invalid type name")
 
 	err = FormatOf("path", "in", "bugz", "", strfmt.Default)
 	require.Error(t, err)
-	assert.Equal(t, int(err.Code()), int(errors.InvalidTypeCode))
-	assert.Contains(t, err.Error(), "bugz is an invalid type name")
+	assert.EqualT(t, int(err.Code()), int(errors.InvalidTypeCode))
+	assert.StringContainsT(t, err.Error(), "bugz is an invalid type name")
 }
 
 // Test edge cases in MaximumNativeType
-// not easily exercised with full specs
+// not easily exercised with full specs.
 func TestValues_MaximumNative(t *testing.T) {
 	require.Nil(t, MaximumNativeType("path", "in", int(5), 10, false))
 	require.Nil(t, MaximumNativeType("path", "in", uint(5), 10, true))
@@ -265,36 +263,36 @@ func TestValues_MaximumNative(t *testing.T) {
 	err = MaximumNativeType("path", "in", int32(10), 10, true)
 	require.Error(t, err)
 	code := int(err.Code())
-	assert.Equal(t, errors.MaxFailCode, code)
+	assert.EqualT(t, errors.MaxFailCode, code)
 
 	err = MaximumNativeType("path", "in", uint(10), 10, true)
 	require.Error(t, err)
 	code = int(err.Code())
-	assert.Equal(t, errors.MaxFailCode, code)
+	assert.EqualT(t, errors.MaxFailCode, code)
 
 	err = MaximumNativeType("path", "in", int64(12), 10, false)
 	require.Error(t, err)
 	code = int(err.Code())
-	assert.Equal(t, errors.MaxFailCode, code)
+	assert.EqualT(t, errors.MaxFailCode, code)
 
 	err = MaximumNativeType("path", "in", float32(12.6), 10, false)
 	require.Error(t, err)
 	code = int(err.Code())
-	assert.Equal(t, int(errors.MaxFailCode), code)
+	assert.EqualT(t, int(errors.MaxFailCode), code)
 
 	err = MaximumNativeType("path", "in", float64(12.6), 10, false)
 	require.Error(t, err)
 	code = int(err.Code())
-	assert.Equal(t, int(errors.MaxFailCode), code)
+	assert.EqualT(t, int(errors.MaxFailCode), code)
 
 	err = MaximumNativeType("path", "in", uint(5), -10, true)
 	require.Error(t, err)
 	code = int(err.Code())
-	assert.Equal(t, int(errors.MaxFailCode), code)
+	assert.EqualT(t, int(errors.MaxFailCode), code)
 }
 
 // Test edge cases in MinimumNativeType
-// not easily exercised with full specs
+// not easily exercised with full specs.
 func TestValues_MinimumNative(t *testing.T) {
 	require.Nil(t, MinimumNativeType("path", "in", int(5), 0, false))
 	require.Nil(t, MinimumNativeType("path", "in", uint(5), 0, true))
@@ -314,33 +312,33 @@ func TestValues_MinimumNative(t *testing.T) {
 	err = MinimumNativeType("path", "in", uint(10), 10, true)
 	require.Error(t, err)
 	code := int(err.Code())
-	assert.Equal(t, int(errors.MinFailCode), code)
+	assert.EqualT(t, int(errors.MinFailCode), code)
 
 	err = MinimumNativeType("path", "in", uint(10), 10, true)
 	require.Error(t, err)
 	code = int(err.Code())
-	assert.Equal(t, int(errors.MinFailCode), code)
+	assert.EqualT(t, int(errors.MinFailCode), code)
 
 	err = MinimumNativeType("path", "in", int64(8), 10, false)
 	require.Error(t, err)
 	code = int(err.Code())
-	assert.Equal(t, int(errors.MinFailCode), code)
+	assert.EqualT(t, int(errors.MinFailCode), code)
 
 	err = MinimumNativeType("path", "in", float32(12.6), 20, false)
 	require.Error(t, err)
 	code = int(err.Code())
-	assert.Equal(t, int(errors.MinFailCode), code)
+	assert.EqualT(t, int(errors.MinFailCode), code)
 
 	err = MinimumNativeType("path", "in", float64(12.6), 20, false)
 	require.Error(t, err)
 	code = int(err.Code())
-	assert.Equal(t, int(errors.MinFailCode), code)
+	assert.EqualT(t, int(errors.MinFailCode), code)
 
 	require.Nil(t, MinimumNativeType("path", "in", uint(5), -10, true))
 }
 
 // Test edge cases in MaximumNativeType
-// not easily exercised with full specs
+// not easily exercised with full specs.
 func TestValues_MultipleOfNative(t *testing.T) {
 	require.Nil(t, MultipleOfNativeType("path", "in", int(5), 1))
 	require.Nil(t, MultipleOfNativeType("path", "in", uint(5), 1))
@@ -358,31 +356,31 @@ func TestValues_MultipleOfNative(t *testing.T) {
 	err = MultipleOfNativeType("path", "in", int64(5), 0)
 	require.Error(t, err)
 	code := int(err.Code())
-	assert.Equal(t, int(errors.MultipleOfMustBePositiveCode), code)
+	assert.EqualT(t, int(errors.MultipleOfMustBePositiveCode), code)
 
 	err = MultipleOfNativeType("path", "in", uint64(5), 0)
 	require.Error(t, err)
 	code = int(err.Code())
-	assert.Equal(t, int(errors.MultipleOfMustBePositiveCode), code)
+	assert.EqualT(t, int(errors.MultipleOfMustBePositiveCode), code)
 
 	err = MultipleOfNativeType("path", "in", int64(5), -1)
 	require.Error(t, err)
 	code = int(err.Code())
-	assert.Equal(t, int(errors.MultipleOfMustBePositiveCode), code)
+	assert.EqualT(t, int(errors.MultipleOfMustBePositiveCode), code)
 
 	err = MultipleOfNativeType("path", "in", int64(11), 5)
 	require.Error(t, err)
 	code = int(err.Code())
-	assert.Equal(t, int(errors.MultipleOfFailCode), code)
+	assert.EqualT(t, int(errors.MultipleOfFailCode), code)
 
 	err = MultipleOfNativeType("path", "in", uint64(11), 5)
 	require.Error(t, err)
 	code = int(err.Code())
-	assert.Equal(t, int(errors.MultipleOfFailCode), code)
+	assert.EqualT(t, int(errors.MultipleOfFailCode), code)
 }
 
 // Test edge cases in IsValueValidAgainstRange
-// not easily exercised with full specs: we did not simulate these formats in full specs
+// not easily exercised with full specs: we did not simulate these formats in full specs.
 func TestValues_IsValueValidAgainstRange(t *testing.T) {
 	require.NoError(t, IsValueValidAgainstRange(float32(123.45), "number", "float32", "prefix", "path"))
 	require.NoError(t, IsValueValidAgainstRange(float64(123.45), "number", "float32", "prefix", "path"))
@@ -397,10 +395,10 @@ func TestValues_IsValueValidAgainstRange(t *testing.T) {
 	// Error case (do not occur in normal course of a validation)
 	err = IsValueValidAgainstRange(float64(math.MaxFloat64), "integer", "", "prefix", "path")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "must be of type integer (default format)")
+	assert.StringContainsT(t, err.Error(), "must be of type integer (default format)")
 
 	// Checking a few limits
 	err = IsValueValidAgainstRange("123", "number", "", "prefix", "path")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "called with invalid (non numeric) val type")
+	assert.StringContainsT(t, err.Error(), "called with invalid (non numeric) val type")
 }

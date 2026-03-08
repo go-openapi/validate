@@ -14,13 +14,13 @@ import (
 
 // Test edge cases in schema_props_validator which are difficult
 // to simulate with specs
-// (this one is a trivial, just to check all methods are filled)
+// (this one is a trivial, just to check all methods are filled).
 func TestSchemaPropsValidator_EdgeCases(t *testing.T) {
 	t.Run("should validate props against empty validator", func(t *testing.T) {
 		s := newSchemaPropsValidator(
 			"", "", nil, nil, nil, nil, nil, nil, strfmt.Default, nil)
 		s.SetPath("path")
-		assert.Equal(t, "path", s.Path)
+		assert.EqualT(t, "path", s.Path)
 	})
 
 	t.Run("with allOf", func(t *testing.T) {

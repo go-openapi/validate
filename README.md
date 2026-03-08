@@ -49,7 +49,6 @@ This package provides helpers to validate Swagger 2.0. specification (aka OpenAP
   * Minimum, Maximum, MultipleOf
   * FormatOf
 
-
 ### FAQ
 
 * Does this library support OpenAPI 3?
@@ -59,7 +58,8 @@ This package provides helpers to validate Swagger 2.0. specification (aka OpenAP
 > There is no plan to make it evolve toward supporting OpenAPI 3.x.
 > This [discussion thread](https://github.com/go-openapi/spec/issues/21) relates the full story.
 >
-> An early attempt to support Swagger 3 may be found at: https://github.com/go-openapi/spec3
+> An early attempt to support Swagger 3 may be found at: <https://github.com/go-openapi/spec3>
+
 ## Change log
 
 See <https://github.com/go-openapi/validate/releases>
@@ -71,9 +71,6 @@ See <https://github.com/go-openapi/validate/releases>
 ## Licensing
 
 This library ships under the [SPDX-License-Identifier: Apache-2.0](./LICENSE).
-
-See the license [NOTICE](./NOTICE), which recalls the licensing terms of all the pieces of software
-on top of which it has been built.
 
 ## Other documentation
 
@@ -103,23 +100,19 @@ Maintainers can cut a new release by either:
 <!-- Badges: release & docker images  -->
 [release-badge]: https://badge.fury.io/gh/go-openapi%2Fvalidate.svg
 [release-url]: https://badge.fury.io/gh/go-openapi%2Fvalidate
-[gomod-badge]: https://badge.fury.io/go/github.com%2Fgo-openapi%2Fvalidate.svg
-[gomod-url]: https://badge.fury.io/go/github.com%2Fgo-openapi%2Fvalidate
 <!-- Badges: code quality  -->
 [gocard-badge]: https://goreportcard.com/badge/github.com/go-openapi/validate
 [gocard-url]: https://goreportcard.com/report/github.com/go-openapi/validate
 [codefactor-badge]: https://img.shields.io/codefactor/grade/github/go-openapi/validate
 [codefactor-url]: https://www.codefactor.io/repository/github/go-openapi/validate
 <!-- Badges: documentation & support -->
-[doc-badge]: https://img.shields.io/badge/doc-site-blue?link=https%3A%2F%2Fgoswagger.io%2Fgo-openapi%2F
-[doc-url]: https://goswagger.io/go-openapi
 [godoc-badge]: https://pkg.go.dev/badge/github.com/go-openapi/validate
 [godoc-url]: http://pkg.go.dev/github.com/go-openapi/validate
 [slack-logo]: https://a.slack-edge.com/e6a93c1/img/icons/favicon-32.png
 [slack-badge]: https://img.shields.io/badge/slack-blue?link=https%3A%2F%2Fgoswagger.slack.com%2Farchives%2FC04R30YM
 [slack-url]: https://goswagger.slack.com/archives/C04R30YMU
 [discord-badge]: https://img.shields.io/discord/1446918742398341256?logo=discord&label=discord&color=blue
-[discord-url]: https://discord.gg/DrafRmZx
+[discord-url]: https://discord.gg/twZ9BwT3
 
 <!-- Badges: license & compliance -->
 [license-badge]: http://img.shields.io/badge/license-Apache%20v2-orange.svg

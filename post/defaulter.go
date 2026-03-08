@@ -22,7 +22,7 @@ import (
 )
 
 // ApplyDefaults applies defaults to the underlying data of the result. The data must be a JSON
-// struct as returned by json.Unmarshal.
+// struct as returned by [json.Unmarshal].
 func ApplyDefaults(r *validate.Result) {
 	fieldSchemata := r.FieldSchemata()
 	for key, schemata := range fieldSchemata {

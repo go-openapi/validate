@@ -90,18 +90,18 @@ func TestTypeArrayMustHaveItems(t *testing.T) {
 
 // Test edge cases in object_validator which are difficult
 // to simulate with specs
-// (this one is a trivial, just to check all methods are filled)
+// (this one is a trivial, just to check all methods are filled).
 func TestObjectValidator_EdgeCases(t *testing.T) {
 	s := newObjectValidator("", "", nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	s.SetPath("path")
-	assert.Equal(t, "path", s.Path)
+	assert.EqualT(t, "path", s.Path)
 }
 
 func TestObjectValidatorApply(t *testing.T) {
 	s := newObjectValidator("", "", nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	require.True(t, s.Applies(&spec.Schema{}, reflect.Map))
-	require.False(t, s.Applies(&spec.Response{}, reflect.Map))
-	require.False(t, s.Applies(&struct{}{}, reflect.Map))
+	require.TrueT(t, s.Applies(&spec.Schema{}, reflect.Map))
+	require.FalseT(t, s.Applies(&spec.Response{}, reflect.Map))
+	require.FalseT(t, s.Applies(&struct{}{}, reflect.Map))
 }
 
 func TestObjectValidatorPatternProperties(t *testing.T) {
@@ -230,7 +230,7 @@ func TestObjectValidatorWithHeaderProperty(t *testing.T) {
 				found++
 			}
 		}
-		require.Equal(t, 2, found)
+		require.EqualT(t, 2, found)
 	})
 
 	t.Run("should NOT report extra information when header is not detected", func(t *testing.T) {
@@ -319,7 +319,8 @@ func TestObjectValidatorWithDefault(t *testing.T) {
 			spec.SchemaProperties{
 				"wanted": spec.Schema{
 					SchemaProps: spec.SchemaProps{
-						Default: "default_value"},
+						Default: "default_value",
+					},
 				},
 			},
 			nil, nil,

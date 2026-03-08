@@ -11,9 +11,7 @@ import (
 	"github.com/go-openapi/testify/v2/assert"
 )
 
-var (
-	logMutex = &sync.Mutex{}
-)
+var logMutex = &sync.Mutex{}
 
 func TestDebug(t *testing.T) {
 	if !enableLongTests {
@@ -50,5 +48,5 @@ func TestDebug(t *testing.T) {
 	buf := make([]byte, 500)
 	_, _ = flushed.Read(buf)
 	validateLogger.SetOutput(os.Stdout)
-	assert.Contains(t, string(buf), "A debug")
+	assert.StringContainsT(t, string(buf), "A debug")
 }

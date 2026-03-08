@@ -19,11 +19,9 @@ import (
 	yaml "go.yaml.in/yaml/v3"
 )
 
-var (
-	// This debug environment variable allows to report and capture actual validation messages
-	// during testing. It should be disabled (undefined) during CI tests.
-	DebugTest = os.Getenv("SWAGGER_DEBUG_TEST") != ""
-)
+// This debug environment variable allows to report and capture actual validation messages
+// during testing. It should be disabled (undefined) during CI tests.
+var DebugTest = os.Getenv("SWAGGER_DEBUG_TEST") != ""
 
 type ExpectedMessage struct {
 	Message              string `yaml:"message"`
@@ -63,7 +61,7 @@ func Test_MessageQualityContinueOnErrors_Issue44(t *testing.T) {
 	assert.Zero(t, errs, "Message testing didn't match expectations")
 }
 
-// ContinueOnErrors mode off
+// ContinueOnErrors mode off.
 func Test_MessageQualityStopOnErrors_Issue44(t *testing.T) {
 	if !enableLongTests {
 		skipNotify(t)
@@ -139,7 +137,7 @@ func expectInvalid(t *testing.T, path string, thisTest *ExpectedFixture, continu
 	if thisTest.ExpectedLoadError {
 		// Expect a load error: no further validation may possibly be conducted.
 		require.Error(t, err, "expected this spec to return a load error")
-		assert.Equal(t, 0, verifyLoadErrors(t, err, thisTest.ExpectedMessages))
+		assert.EqualT(t, 0, verifyLoadErrors(t, err, thisTest.ExpectedMessages))
 		return
 	}
 
@@ -151,12 +149,12 @@ func expectInvalid(t *testing.T, path string, thisTest *ExpectedFixture, continu
 	res, warn := validator.Validate(doc)
 
 	// Check specs with load errors (error is located in pkg loads or spec)
-	require.False(t, res.IsValid(), "expected this spec to be invalid")
+	require.FalseT(t, res.IsValid(), "expected this spec to be invalid")
 
 	errs := verifyErrorsVsWarnings(t, res, warn)
 	errs += verifyErrors(t, res, thisTest.ExpectedMessages, "error", continueOnErrors)
 	errs += verifyErrors(t, warn, thisTest.ExpectedWarnings, "warning", continueOnErrors)
-	assert.Equal(t, 0, errs)
+	assert.EqualT(t, 0, errs)
 
 	if errs > 0 {
 		t.Logf("Message qualification on spec validation failed for %s", path)
@@ -179,12 +177,12 @@ func expectValid(t *testing.T, path string, thisTest *ExpectedFixture, continueO
 	validator := NewSpecValidator(doc.Schema(), strfmt.Default)
 	validator.SetContinueOnErrors(continueOnErrors)
 	res, warn := validator.Validate(doc)
-	assert.True(t, res.IsValid(), "expected this spec to be valid")
+	assert.TrueT(t, res.IsValid(), "expected this spec to be valid")
 	assert.Emptyf(t, res.Errors, "expected no returned errors")
 
 	// check warnings
 	errs := verifyErrors(t, warn, thisTest.ExpectedWarnings, "warning", continueOnErrors)
-	assert.Equal(t, 0, errs)
+	assert.EqualT(t, 0, errs)
 
 	if DebugTest && errs > 0 {
 		reportTest(t, path, res, thisTest.ExpectedMessages, "error", continueOnErrors)
@@ -243,6 +241,8 @@ func recapTest(t *testing.T, config ExpectedMap) {
 		t.Log("INFO:We are good")
 	}
 }
+
+//nolint:gocognit // refactor in a forthcoming PR
 func reportTest(t *testing.T, path string, res *Result, expectedMessages []ExpectedMessage, msgtype string, continueOnErrors bool) {
 	const expected = "Expected "
 	// Prints out a recap of error messages. To be enabled during development / test iterations
@@ -314,6 +314,7 @@ func verifyErrorsVsWarnings(t *testing.T, res, warn *Result) int {
 	return 0
 }
 
+//nolint:gocognit // refactor in a forthcoming PR
 func verifyErrors(t *testing.T, res *Result, expectedMessages []ExpectedMessage, msgtype string, continueOnErrors bool) int {
 	var numExpected, errs int
 	verifiedErrors := make([]string, 0, 50)
@@ -349,7 +350,7 @@ func verifyErrors(t *testing.T, res *Result, expectedMessages []ExpectedMessage,
 					}
 				}
 			}
-			if !assert.True(t, found, "Missing expected %s message: %s", msgtype, s.Message) {
+			if !assert.TrueT(t, found, "Missing expected %s message: %s", msgtype, s.Message) {
 				errs++
 			}
 		}
@@ -373,7 +374,7 @@ func verifyErrors(t *testing.T, res *Result, expectedMessages []ExpectedMessage,
 				}
 			}
 		}
-		if !assert.True(t, found, "unexpected %s message: %s", msgtype, v) {
+		if !assert.TrueT(t, found, "unexpected %s message: %s", msgtype, v) {
 			errs++
 		}
 	}
@@ -398,7 +399,7 @@ func verifyLoadErrors(t *testing.T, err error, expectedMessages []ExpectedMessag
 				break
 			}
 		}
-		if !assert.True(t, found, "unexpected load error: %s", v) {
+		if !assert.TrueT(t, found, "unexpected load error: %s", v) {
 			t.Logf("Expecting one of the following:")
 			for _, s := range expectedMessages {
 				smode := "Contains"
@@ -429,7 +430,7 @@ func testIssue(t *testing.T, path string, expectedNumErrors, expectedNumWarnings
 	}
 }
 
-// Test unitary fixture for dev and bug fixing
+// Test unitary fixture for dev and bug fixing.
 func Test_SingleFixture(t *testing.T) {
 	t.SkipNow()
 	path := filepath.Join("fixtures", "validation", "fixture-1231.yaml")

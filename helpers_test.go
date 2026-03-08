@@ -18,7 +18,7 @@ func TestHelpers_addPointerError(t *testing.T) {
 	r := errorHelp.addPointerError(res, errMyError, "my ref", "path")
 	require.NotEmpty(t, r.Errors)
 	msg := r.Errors[0].Error()
-	assert.Contains(t, msg, "could not resolve reference in path to $ref my ref: my error")
+	assert.StringContainsT(t, msg, "could not resolve reference in path to $ref my ref: my error")
 }
 
 //nolint:gosec
@@ -39,46 +39,46 @@ func integerFactory(base int) []any {
 	}
 }
 
-// Test cases in private method asInt64()
+// Test cases in private method asInt64().
 func TestHelpers_asInt64(t *testing.T) {
 	for _, v := range integerFactory(3) {
-		assert.Equal(t, int64(3), valueHelp.asInt64(v))
+		assert.EqualT(t, int64(3), valueHelp.asInt64(v))
 	}
 
 	// Non numeric
 	if assert.NotPanics(t, func() {
 		valueHelp.asInt64("123")
 	}) {
-		assert.Equal(t, int64(0), valueHelp.asInt64("123"))
+		assert.EqualT(t, int64(0), valueHelp.asInt64("123"))
 	}
 }
 
-// Test cases in private method asUint64()
+// Test cases in private method asUint64().
 func TestHelpers_asUint64(t *testing.T) {
 	for _, v := range integerFactory(3) {
-		assert.Equal(t, uint64(3), valueHelp.asUint64(v))
+		assert.EqualT(t, uint64(3), valueHelp.asUint64(v))
 	}
 
 	// Non numeric
 	if assert.NotPanics(t, func() {
 		valueHelp.asUint64("123")
 	}) {
-		assert.Equal(t, uint64(0), valueHelp.asUint64("123"))
+		assert.EqualT(t, uint64(0), valueHelp.asUint64("123"))
 	}
 }
 
-// Test cases in private method asFloat64()
+// Test cases in private method asFloat64().
 func TestHelpers_asFloat64(t *testing.T) {
 	const epsilon = 1e-9
 
 	for _, v := range integerFactory(3) {
-		assert.InDelta(t, float64(3), valueHelp.asFloat64(v), epsilon)
+		assert.InDeltaT(t, float64(3), valueHelp.asFloat64(v), epsilon)
 	}
 
 	// Non numeric
 	if assert.NotPanics(t, func() {
 		valueHelp.asFloat64("123")
 	}) {
-		assert.InDelta(t, float64(0), valueHelp.asFloat64("123"), epsilon)
+		assert.InDeltaT(t, float64(0), valueHelp.asFloat64("123"), epsilon)
 	}
 }

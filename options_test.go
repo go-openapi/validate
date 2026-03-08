@@ -8,6 +8,6 @@ import (
 )
 
 // This test must be synchronized to avoid issues with -race
-// TODO(TEST)
+// NOTE(TEST).
 func TestOptions_SetContinueOnErrors(_ *testing.T) {
 }
