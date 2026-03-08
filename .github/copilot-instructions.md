@@ -2,18 +2,26 @@
 
 ## Project Overview
 
-Go implementation of a OpenAPI v2 (swagger) validator and JSON Schema draft 4 validator
+Go library for validating OpenAPI v2 (Swagger) specifications and JSON Schema draft 4 data.
+Part of the [go-openapi](https://github.com/go-openapi) ecosystem. API is stable; maintenance-only.
 
-## Package Layout (single package)
+## Package Layout
 
-| File | Contents |
-|------|----------|
+| Package | Contents |
+|---------|----------|
+| `validate` (root) | Spec validator, schema validator, type/format/object/slice/string/number validators, result handling, pools |
+| `post` | Post-validation transforms: `ApplyDefaults` and `Prune` |
 
 ## Key API
 
-## Design Decisions
+- `Spec(doc, formats) error` — high-level spec validation
+- `AgainstSchema(schema, data, formats, ...Option) error` — validate data against a JSON schema
+- `NewSchemaValidator(schema, root, path, formats, ...Option) *SchemaValidator`
+- `post.ApplyDefaults(result)` / `post.Prune(result)`
 
 ## Dependencies
+
+- `github.com/go-openapi/spec`, `analysis`, `loads`, `errors`, `strfmt`
 
 ## Conventions
 
