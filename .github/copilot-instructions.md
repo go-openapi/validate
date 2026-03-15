@@ -32,4 +32,4 @@ Part of the [go-openapi](https://github.com/go-openapi) ecosystem. API is stable
 - Tests: `go test ./...` with `-race`. CI runs on `{ubuntu, macos, windows} x {stable, oldstable}`.
 - Test framework: `github.com/go-openapi/testify/v2` (not `stretchr/testify`).
 
-See `.github/copilot/` (symlinked to `.claude/rules/`) for detailed rules on Go conventions, linting, and testing.
+See `.github/copilot/` (symlinked to `.claude/rules/`) for detailed rules on Go conventions, linting, testing, and contributions.
