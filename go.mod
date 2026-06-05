@@ -1,11 +1,11 @@
 module github.com/go-openapi/validate
 
 require (
-	github.com/go-openapi/analysis v0.25.1
-	github.com/go-openapi/errors v0.22.7
+	github.com/go-openapi/analysis v0.25.2
+	github.com/go-openapi/errors v0.22.8
 	github.com/go-openapi/jsonpointer v0.23.1
-	github.com/go-openapi/loads v0.23.3
-	github.com/go-openapi/spec v0.22.4
+	github.com/go-openapi/loads v0.23.4
+	github.com/go-openapi/spec v0.22.5
 	github.com/go-openapi/strfmt v0.26.3
 	github.com/go-openapi/swag/conv v0.26.0
 	github.com/go-openapi/swag/fileutils v0.26.0
