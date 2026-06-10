@@ -146,7 +146,8 @@ func (s *SpecValidator) Validate(data any) (*Result, *Result) {
 	errs.Merge(s.validateNonEmptyPathParamNames())
 
 	// errs.Merge(s.validateRefNoSibling()) // warning only
-	errs.Merge(s.validateReferenced()) // warning only
+	errs.Merge(s.validateReferenced())  // warning only
+	errs.Merge(s.validateDubiousRefs()) // warning only
 
 	return errs, warnings
 }
