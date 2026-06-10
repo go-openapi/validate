@@ -57,8 +57,12 @@ func ExampleSpec_second() {
 		fmt.Println("Could not load this spec:", err)
 	}
 
-	// Output:
-	// This spec is valid
+	// NOTE: this example loads a spec from a live remote URL, so it is intentionally left
+	// without an "// Output:" directive: Go compiles it (keeping it from bit-rotting and
+	// displaying it in godoc with the real URL) but does not execute it under "go test".
+	// Executing it made the suite flaky (the remote host intermittently returns HTTP 403),
+	// and the remote path exercises loads.JSONSpec + network rather than validate itself,
+	// which is already covered by the file-based examples and tests.
 }
 
 func ExampleSpecValidator_Validate() {
@@ -109,8 +113,12 @@ func ExampleSpecValidator_Validate_url() {
 		}
 	}
 
-	// Output:
-	// This spec is valid
+	// NOTE: this example loads a spec from a live remote URL, so it is intentionally left
+	// without an "// Output:" directive: Go compiles it (keeping it from bit-rotting and
+	// displaying it in godoc with the real URL) but does not execute it under "go test".
+	// Executing it made the suite flaky (the remote host intermittently returns HTTP 403),
+	// and the remote path exercises loads.JSONSpec + network rather than validate itself,
+	// which is already covered by the file-based examples and tests.
 }
 
 func ExampleAgainstSchema() {
