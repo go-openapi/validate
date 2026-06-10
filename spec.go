@@ -554,8 +554,12 @@ DEFINITIONS:
 		if schema.Required != nil { // Safeguard
 			for _, pn := range schema.Required {
 				red := s.validateRequiredProperties(pn, d, &schema) //#nosec
+				// NOTE: capture validity before merging: Merge may redeem `red` to the
+				// pool (wantsRedeemOnMerge), after which reading it races with a concurrent
+				// BorrowResult().cleared() in another goroutine sharing the global pool.
+				isValid := red.IsValid()
 				res.Merge(red)
-				if !red.IsValid() && !s.Options.ContinueOnErrors {
+				if !isValid && !s.Options.ContinueOnErrors {
 					break DEFINITIONS // there is an error, let's stop that bleeding
 				}
 			}
