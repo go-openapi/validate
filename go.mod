@@ -6,7 +6,7 @@ require (
 	github.com/go-openapi/jsonpointer v1.0.0
 	github.com/go-openapi/loads v0.24.0
 	github.com/go-openapi/spec v0.22.6
-	github.com/go-openapi/strfmt v0.26.4
+	github.com/go-openapi/strfmt v0.27.0
 	github.com/go-openapi/swag/conv v0.27.0
 	github.com/go-openapi/swag/fileutils v0.27.0
 	github.com/go-openapi/swag/jsonutils v0.27.0
@@ -25,8 +25,8 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
-	golang.org/x/net v0.56.0 // indirect
-	golang.org/x/text v0.38.0 // indirect
+	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/text v0.40.0 // indirect
 )
 
 go 1.25.0
