@@ -104,7 +104,7 @@ func TestJSONSchemaSuite(t *testing.T) {
 		WriteTimeout: 10 * time.Second,
 		Handler:      http.FileServer(http.Dir(jsonSchemaFixturesPath + "/remotes")),
 	}
-	listener, err := net.Listen("tcp", "localhost:1234")
+	listener, err := new(net.ListenConfig).Listen(t.Context(), "tcp", "localhost:1234")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, svr.Close())
