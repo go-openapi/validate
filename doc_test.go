@@ -42,6 +42,7 @@ func ExampleSpec_second() {
 	// Example with high level spec validation call, without showing warnings
 
 	// Example with the bundled Petstore spec:
+	// Also works with URL, e.g. http://petstore.swagger.io/v2/swagger.json
 	path := "fixtures/go-swagger/canary/petstore/swagger.json"
 	doc, err := loads.JSONSpec(path)
 	if err == nil {
