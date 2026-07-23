@@ -5,6 +5,8 @@ package validate
 
 import (
 	"encoding/json"
+	"errors"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -97,15 +99,18 @@ func isExtendedEnabled(nm string) bool {
 
 func TestJSONSchemaSuite(t *testing.T) {
 	// Internal local server to serve remote $ref
+	svr := &http.Server{
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		Handler:      http.FileServer(http.Dir(jsonSchemaFixturesPath + "/remotes")),
+	}
+	listener, err := new(net.ListenConfig).Listen(t.Context(), "tcp", "localhost:1234")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, svr.Close())
+	})
 	go func() {
-		svr := &http.Server{
-			ReadTimeout:  5 * time.Second,
-			WriteTimeout: 10 * time.Second,
-			Addr:         "localhost:1234",
-			Handler:      http.FileServer(http.Dir(jsonSchemaFixturesPath + "/remotes")),
-		}
-		err := svr.ListenAndServe()
-		if err != nil {
+		if err := svr.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			panic(err.Error())
 		}
 	}()

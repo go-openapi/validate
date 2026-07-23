@@ -41,9 +41,10 @@ func ExampleSpec() {
 func ExampleSpec_second() {
 	// Example with high level spec validation call, without showing warnings
 
-	// Example with online spec URL:
-	url := "http://petstore.swagger.io/v2/swagger.json"
-	doc, err := loads.JSONSpec(url)
+	// Example with the bundled Petstore spec:
+	// Also works with URL, e.g. http://petstore.swagger.io/v2/swagger.json
+	path := "fixtures/go-swagger/canary/petstore/swagger.json"
+	doc, err := loads.JSONSpec(path)
 	if err == nil {
 		validate.SetContinueOnErrors(true)         // Set global options
 		errs := validate.Spec(doc, strfmt.Default) // Validates spec with default Swagger 2.0 format definitions
@@ -96,9 +97,10 @@ func ExampleSpecValidator_Validate() {
 func ExampleSpecValidator_Validate_url() {
 	// Example of spec validation call with full result
 
-	// Example with online spec URL:
-	url := "http://petstore.swagger.io/v2/swagger.json"
-	doc, err := loads.JSONSpec(url)
+	// Example with the bundled Petstore spec:
+	// Also works with URL, e.g. http://petstore.swagger.io/v2/swagger.json
+	path := "fixtures/go-swagger/canary/petstore/swagger.json"
+	doc, err := loads.JSONSpec(path)
 	if err == nil {
 		validator := validate.NewSpecValidator(doc.Schema(), strfmt.Default)
 		validator.SetContinueOnErrors(true)  // Set option for this validator
