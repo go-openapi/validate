@@ -27,6 +27,9 @@ import (
 	"github.com/go-openapi/testify/v2/require"
 )
 
+// wantedProp is the name of the required property exercised by these tests.
+const wantedProp = "wanted"
+
 func itemsFixture() map[string]any {
 	return map[string]any{
 		"type":  "array",
@@ -51,7 +54,7 @@ func expectOnlyInvalid(t *testing.T, ov EntityValidator, dataValid, dataInvalid 
 }
 
 func TestItemsMustBeTypeArray(t *testing.T) {
-	ov := newObjectValidator("", "", nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	ov := newObjectValidator(nil, "", nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	dataValid := itemsFixture()
 	dataInvalid := map[string]any{
 		"type":  "object",
@@ -64,7 +67,7 @@ func TestItemsMustBeTypeArray(t *testing.T) {
 }
 
 func TestItemsMustHaveType(t *testing.T) {
-	ov := newObjectValidator("", "", nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	ov := newObjectValidator(nil, "", nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	dataValid := itemsFixture()
 	dataInvalid := map[string]any{
 		"items": "dummy",
@@ -76,7 +79,7 @@ func TestItemsMustHaveType(t *testing.T) {
 }
 
 func TestTypeArrayMustHaveItems(t *testing.T) {
-	ov := newObjectValidator("", "", nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	ov := newObjectValidator(nil, "", nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	dataValid := itemsFixture()
 	dataInvalid := map[string]any{
 		"type": "array",
@@ -92,13 +95,13 @@ func TestTypeArrayMustHaveItems(t *testing.T) {
 // to simulate with specs
 // (this one is a trivial, just to check all methods are filled).
 func TestObjectValidator_EdgeCases(t *testing.T) {
-	s := newObjectValidator("", "", nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	s.SetPath("path")
-	assert.EqualT(t, "path", s.Path)
+	s := newObjectValidator(nil, "", nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	s.setPath(newPathSegments("path"))
+	assert.EqualT(t, "path", s.Path.dotted())
 }
 
 func TestObjectValidatorApply(t *testing.T) {
-	s := newObjectValidator("", "", nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	s := newObjectValidator(nil, "", nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	require.TrueT(t, s.Applies(&spec.Schema{}, reflect.Map))
 	require.FalseT(t, s.Applies(&spec.Response{}, reflect.Map))
 	require.FalseT(t, s.Applies(&struct{}{}, reflect.Map))
@@ -127,7 +130,7 @@ func TestObjectValidatorPatternProperties(t *testing.T) {
 	}
 
 	t.Run("should ignore invalid regexp in pattern properties", func(t *testing.T) {
-		s := newObjectValidator("test", "body", nil, nil, nil, nil, nil, patternWithValid, nil, nil, nil)
+		s := newObjectValidator(newPathSegments("test"), "body", nil, nil, nil, nil, nil, patternWithValid, nil, nil, nil)
 
 		res := s.Validate(map[string]any{"valid": "test_string"})
 		require.NotNil(t, res)
@@ -135,7 +138,7 @@ func TestObjectValidatorPatternProperties(t *testing.T) {
 	})
 
 	t.Run("should report forbidden property when invalid regexp in pattern properties", func(t *testing.T) {
-		s := newObjectValidator("test", "body", nil, nil, nil, nil, nil, patternGarbled, nil, nil, nil)
+		s := newObjectValidator(newPathSegments("test"), "body", nil, nil, nil, nil, nil, patternGarbled, nil, nil, nil)
 
 		res := s.Validate(map[string]any{"valid": "test_string"})
 		require.NotNil(t, res)
@@ -143,7 +146,7 @@ func TestObjectValidatorPatternProperties(t *testing.T) {
 	})
 
 	t.Run("should ignore invalid regexp in pattern properties of additional properties", func(t *testing.T) {
-		s := newObjectValidator("test", "body", nil, nil, nil, nil, &spec.SchemaOrBool{
+		s := newObjectValidator(newPathSegments("test"), "body", nil, nil, nil, nil, &spec.SchemaOrBool{
 			Schema: &spec.Schema{},
 			Allows: false,
 		}, patternWithValid, nil, nil, nil)
@@ -154,7 +157,7 @@ func TestObjectValidatorPatternProperties(t *testing.T) {
 	})
 
 	t.Run("should report forbidden property when invalid regexp in pattern properties of additional properties", func(t *testing.T) {
-		s := newObjectValidator("test", "body", nil, nil, nil, nil, &spec.SchemaOrBool{
+		s := newObjectValidator(newPathSegments("test"), "body", nil, nil, nil, nil, &spec.SchemaOrBool{
 			Schema: &spec.Schema{},
 			Allows: false,
 		}, patternGarbled, nil, nil, nil)
@@ -168,7 +171,7 @@ func TestObjectValidatorPatternProperties(t *testing.T) {
 
 func TestObjectValidatorNilData(t *testing.T) {
 	t.Run("object Validate should NOT panic on nil data", func(t *testing.T) {
-		s := newObjectValidator("", "", nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		s := newObjectValidator(nil, "", nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		require.NotPanics(t, func() {
 			_ = s.Validate(nil)
 		})
@@ -179,35 +182,35 @@ func TestObjectValidatorNilData(t *testing.T) {
 	})
 
 	t.Run("object Validate should validate required on nil data", func(t *testing.T) {
-		s := newObjectValidator("", "", nil, nil, []string{"wanted"}, nil, nil, nil, nil, nil, nil)
+		s := newObjectValidator(nil, "", nil, nil, []string{wantedProp}, nil, nil, nil, nil, nil, nil)
 		res := s.Validate(nil)
 		require.NotNil(t, res)
 		require.NotEmpty(t, res.Errors)
 	})
 
 	t.Run("object Validate should NOT panic on unexpected input", func(t *testing.T) {
-		s := newObjectValidator("", "", nil, nil, []string{"wanted"}, nil, nil, nil, nil, nil, nil)
-		res := s.Validate(map[string]string{"wanted": "not expected"})
+		s := newObjectValidator(nil, "", nil, nil, []string{wantedProp}, nil, nil, nil, nil, nil, nil)
+		res := s.Validate(map[string]string{wantedProp: "not expected"})
 		require.NotNil(t, res)
 		require.Len(t, res.Errors, 1)
 		require.ErrorContains(t, res.Errors[0], "expected an object")
 	})
 
 	t.Run("object Validate should NOT panic on nil input (with array type check)", func(t *testing.T) {
-		s := newObjectValidator("", "", nil, nil, []string{"wanted"}, nil, nil, nil, nil, nil, &SchemaValidatorOptions{
+		s := newObjectValidator(nil, "", nil, nil, []string{wantedProp}, nil, nil, nil, nil, nil, &SchemaValidatorOptions{
 			EnableArrayMustHaveItemsCheck: true,
 			EnableObjectArrayTypeCheck:    true,
 		})
 		res := s.Validate(nil)
 		require.NotNil(t, res)
 		require.Len(t, res.Errors, 1)
-		require.ErrorContains(t, res.Errors[0], "wanted is required")
+		require.ErrorContains(t, res.Errors[0], wantedProp+" is required")
 	})
 }
 
 func TestObjectValidatorWithHeaderProperty(t *testing.T) {
 	t.Run("should report extra information about forbidden $ref in this context", func(t *testing.T) {
-		s := newObjectValidator("test", "body", nil, nil, nil, nil, &spec.SchemaOrBool{
+		s := newObjectValidator(newPathSegments("test"), "body", nil, nil, nil, nil, &spec.SchemaOrBool{
 			Schema: &spec.Schema{},
 			Allows: false,
 		}, nil, nil, nil, nil)
@@ -234,7 +237,7 @@ func TestObjectValidatorWithHeaderProperty(t *testing.T) {
 	})
 
 	t.Run("should NOT report extra information when header is not detected", func(t *testing.T) {
-		s := newObjectValidator("test", "body", nil, nil, nil, nil, &spec.SchemaOrBool{
+		s := newObjectValidator(newPathSegments("test"), "body", nil, nil, nil, nil, &spec.SchemaOrBool{
 			Schema: &spec.Schema{},
 			Allows: false,
 		}, nil, nil, nil, nil)
@@ -314,10 +317,10 @@ func TestObjectValidatorWithDefault(t *testing.T) {
 		root interface{}, formats strfmt.Registry, opts *SchemaValidatorOptions) *objectValidator {
 	*/
 	t.Run("should accept required populated with a default", func(t *testing.T) {
-		s := newObjectValidator("test", "body", nil, nil,
-			[]string{"wanted"},
+		s := newObjectValidator(newPathSegments("test"), "body", nil, nil,
+			[]string{wantedProp},
 			spec.SchemaProperties{
-				"wanted": spec.Schema{
+				wantedProp: spec.Schema{
 					SchemaProps: spec.SchemaProps{
 						Default: "default_value",
 					},

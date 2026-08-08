@@ -115,7 +115,7 @@ func (s *SpecValidator) Validate(data any) (*Result, *Result) {
 	}()
 
 	// Swagger schema validator
-	schv := newSchemaValidator(s.schema, nil, "", s.KnownFormats, s.schemaOptions)
+	schv := newSchemaValidator(s.schema, nil, rootPath(), s.KnownFormats, s.schemaOptions)
 	errs.Merge(schv.Validate(obj)) // error -
 	// There may be a point in continuing to try and determine more accurate errors
 	if !s.Options.ContinueOnErrors && errs.HasErrors() {
@@ -697,7 +697,7 @@ func (s *SpecValidator) validateParameters() *Result {
 
 			for _, pr := range paramHelp.safeExpandedParamsFor(path, method, op.ID, res, s) {
 				// An expanded parameter must validate the Parameter schema (an unexpanded $ref always passes high-level schema validation)
-				schv := newSchemaValidator(&paramSchema, s.schema, fmt.Sprintf("%s.%s.parameters.%s", path, method, pr.Name), s.KnownFormats, s.schemaOptions)
+				schv := newSchemaValidator(&paramSchema, s.schema, newPathSegments(swaggerPaths, path, methodToken(method), swaggerParameters, pr.Name), s.KnownFormats, s.schemaOptions)
 				var obj any
 				if err := jsonutils.FromDynamicJSON(pr, &obj); err != nil {
 					res.AddErrors(err)

@@ -256,7 +256,7 @@ func TestType_schemaInfoForType(t *testing.T) {
 	}
 
 	v := newTypeValidator(
-		"", "", nil, false, "", nil,
+		nil, "", nil, false, "", nil,
 	)
 
 	t.Run("should not apply", func(t *testing.T) {

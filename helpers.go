@@ -38,7 +38,28 @@ const (
 	jsonType       = "type"
 	// jsonSchema     = "schema".
 	jsonDefault = "default"
+
+	jsonAllOf                = "allOf"
+	jsonAdditionalItems      = "additionalItems"
+	jsonAdditionalProperties = "additionalProperties"
+
+	swaggerPaths       = "paths"
+	swaggerDefinitions = "definitions"
+	swaggerResponses   = "responses"
+	swaggerParameters  = "parameters"
 )
+
+// responsePath locates a response of an operation in the spec document.
+func responsePath(path, method, responseCode string) pathSegments {
+	return newPathSegments(swaggerPaths, path, methodToken(method), swaggerResponses, responseCode)
+}
+
+// methodToken normalizes an HTTP method into the key under which the operation
+// is found in the document: the analyzer hands them over in upper case, but a
+// path item spells them in lower case.
+func methodToken(method string) string {
+	return strings.ToLower(method)
+}
 
 const (
 	stringFormatDate     = "date"

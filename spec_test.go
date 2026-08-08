@@ -107,7 +107,7 @@ func TestSpec_Issue52(t *testing.T) {
 	res := schemaValidator.Validate(&sch)
 	assert.FalseT(t, res.IsValid())
 	require.NotEmpty(t, res.Errors)
-	require.EqualError(t, res.Errors[0], ".paths in body is required")
+	require.EqualError(t, res.Errors[0], "paths in body is required")
 
 	// as swagger spec: path is set to nil
 	// Here, validation stops as paths is initialized to empty
@@ -116,7 +116,7 @@ func TestSpec_Issue52(t *testing.T) {
 
 	verifiedErrors := verifiedTestErrors(res)
 	assert.Len(t, verifiedErrors, 2, "Unexpected number of error messages returned")
-	assert.SliceContainsT(t, verifiedErrors, ".paths in body is required")
+	assert.SliceContainsT(t, verifiedErrors, "paths in body is required")
 	assert.SliceContainsT(t, verifiedErrors, "spec has no valid path defined")
 }
 
@@ -132,13 +132,13 @@ func TestSpec_Issue53(t *testing.T) {
 	res := schemaValidator.Validate(&sch)
 	assert.FalseT(t, res.IsValid())
 	require.NotEmpty(t, res.Errors)
-	require.EqualError(t, res.Errors[0], ".swagger in body is required")
+	require.EqualError(t, res.Errors[0], "swagger in body is required")
 
 	// as swagger despec
 	res, _ = loadAndValidate(t, fp, false)
 	require.FalseT(t, res.IsValid())
 	require.NotEmpty(t, res.Errors)
-	require.EqualError(t, res.Errors[0], ".swagger in body is required")
+	require.EqualError(t, res.Errors[0], "swagger in body is required")
 }
 
 func TestSpec_Issue62(t *testing.T) {
@@ -226,14 +226,13 @@ func TestSpec_Issue18(t *testing.T) {
 
 		case strings.Contains(path, "paramItems.json"):
 			assert.SliceContainsT(t, verifiedErrors, "body param \"user\" for \"\" has invalid items pattern: \")<-- bad pattern\"")
-			// Updated message: from "user.items in body has invalid pattern: \")<-- bad pattern\"" to:
 			assert.SliceContainsT(t, verifiedErrors, "default value for user in body does not validate its schema")
-			assert.SliceContainsT(t, verifiedErrors, "user.items.default in body has invalid pattern: \")<-- bad pattern\"")
+			assert.SliceContainsT(t, verifiedErrors, "user.items in body has invalid pattern: \")<-- bad pattern\"")
 		case strings.Contains(path, "parameters.json"):
 			assert.SliceContainsT(t, verifiedErrors, "operation \"\" has invalid pattern in param \"userId\": \")<-- bad pattern\"")
 		case strings.Contains(path, "schema.json"):
-			// NOTE: strange that the text does not say response "200"...
-			assert.SliceContainsT(t, verifiedErrors, "200 in response has invalid pattern: \")<-- bad pattern\"")
+			assert.SliceContainsT(t, verifiedErrors,
+				"paths./foo.get.responses.200 in response has invalid pattern: \")<-- bad pattern\"")
 		default:
 			t.Logf("Returned error messages: %v", verifiedErrors)
 			t.Fatal("fixture not tested. Please add assertions for messages")
@@ -460,10 +459,10 @@ func TestSpec_ValidateParameters(t *testing.T) {
 			res := validator.validateParameters()
 			require.Len(t, res.Errors, 2)
 			assert.StringContainsT(t, res.Errors[0].Error(),
-				`"/pets.POST.parameters.pet" must validate one and only one schema (oneOf). Found none valid`,
+				`"paths./pets.post.parameters.pet" must validate one and only one schema (oneOf). Found none valid`,
 			)
 			assert.StringContainsT(t, res.Errors[1].Error(),
-				`/pets.POST.parameters.pet.schema.anyOf in body is a forbidden property`,
+				`paths./pets.post.parameters.pet.schema.anyOf in body is a forbidden property`,
 			)
 		})
 		t.Run("with loads.Spec", func(t *testing.T) {
@@ -561,16 +560,16 @@ func TestSpec_ValidateParameters(t *testing.T) {
 			err = Spec(doc, strfmt.Default)
 			require.Error(t, err)
 			require.ErrorContains(t, err,
-				`/deposits.GET.parameters..enum in body is a forbidden property`,
+				`paths./deposits.get.parameters..enum in body is a forbidden property`,
 			)
 			require.ErrorContains(t, err,
-				`deposits.GET.parameters..type in body is a forbidden property`,
+				`paths./deposits.get.parameters..type in body is a forbidden property`,
 			)
 			require.ErrorContains(t, err,
-				`/deposits.GET.parameters..name in body is required`,
+				`paths./deposits.get.parameters..name in body is required`,
 			)
 			require.ErrorContains(t, err,
-				`/deposits.GET.parameters..in in body is required`,
+				`paths./deposits.get.parameters..in in body is required`,
 			)
 		})
 
@@ -606,18 +605,24 @@ func TestSpec_ValidateParameters(t *testing.T) {
 				require.NoError(t, err)
 
 				errs, warns := NewSpecValidator(doc.Schema(), strfmt.Default).Validate(doc)
-				require.Len(t, errs.Errors, 3)
+
+				// the fixture declares "type: [zilk, zork]": both entries are invalid and
+				// each is reported on its own index.
+				require.Len(t, errs.Errors, 4)
 				require.Empty(t, warns.Errors)
 
-				var found1, found2, found3 int
+				const oneOfTypes = ` in body should be one of [array boolean integer null number object string]`
+				var found1, found2, found3, found4 int
 				for _, err := range errs.Errors {
 					switch {
 					case strings.Contains(err.Error(), `definitions.WrongSchema.descriptions in body is a forbidden property`):
 						found1++
 					case strings.Contains(err.Error(), `"definitions.WrongSchema.type" must validate at least one schema (anyOf)`):
 						found2++
-					case strings.Contains(err.Error(), `definitions.WrongSchema.type in body should be one of [array boolean integer null number object string]`):
+					case strings.Contains(err.Error(), `definitions.WrongSchema.type.0`+oneOfTypes):
 						found3++
+					case strings.Contains(err.Error(), `definitions.WrongSchema.type.1`+oneOfTypes):
+						found4++
 					}
 				}
 
@@ -625,6 +630,7 @@ func TestSpec_ValidateParameters(t *testing.T) {
 					require.EqualT(t, 1, found1)
 					require.EqualT(t, 1, found2)
 					require.EqualT(t, 1, found3)
+					require.EqualT(t, 1, found4)
 				})
 			})
 		})
