@@ -7,25 +7,28 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/go-openapi/analysis"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/testify/v2/assert"
 	"github.com/go-openapi/testify/v2/require"
 )
 
-func indexRefs(t *testing.T, doc string) refLocations {
+// indexRefs analyzes a document body, wrapped into the smallest valid spec.
+func indexRefs(t *testing.T, body string) refLocations {
 	t.Helper()
 
-	var raw any
-	require.NoError(t, json.Unmarshal([]byte(doc), &raw))
+	doc := `{"swagger":"2.0","info":{"title":"t","version":"1"},` + body + `}`
+	d, err := loads.Analyzed(json.RawMessage(doc), "")
+	require.NoError(t, err)
 
-	return newRefLocations(raw)
+	return newRefLocations(analysis.New(d.Spec()))
 }
 
 func TestRefLocations_FindsDeclarations(t *testing.T) {
 	t.Parallel()
 
-	locations := indexRefs(t, `{
+	locations := indexRefs(t, `
 		"paths": {
 			"/pets": {
 				"get": {
@@ -40,8 +43,7 @@ func TestRefLocations_FindsDeclarations(t *testing.T) {
 		"definitions": {
 			"Pet": {"properties": {"owner": {"$ref": "#/definitions/Owner"}}},
 			"Remote": {"$ref": "https://elsewhere.example/schema.json"}
-		}
-	}`)
+		}`)
 
 	assert.EqualT(t, "/paths/~1pets/get/parameters/1", locations.at("#/parameters/tagsParam").pointer())
 	assert.EqualT(t, "/paths/~1pets/get/responses/200/schema", locations.at("#/definitions/Pet").pointer())
@@ -52,7 +54,7 @@ func TestRefLocations_FindsDeclarations(t *testing.T) {
 func TestRefLocations_UnknownReferenceIsTheRoot(t *testing.T) {
 	t.Parallel()
 
-	locations := indexRefs(t, `{"definitions": {"Pet": {"type": "object"}}}`)
+	locations := indexRefs(t, `"definitions": {"Pet": {"type": "object"}}`)
 
 	assert.True(t, locations.at("#/definitions/Nope").isEmpty())
 	assert.EqualT(t, "", locations.at("#/definitions/Nope").pointer())
@@ -62,26 +64,22 @@ func TestRefLocations_SkipsExampleData(t *testing.T) {
 	t.Parallel()
 
 	// an example may legitimately hold a "$ref" member: it declares nothing
-	locations := indexRefs(t, `{
+	locations := indexRefs(t, `
 		"definitions": {
 			"Pet": {
 				"example": {"$ref": "#/definitions/NotAReference"},
 				"examples": {"application/json": {"$ref": "#/definitions/NotAReferenceEither"}}
 			}
-		}
-	}`)
+		}`)
 
 	assert.True(t, locations.at("#/definitions/NotAReference").isEmpty())
 	assert.True(t, locations.at("#/definitions/NotAReferenceEither").isEmpty())
 }
 
-func TestRefLocations_SkipsDefaultValuesButNotDefaultResponses(t *testing.T) {
+func TestRefLocations_DefaultResponseIsADeclarationNotAValue(t *testing.T) {
 	t.Parallel()
 
-	locations := indexRefs(t, `{
-		"responses": {
-			"default": {"$ref": "#/responses/sharedError"}
-		},
+	locations := indexRefs(t, `
 		"paths": {
 			"/pets": {
 				"get": {
@@ -95,18 +93,12 @@ func TestRefLocations_SkipsDefaultValuesButNotDefaultResponses(t *testing.T) {
 			"Pet": {
 				"default": {"$ref": "#/definitions/NotAReference"}
 			}
-		}
-	}`)
+		}`)
 
-	t.Run("a default response is a declaration", func(t *testing.T) {
-		assert.EqualT(t, "/responses/default", locations.at("#/responses/sharedError").pointer())
-		assert.EqualT(t, "/paths/~1pets/get/responses/default",
-			locations.at("#/responses/operationError").pointer())
-	})
-
-	t.Run("a default value is not", func(t *testing.T) {
-		assert.True(t, locations.at("#/definitions/NotAReference").isEmpty())
-	})
+	assert.EqualT(t, "/paths/~1pets/get/responses/default",
+		locations.at("#/responses/operationError").pointer())
+	assert.True(t, locations.at("#/definitions/NotAReference").isEmpty(),
+		"a default value holds data: a $ref member there declares nothing")
 }
 
 func TestRefLocations_TieBreakIsStable(t *testing.T) {
@@ -114,12 +106,11 @@ func TestRefLocations_TieBreakIsStable(t *testing.T) {
 
 	// the same reference declared twice: whichever is kept, it must be the
 	// same one on every run, since maps are walked in random order
-	const doc = `{
+	const doc = `
 		"definitions": {
 			"Zebra": {"$ref": "#/definitions/Pet"},
 			"Ant": {"$ref": "#/definitions/Pet"}
-		}
-	}`
+		}`
 
 	first := indexRefs(t, doc).at("#/definitions/Pet").pointer()
 	for range 20 {
@@ -128,18 +119,44 @@ func TestRefLocations_TieBreakIsStable(t *testing.T) {
 	assert.EqualT(t, "/definitions/Ant", first)
 }
 
-func TestRefLocations_IgnoresNonStringAndEmptyRefs(t *testing.T) {
+func TestRefLocations_CoverEveryAnalyzedReference(t *testing.T) {
 	t.Parallel()
 
-	locations := indexRefs(t, `{
+	// the index and the two diagnostics read the same analyzer, so every
+	// reference they can report is one the index knows where to find
+	d, err := loads.Analyzed(json.RawMessage(`{
+		"swagger": "2.0",
+		"info": {"title": "t", "version": "1"},
+		"parameters": {"tagsParam": {"name": "tags", "in": "query", "type": "string"}},
+		"paths": {
+			"/pets": {
+				"get": {
+					"parameters": [{"$ref": "#/parameters/tagsParam"}],
+					"responses": {
+						"200": {"description": "ok", "schema": {"$ref": "#/definitions/Pet"}},
+						"default": {"$ref": "#/responses/oops"}
+					}
+				}
+			}
+		},
+		"responses": {"oops": {"description": "oops"}},
 		"definitions": {
-			"A": {"$ref": ""},
-			"B": {"$ref": {"not": "a reference"}},
-			"C": {"properties": {"$ref": {"type": "string"}}}
+			"Pet": {"type": "object", "properties": {"owner": {"$ref": "#/definitions/Owner"}}},
+			"Owner": {"type": "object"}
 		}
-	}`)
+	}`), "")
+	require.NoError(t, err)
 
-	assert.Empty(t, locations)
+	analyzer := analysis.New(d.Spec())
+	locations := newRefLocations(analyzer)
+
+	refs := analyzer.AllRefs()
+	require.NotEmpty(t, refs)
+	for _, found := range refs {
+		ref := found
+		assert.False(t, locations.at(ref.String()).isEmpty(),
+			"expected a location for %q", ref.String())
+	}
 }
 
 func TestValidateDubiousRefs_LocatesTheReference(t *testing.T) {

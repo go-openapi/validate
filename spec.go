@@ -100,6 +100,9 @@ func (s *SpecValidator) Validate(data any) (*Result, *Result) {
 	}
 	s.spec = sd
 	s.analyzer = analysis.New(sd.Spec())
+	// where each $ref sits, as authored: refs are reported against the
+	// unexpanded document, before expansion flattens them away
+	s.refLocations = newRefLocations(s.analyzer)
 
 	// Raw spec unmarshalling errors
 	var obj any
@@ -108,9 +111,6 @@ func (s *SpecValidator) Validate(data any) (*Result, *Result) {
 		// So this one is just a paranoid check on the behavior of the spec package
 		panic(InvalidDocumentError)
 	}
-	// where each $ref sits, as authored: refs are reported against the
-	// unexpanded document, before expansion flattens them away
-	s.refLocations = newRefLocations(obj)
 
 	defer func() {
 		// errs holds all errors and warnings,

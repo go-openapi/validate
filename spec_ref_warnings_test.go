@@ -150,9 +150,7 @@ func dubiousValidatorFromJSON(t *testing.T, doc string) *SpecValidator {
 	s.analyzer = analysis.New(d.Spec())
 
 	// as Validate does, so that warnings can say where a $ref sits
-	var raw any
-	require.NoError(t, json.Unmarshal(d.Raw(), &raw))
-	s.refLocations = newRefLocations(raw)
+	s.refLocations = newRefLocations(s.analyzer)
 
 	return s
 }
