@@ -38,6 +38,7 @@ const (
 	jsonItems      = "items"
 	jsonType       = "type"
 	jsonSchema     = "schema"
+	jsonRequired   = "required"
 	jsonRef        = "$ref"
 	jsonDefault    = "default"
 

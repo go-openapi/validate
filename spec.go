@@ -574,8 +574,12 @@ func (s *SpecValidator) validateRequiredDefinitions() *Result {
 DEFINITIONS:
 	for d, schema := range s.spec.Spec().Definitions {
 		if schema.Required != nil { // Safeguard
-			for _, pn := range schema.Required {
-				red := s.validateRequiredProperties(pn, d, newPathSegments(swaggerDefinitions, d), &schema) //#nosec
+			definitionAt := newPathSegments(swaggerDefinitions, d)
+			for i, pn := range schema.Required {
+				// the offending entry of the required array, not the definition
+				// holding it: that is what a reader has to go and amend
+				requiredAt := definitionAt.child(jsonRequired).item(i)
+				red := s.validateRequiredProperties(pn, d, definitionAt, requiredAt, &schema) //#nosec
 				// NOTE: capture validity before merging: Merge may redeem `red` to the
 				// pool (wantsRedeemOnMerge), after which reading it races with a concurrent
 				// BorrowResult().cleared() in another goroutine sharing the global pool.
@@ -590,7 +594,14 @@ DEFINITIONS:
 	return res
 }
 
-func (s *SpecValidator) validateRequiredProperties(path, in string, at pathSegments, v *spec.Schema) *Result {
+// validateRequiredProperties checks one entry of a definition's required array.
+//
+// schemaAt locates the schema being searched for the property, which moves as
+// the search descends into additionalProperties. requiredAt locates the entry
+// of the required array that started it, and stays put.
+func (s *SpecValidator) validateRequiredProperties(
+	path, in string, schemaAt, requiredAt pathSegments, v *spec.Schema,
+) *Result {
 	// Takes care of recursive property definitions, which may be nested in additionalProperties schemas
 	res := pools.poolOfResults.BorrowResult()
 	propertyMatch := false
@@ -609,7 +620,7 @@ func (s *SpecValidator) validateRequiredProperties(path, in string, at pathSegme
 	for pp, pv := range v.PatternProperties {
 		re, err := compileRegexp(pp)
 		if err != nil {
-			res.addErrorsAt(at, invalidPatternMsg(pp, in))
+			res.addErrorsAt(schemaAt, invalidPatternMsg(pp, in))
 		} else if re.MatchString(path) {
 			patternMatch = true
 			if !propertyMatch {
@@ -626,7 +637,7 @@ func (s *SpecValidator) validateRequiredProperties(path, in string, at pathSegme
 				// additionalProperties as schema are upported in swagger
 				// recursively validates additionalProperties schema
 				// Proposal for enhancement: anyOf, allOf, oneOf like in schemaPropsValidator
-				red := s.validateRequiredProperties(path, in, at.child(jsonAdditionalProperties), v.AdditionalProperties.Schema)
+				red := s.validateRequiredProperties(path, in, schemaAt.child(jsonAdditionalProperties), requiredAt, v.AdditionalProperties.Schema)
 				if red.IsValid() {
 					additionalPropertiesMatch = true
 					if !propertyMatch && !patternMatch {
@@ -639,11 +650,11 @@ func (s *SpecValidator) validateRequiredProperties(path, in string, at pathSegme
 	}
 
 	if !propertyMatch && !patternMatch && !additionalPropertiesMatch {
-		res.addErrorsAt(at, requiredButNotDefinedMsg(path, in))
+		res.addErrorsAt(requiredAt, requiredButNotDefinedMsg(path, in))
 	}
 
 	if isReadOnly {
-		res.addWarningsAt(at, readOnlyAndRequiredMsg(in, path))
+		res.addWarningsAt(requiredAt, readOnlyAndRequiredMsg(in, path))
 	}
 	return res
 }

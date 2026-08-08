@@ -5,6 +5,7 @@ package validate
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/go-openapi/loads"
@@ -223,6 +224,67 @@ func TestResultLocations_SpecValidation(t *testing.T) {
 			assert.EqualT(t, uint8('/'), located.Pointer[0],
 				"expected a pointer to start with a separator, got %q", located.Pointer)
 		}
+	})
+}
+
+func TestResultLocations_RequiredEntryIsLocated(t *testing.T) {
+	t.Parallel()
+
+	// the TUI anchors on where the offending text sits, so a required entry
+	// that names no property points at the entry, not at the definition
+	const raw = `{
+	  "swagger": "2.0",
+	  "info": {"title": "t", "version": "1"},
+	  "paths": {"/pets": {"get": {"operationId": "g", "responses": {"200": {"description": "ok"}}}}},
+	  "definitions": {
+	    "Pet": {
+	      "type": "object",
+	      "required": ["name", "notDeclared"],
+	      "properties": {
+	        "name": {"type": "string"},
+	        "readOnlyOne": {"type": "string", "readOnly": true}
+	      }
+	    },
+	    "Owner": {
+	      "type": "object",
+	      "required": ["readOnlyOne"],
+	      "properties": {"readOnlyOne": {"type": "string", "readOnly": true}}
+	    }
+	  }
+	}`
+
+	doc, err := loads.Analyzed(json.RawMessage(raw), "")
+	require.NoError(t, err)
+
+	validator := NewSpecValidator(doc.Schema(), strfmt.Default)
+	validator.SetContinueOnErrors(true)
+	res, warns := validator.Validate(doc)
+
+	t.Run("an undefined required property points at its entry", func(t *testing.T) {
+		var found bool
+		for _, located := range res.LocatedErrors() {
+			if !strings.Contains(located.Err.Error(), "notDeclared") {
+				continue
+			}
+
+			found = true
+			// index 1 of Pet's required array, not "/definitions/Pet"
+			assert.EqualT(t, "/definitions/Pet/required/1", located.Pointer)
+		}
+		require.True(t, found, "expected the undefined required property to be reported")
+	})
+
+	t.Run("a required and readOnly property points at its entry", func(t *testing.T) {
+		var found bool
+		for _, located := range warns.LocatedErrors() {
+			if !strings.Contains(located.Err.Error(), "readOnly") {
+				continue
+			}
+
+			found = true
+			assert.EqualT(t, "/definitions/Owner/required/0", located.Pointer)
+		}
+		require.True(t, found, "expected the readOnly-and-required warning to be reported")
 	})
 }
 
