@@ -53,6 +53,7 @@ type SpecValidator struct {
 	spec          *loads.Document
 	analyzer      *analysis.Spec
 	expanded      *loads.Document
+	refLocations  refLocations
 	KnownFormats  strfmt.Registry
 	Options       Opts // validation options
 	schemaOptions *SchemaValidatorOptions
@@ -107,6 +108,9 @@ func (s *SpecValidator) Validate(data any) (*Result, *Result) {
 		// So this one is just a paranoid check on the behavior of the spec package
 		panic(InvalidDocumentError)
 	}
+	// where each $ref sits, as authored: refs are reported against the
+	// unexpanded document, before expansion flattens them away
+	s.refLocations = newRefLocations(obj)
 
 	defer func() {
 		// errs holds all errors and warnings,
@@ -800,7 +804,7 @@ func (s *SpecValidator) validateReferencesValid() *Result {
 	res := pools.poolOfResults.BorrowResult()
 	for _, r := range s.analyzer.AllRefs() {
 		if !r.IsValidURI(s.spec.SpecFilePath()) { // Safeguard - spec should always yield a valid URI
-			res.AddErrors(invalidRefMsg(r.String()))
+			res.addErrorsAt(s.refLocations.at(r.String()), invalidRefMsg(r.String()))
 		}
 	}
 	if !res.HasErrors() {
