@@ -75,6 +75,40 @@ func TestRefLocations_SkipsExampleData(t *testing.T) {
 	assert.True(t, locations.at("#/definitions/NotAReferenceEither").isEmpty())
 }
 
+func TestRefLocations_SkipsDefaultValuesButNotDefaultResponses(t *testing.T) {
+	t.Parallel()
+
+	locations := indexRefs(t, `{
+		"responses": {
+			"default": {"$ref": "#/responses/sharedError"}
+		},
+		"paths": {
+			"/pets": {
+				"get": {
+					"responses": {
+						"default": {"$ref": "#/responses/operationError"}
+					}
+				}
+			}
+		},
+		"definitions": {
+			"Pet": {
+				"default": {"$ref": "#/definitions/NotAReference"}
+			}
+		}
+	}`)
+
+	t.Run("a default response is a declaration", func(t *testing.T) {
+		assert.EqualT(t, "/responses/default", locations.at("#/responses/sharedError").pointer())
+		assert.EqualT(t, "/paths/~1pets/get/responses/default",
+			locations.at("#/responses/operationError").pointer())
+	})
+
+	t.Run("a default value is not", func(t *testing.T) {
+		assert.True(t, locations.at("#/definitions/NotAReference").isEmpty())
+	})
+}
+
 func TestRefLocations_TieBreakIsStable(t *testing.T) {
 	t.Parallel()
 

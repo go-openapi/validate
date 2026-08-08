@@ -44,7 +44,7 @@ func (l refLocations) collect(node any, at pathSegments) {
 				continue
 			}
 
-			if key == swaggerExample || key == swaggerExamples {
+			if isValueMember(key, at) {
 				// plain data: a "$ref" down there declares nothing
 				continue
 			}
@@ -55,6 +55,22 @@ func (l refLocations) collect(node any, at pathSegments) {
 		for i, value := range typed {
 			l.collect(value, at.item(i))
 		}
+	}
+}
+
+// isValueMember tells if a member holds plain data rather than schemas.
+//
+// Examples and defaults are values, so a "$ref" member inside them declares
+// nothing. The exception is "default" under "responses", which names a
+// response rather than holding a value, and may legitimately be a $ref.
+func isValueMember(key string, at pathSegments) bool {
+	switch key {
+	case swaggerExample, swaggerExamples:
+		return true
+	case jsonDefault:
+		return at.last() != swaggerResponses
+	default:
+		return false
 	}
 }
 
