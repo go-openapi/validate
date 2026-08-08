@@ -81,7 +81,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 			// parameters
 			for _, param := range paramHelp.safeExpandedParamsFor(path, method, op.ID, res, s) {
 				if param.Default != nil && param.Required {
-					res.AddWarnings(requiredHasDefaultMsg(param.Name, param.In))
+					res.addWarningsAt(parameterPath(path, method, param.Name), requiredHasDefaultMsg(param.Name, param.In))
 				}
 
 				// reset explored schemas to get depth-first recursive-proof exploration
@@ -93,7 +93,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 					// check param default value is valid
 					red := newParamValidator(&param, s.KnownFormats, d.schemaOptions).Validate(param.Default) //#nosec
 					if red.HasErrorsOrWarnings() {
-						res.AddErrors(defaultValueDoesNotValidateMsg(param.Name, param.In))
+						res.addErrorsAt(parameterPath(path, method, param.Name), defaultValueDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
 					} else if red.wantsRedeemOnMerge {
 						pools.poolOfResults.RedeemResult(red)
@@ -102,9 +102,9 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 
 				// Recursively follows Items and Schemas
 				if param.Items != nil {
-					red := d.validateDefaultValueItemsAgainstSchema(newPathSegments(param.Name), param.In, &param, param.Items) //#nosec
+					red := d.validateDefaultValueItemsAgainstSchema(parameterPath(path, method, param.Name), param.In, &param, param.Items) //#nosec
 					if red.HasErrorsOrWarnings() {
-						res.AddErrors(defaultValueItemsDoesNotValidateMsg(param.Name, param.In))
+						res.addErrorsAt(parameterPath(path, method, param.Name), defaultValueItemsDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
 					} else if red.wantsRedeemOnMerge {
 						pools.poolOfResults.RedeemResult(red)
@@ -113,9 +113,9 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 
 				if param.Schema != nil {
 					// Validate default value against schema
-					red := d.validateDefaultValueSchemaAgainstSchema(newPathSegments(param.Name), param.In, param.Schema)
+					red := d.validateDefaultValueSchemaAgainstSchema(parameterPath(path, method, param.Name), param.In, param.Schema)
 					if red.HasErrorsOrWarnings() {
-						res.AddErrors(defaultValueDoesNotValidateMsg(param.Name, param.In))
+						res.addErrorsAt(parameterPath(path, method, param.Name), defaultValueDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
 					} else if red.wantsRedeemOnMerge {
 						pools.poolOfResults.RedeemResult(red)
@@ -136,7 +136,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 				}
 			} else if op.ID != "" {
 				// Empty op.ID means there is no meaningful operation: no need to report a specific message
-				res.AddErrors(noValidResponseMsg(op.ID))
+				res.addErrorsAt(operationPath(path, method), noValidResponseMsg(op.ID))
 			}
 		}
 	}
@@ -170,7 +170,7 @@ func (d *defaultValidator) validateDefaultInResponse(
 			if h.Default != nil {
 				red := newHeaderValidator(nm, &h, s.KnownFormats, d.schemaOptions).Validate(h.Default) //#nosec
 				if red.HasErrorsOrWarnings() {
-					res.AddErrors(defaultValueHeaderDoesNotValidateMsg(operationID, nm, responseName))
+					res.addErrorsAt(responseHeaderPath(path, method, responseCodeAsStr, nm), defaultValueHeaderDoesNotValidateMsg(operationID, nm, responseName))
 					res.Merge(red)
 				} else if red.wantsRedeemOnMerge {
 					pools.poolOfResults.RedeemResult(red)
@@ -179,9 +179,9 @@ func (d *defaultValidator) validateDefaultInResponse(
 
 			// Headers have inline definition, like params
 			if h.Items != nil {
-				red := d.validateDefaultValueItemsAgainstSchema(newPathSegments(nm), "header", &h, h.Items) //#nosec
+				red := d.validateDefaultValueItemsAgainstSchema(responseHeaderPath(path, method, responseCodeAsStr, nm), "header", &h, h.Items) //#nosec
 				if red.HasErrorsOrWarnings() {
-					res.AddErrors(defaultValueHeaderItemsDoesNotValidateMsg(operationID, nm, responseName))
+					res.addErrorsAt(responseHeaderPath(path, method, responseCodeAsStr, nm), defaultValueHeaderItemsDoesNotValidateMsg(operationID, nm, responseName))
 					res.Merge(red)
 				} else if red.wantsRedeemOnMerge {
 					pools.poolOfResults.RedeemResult(red)
@@ -189,7 +189,7 @@ func (d *defaultValidator) validateDefaultInResponse(
 			}
 
 			if _, err := compileRegexp(h.Pattern); err != nil {
-				res.AddErrors(invalidPatternInHeaderMsg(operationID, nm, responseName, h.Pattern, err))
+				res.addErrorsAt(responseHeaderPath(path, method, responseCodeAsStr, nm), invalidPatternInHeaderMsg(operationID, nm, responseName, h.Pattern, err))
 			}
 
 			// Headers don't have schema
@@ -202,7 +202,7 @@ func (d *defaultValidator) validateDefaultInResponse(
 		red := d.validateDefaultValueSchemaAgainstSchema(responsePath(path, method, responseCodeAsStr), "response", response.Schema)
 		if red.HasErrorsOrWarnings() {
 			// Additional message to make sure the context of the error is not lost
-			res.AddErrors(defaultValueInDoesNotValidateMsg(operationID, responseName))
+			res.addErrorsAt(responsePath(path, method, responseCodeAsStr), defaultValueInDoesNotValidateMsg(operationID, responseName))
 			res.Merge(red)
 		} else if red.wantsRedeemOnMerge {
 			pools.poolOfResults.RedeemResult(red)
@@ -237,7 +237,7 @@ func (d *defaultValidator) validateDefaultValueSchemaAgainstSchema(path pathSegm
 		}
 	}
 	if _, err := compileRegexp(schema.Pattern); err != nil {
-		res.AddErrors(invalidPatternInMsg(path.dotted(), in, schema.Pattern))
+		res.addErrorsAt(path, invalidPatternInMsg(path.dotted(), in, schema.Pattern))
 	}
 	if schema.AdditionalItems != nil && schema.AdditionalItems.Schema != nil {
 		// NOTE: we keep validating values, even though additionalItems is not supported by Swagger 2.0 (and 3.0 as well)
@@ -275,7 +275,7 @@ func (d *defaultValidator) validateDefaultValueItemsAgainstSchema(path pathSegme
 			res.Merge(d.validateDefaultValueItemsAgainstSchema(path.item(0), in, root, items.Items))
 		}
 		if _, err := compileRegexp(items.Pattern); err != nil {
-			res.AddErrors(invalidPatternInMsg(path.dotted(), in, items.Pattern))
+			res.addErrorsAt(path, invalidPatternInMsg(path.dotted(), in, items.Pattern))
 		}
 	}
 	return res

@@ -215,7 +215,8 @@ func TestSpec_Issue18(t *testing.T) {
 		verifiedErrors := verifiedTestErrors(res)
 		switch {
 		case strings.Contains(path, "headerItems.json"):
-			assert.SliceContainsT(t, verifiedErrors, "X-Foo in header has invalid pattern: \")<-- bad pattern\"")
+			assert.SliceContainsT(t, verifiedErrors,
+				"paths./foo.get.responses.default.headers.X-Foo in header has invalid pattern: \")<-- bad pattern\"")
 		case strings.Contains(path, "headers.json"):
 			const badPatternSuffix = ` has invalid pattern ")<-- bad pattern": error parsing regexp: unexpected ): ` +
 				"`)<-- bad pattern`"
@@ -227,7 +228,8 @@ func TestSpec_Issue18(t *testing.T) {
 		case strings.Contains(path, "paramItems.json"):
 			assert.SliceContainsT(t, verifiedErrors, "body param \"user\" for \"\" has invalid items pattern: \")<-- bad pattern\"")
 			assert.SliceContainsT(t, verifiedErrors, "default value for user in body does not validate its schema")
-			assert.SliceContainsT(t, verifiedErrors, "user.items in body has invalid pattern: \")<-- bad pattern\"")
+			assert.SliceContainsT(t, verifiedErrors,
+				"paths./foo.get.parameters.user.items in body has invalid pattern: \")<-- bad pattern\"")
 		case strings.Contains(path, "parameters.json"):
 			assert.SliceContainsT(t, verifiedErrors, "operation \"\" has invalid pattern in param \"userId\": \")<-- bad pattern\"")
 		case strings.Contains(path, "schema.json"):

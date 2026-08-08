@@ -274,7 +274,7 @@ func (b *basicCommonValidator) Validate(data any) (res *Result) {
 		}
 	}
 
-	return errorHelp.sErr(errors.EnumFail(b.Path.dotted(), b.In, data, b.Enum), b.Options.recycleResult)
+	return errorHelp.sErrAt(b.Path, errors.EnumFail(b.Path.dotted(), b.In, data, b.Enum), b.Options.recycleResult)
 }
 
 func (b *basicCommonValidator) setPath(path pathSegments) {
@@ -734,19 +734,19 @@ func (s *basicSliceValidator) Validate(data any) *Result {
 	size := int64(val.Len())
 	if s.MinItems != nil {
 		if err := MinItems(s.Path.dotted(), s.In, size, *s.MinItems); err != nil {
-			return errorHelp.sErr(err, s.Options.recycleResult)
+			return errorHelp.sErrAt(s.Path, err, s.Options.recycleResult)
 		}
 	}
 
 	if s.MaxItems != nil {
 		if err := MaxItems(s.Path.dotted(), s.In, size, *s.MaxItems); err != nil {
-			return errorHelp.sErr(err, s.Options.recycleResult)
+			return errorHelp.sErrAt(s.Path, err, s.Options.recycleResult)
 		}
 	}
 
 	if s.UniqueItems {
 		if err := UniqueItems(s.Path.dotted(), s.In, data); err != nil {
-			return errorHelp.sErr(err, s.Options.recycleResult)
+			return errorHelp.sErrAt(s.Path, err, s.Options.recycleResult)
 		}
 	}
 
@@ -876,22 +876,22 @@ func (n *numberValidator) Validate(val any) *Result {
 	data := valueHelp.asFloat64(val)
 
 	// Is the provided value within the range of the specified numeric type and format?
-	res.AddErrors(IsValueValidAgainstRange(val, n.Type, n.Format, "Checked", n.Path.dotted()))
+	res.addErrorsAt(n.Path, IsValueValidAgainstRange(val, n.Type, n.Format, "Checked", n.Path.dotted()))
 
 	if n.MultipleOf != nil {
 		resMultiple = pools.poolOfResults.BorrowResult()
 
 		// Is the constraint specifier within the range of the specific numeric type and format?
-		resMultiple.AddErrors(IsValueValidAgainstRange(*n.MultipleOf, n.Type, n.Format, "MultipleOf", n.Path.dotted()))
+		resMultiple.addErrorsAt(n.Path, IsValueValidAgainstRange(*n.MultipleOf, n.Type, n.Format, "MultipleOf", n.Path.dotted()))
 		if resMultiple.IsValid() {
 			// Constraint validated with compatible types
 			if err := MultipleOfNativeType(n.Path.dotted(), n.In, val, *n.MultipleOf); err != nil {
-				resMultiple.Merge(errorHelp.sErr(err, n.Options.recycleResult))
+				resMultiple.Merge(errorHelp.sErrAt(n.Path, err, n.Options.recycleResult))
 			}
 		} else {
 			// Constraint nevertheless validated, converted as general number
 			if err := MultipleOf(n.Path.dotted(), n.In, data, *n.MultipleOf); err != nil {
-				resMultiple.Merge(errorHelp.sErr(err, n.Options.recycleResult))
+				resMultiple.Merge(errorHelp.sErrAt(n.Path, err, n.Options.recycleResult))
 			}
 		}
 	}
@@ -900,16 +900,16 @@ func (n *numberValidator) Validate(val any) *Result {
 		resMaximum = pools.poolOfResults.BorrowResult()
 
 		// Is the constraint specifier within the range of the specific numeric type and format?
-		resMaximum.AddErrors(IsValueValidAgainstRange(*n.Maximum, n.Type, n.Format, "Maximum boundary", n.Path.dotted()))
+		resMaximum.addErrorsAt(n.Path, IsValueValidAgainstRange(*n.Maximum, n.Type, n.Format, "Maximum boundary", n.Path.dotted()))
 		if resMaximum.IsValid() {
 			// Constraint validated with compatible types
 			if err := MaximumNativeType(n.Path.dotted(), n.In, val, *n.Maximum, n.ExclusiveMaximum); err != nil {
-				resMaximum.Merge(errorHelp.sErr(err, n.Options.recycleResult))
+				resMaximum.Merge(errorHelp.sErrAt(n.Path, err, n.Options.recycleResult))
 			}
 		} else {
 			// Constraint nevertheless validated, converted as general number
 			if err := Maximum(n.Path.dotted(), n.In, data, *n.Maximum, n.ExclusiveMaximum); err != nil {
-				resMaximum.Merge(errorHelp.sErr(err, n.Options.recycleResult))
+				resMaximum.Merge(errorHelp.sErrAt(n.Path, err, n.Options.recycleResult))
 			}
 		}
 	}
@@ -918,16 +918,16 @@ func (n *numberValidator) Validate(val any) *Result {
 		resMinimum = pools.poolOfResults.BorrowResult()
 
 		// Is the constraint specifier within the range of the specific numeric type and format?
-		resMinimum.AddErrors(IsValueValidAgainstRange(*n.Minimum, n.Type, n.Format, "Minimum boundary", n.Path.dotted()))
+		resMinimum.addErrorsAt(n.Path, IsValueValidAgainstRange(*n.Minimum, n.Type, n.Format, "Minimum boundary", n.Path.dotted()))
 		if resMinimum.IsValid() {
 			// Constraint validated with compatible types
 			if err := MinimumNativeType(n.Path.dotted(), n.In, val, *n.Minimum, n.ExclusiveMinimum); err != nil {
-				resMinimum.Merge(errorHelp.sErr(err, n.Options.recycleResult))
+				resMinimum.Merge(errorHelp.sErrAt(n.Path, err, n.Options.recycleResult))
 			}
 		} else {
 			// Constraint nevertheless validated, converted as general number
 			if err := Minimum(n.Path.dotted(), n.In, data, *n.Minimum, n.ExclusiveMinimum); err != nil {
-				resMinimum.Merge(errorHelp.sErr(err, n.Options.recycleResult))
+				resMinimum.Merge(errorHelp.sErrAt(n.Path, err, n.Options.recycleResult))
 			}
 		}
 	}
@@ -1004,30 +1004,30 @@ func (s *stringValidator) Validate(val any) *Result {
 
 	data, ok := val.(string)
 	if !ok {
-		return errorHelp.sErr(errors.InvalidType(s.Path.dotted(), s.In, stringType, val), s.Options.recycleResult)
+		return errorHelp.sErrAt(s.Path, errors.InvalidType(s.Path.dotted(), s.In, stringType, val), s.Options.recycleResult)
 	}
 
 	if s.Required && !s.AllowEmptyValue && (s.Default == nil || s.Default == "") {
 		if err := RequiredString(s.Path.dotted(), s.In, data); err != nil {
-			return errorHelp.sErr(err, s.Options.recycleResult)
+			return errorHelp.sErrAt(s.Path, err, s.Options.recycleResult)
 		}
 	}
 
 	if s.MaxLength != nil {
 		if err := MaxLength(s.Path.dotted(), s.In, data, *s.MaxLength); err != nil {
-			return errorHelp.sErr(err, s.Options.recycleResult)
+			return errorHelp.sErrAt(s.Path, err, s.Options.recycleResult)
 		}
 	}
 
 	if s.MinLength != nil {
 		if err := MinLength(s.Path.dotted(), s.In, data, *s.MinLength); err != nil {
-			return errorHelp.sErr(err, s.Options.recycleResult)
+			return errorHelp.sErrAt(s.Path, err, s.Options.recycleResult)
 		}
 	}
 
 	if s.Pattern != "" {
 		if err := Pattern(s.Path.dotted(), s.In, data, s.Pattern); err != nil {
-			return errorHelp.sErr(err, s.Options.recycleResult)
+			return errorHelp.sErrAt(s.Path, err, s.Options.recycleResult)
 		}
 	}
 	return nil

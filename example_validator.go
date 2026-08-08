@@ -83,7 +83,7 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 					// check param default value is valid
 					red := newParamValidator(&param, s.KnownFormats, ex.schemaOptions).Validate(param.Example) //#nosec
 					if red.HasErrorsOrWarnings() {
-						res.AddWarnings(exampleValueDoesNotValidateMsg(param.Name, param.In))
+						res.addWarningsAt(parameterPath(path, method, param.Name), exampleValueDoesNotValidateMsg(param.Name, param.In))
 						res.MergeAsWarnings(red)
 					} else if red.wantsRedeemOnMerge {
 						pools.poolOfResults.RedeemResult(red)
@@ -92,9 +92,9 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 
 				// Recursively follows Items and Schemas
 				if param.Items != nil {
-					red := ex.validateExampleValueItemsAgainstSchema(newPathSegments(param.Name), param.In, &param, param.Items) //#nosec
+					red := ex.validateExampleValueItemsAgainstSchema(parameterPath(path, method, param.Name), param.In, &param, param.Items) //#nosec
 					if red.HasErrorsOrWarnings() {
-						res.AddWarnings(exampleValueItemsDoesNotValidateMsg(param.Name, param.In))
+						res.addWarningsAt(parameterPath(path, method, param.Name), exampleValueItemsDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
 					} else if red.wantsRedeemOnMerge {
 						pools.poolOfResults.RedeemResult(red)
@@ -103,9 +103,9 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 
 				if param.Schema != nil {
 					// Validate example value against schema
-					red := ex.validateExampleValueSchemaAgainstSchema(newPathSegments(param.Name), param.In, param.Schema)
+					red := ex.validateExampleValueSchemaAgainstSchema(parameterPath(path, method, param.Name), param.In, param.Schema)
 					if red.HasErrorsOrWarnings() {
-						res.AddWarnings(exampleValueDoesNotValidateMsg(param.Name, param.In))
+						res.addWarningsAt(parameterPath(path, method, param.Name), exampleValueDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
 					} else if red.wantsRedeemOnMerge {
 						pools.poolOfResults.RedeemResult(red)
@@ -126,7 +126,7 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 				}
 			} else if op.ID != "" {
 				// Empty op.ID means there is no meaningful operation: no need to report a specific message
-				res.AddErrors(noValidResponseMsg(op.ID))
+				res.addErrorsAt(operationPath(path, method), noValidResponseMsg(op.ID))
 			}
 		}
 	}
@@ -160,7 +160,7 @@ func (ex *exampleValidator) validateExampleInResponse(
 			if h.Example != nil {
 				red := newHeaderValidator(nm, &h, s.KnownFormats, ex.schemaOptions).Validate(h.Example) //#nosec
 				if red.HasErrorsOrWarnings() {
-					res.AddWarnings(exampleValueHeaderDoesNotValidateMsg(operationID, nm, responseName))
+					res.addWarningsAt(responseHeaderPath(path, method, responseCodeAsStr, nm), exampleValueHeaderDoesNotValidateMsg(operationID, nm, responseName))
 					res.MergeAsWarnings(red)
 				} else if red.wantsRedeemOnMerge {
 					pools.poolOfResults.RedeemResult(red)
@@ -169,9 +169,9 @@ func (ex *exampleValidator) validateExampleInResponse(
 
 			// Headers have inline definition, like params
 			if h.Items != nil {
-				red := ex.validateExampleValueItemsAgainstSchema(newPathSegments(nm), "header", &h, h.Items) //#nosec
+				red := ex.validateExampleValueItemsAgainstSchema(responseHeaderPath(path, method, responseCodeAsStr, nm), "header", &h, h.Items) //#nosec
 				if red.HasErrorsOrWarnings() {
-					res.AddWarnings(exampleValueHeaderItemsDoesNotValidateMsg(operationID, nm, responseName))
+					res.addWarningsAt(responseHeaderPath(path, method, responseCodeAsStr, nm), exampleValueHeaderItemsDoesNotValidateMsg(operationID, nm, responseName))
 					res.MergeAsWarnings(red)
 				} else if red.wantsRedeemOnMerge {
 					pools.poolOfResults.RedeemResult(red)
@@ -179,7 +179,7 @@ func (ex *exampleValidator) validateExampleInResponse(
 			}
 
 			if _, err := compileRegexp(h.Pattern); err != nil {
-				res.AddErrors(invalidPatternInHeaderMsg(operationID, nm, responseName, h.Pattern, err))
+				res.addErrorsAt(responseHeaderPath(path, method, responseCodeAsStr, nm), invalidPatternInHeaderMsg(operationID, nm, responseName, h.Pattern, err))
 			}
 
 			// Headers don't have schema
@@ -192,7 +192,7 @@ func (ex *exampleValidator) validateExampleInResponse(
 		red := ex.validateExampleValueSchemaAgainstSchema(responsePath(path, method, responseCodeAsStr), "response", response.Schema)
 		if red.HasErrorsOrWarnings() {
 			// Additional message to make sure the context of the error is not lost
-			res.AddWarnings(exampleValueInDoesNotValidateMsg(operationID, responseName))
+			res.addWarningsAt(responsePath(path, method, responseCodeAsStr), exampleValueInDoesNotValidateMsg(operationID, responseName))
 			res.Merge(red)
 		} else if red.wantsRedeemOnMerge {
 			pools.poolOfResults.RedeemResult(red)
@@ -207,10 +207,10 @@ func (ex *exampleValidator) validateExampleInResponse(
 				)
 			} else {
 				// Proposal for enhancement: validate other media types too
-				res.AddWarnings(examplesMimeNotSupportedMsg(operationID, responseName))
+				res.addWarningsAt(responsePath(path, method, responseCodeAsStr).child(swaggerExamples), examplesMimeNotSupportedMsg(operationID, responseName))
 			}
 		} else {
-			res.AddWarnings(examplesWithoutSchemaMsg(operationID, responseName))
+			res.addWarningsAt(responsePath(path, method, responseCodeAsStr).child(swaggerExamples), examplesWithoutSchemaMsg(operationID, responseName))
 		}
 	}
 	return res
@@ -242,7 +242,7 @@ func (ex *exampleValidator) validateExampleValueSchemaAgainstSchema(path pathSeg
 		}
 	}
 	if _, err := compileRegexp(schema.Pattern); err != nil {
-		res.AddErrors(invalidPatternInMsg(path.dotted(), in, schema.Pattern))
+		res.addErrorsAt(path, invalidPatternInMsg(path.dotted(), in, schema.Pattern))
 	}
 	if schema.AdditionalItems != nil && schema.AdditionalItems.Schema != nil {
 		// NOTE: we keep validating values, even though additionalItems is unsupported in Swagger 2.0 (and 3.0 as well)
@@ -281,7 +281,7 @@ func (ex *exampleValidator) validateExampleValueItemsAgainstSchema(path pathSegm
 			res.Merge(ex.validateExampleValueItemsAgainstSchema(path.item(0), in, root, items.Items))
 		}
 		if _, err := compileRegexp(items.Pattern); err != nil {
-			res.AddErrors(invalidPatternInMsg(path.dotted(), in, items.Pattern))
+			res.addErrorsAt(path, invalidPatternInMsg(path.dotted(), in, items.Pattern))
 		}
 	}
 

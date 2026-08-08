@@ -103,7 +103,7 @@ func (s *schemaSliceValidator) Validate(data any) *Result {
 	}
 	if s.AdditionalItems != nil && itemsSize < size {
 		if s.Items != nil && len(s.Items.Schemas) > 0 && !s.AdditionalItems.Allows {
-			result.AddErrors(arrayDoesNotAllowAdditionalItemsMsg())
+			result.addErrorsAt(s.Path, arrayDoesNotAllowAdditionalItemsMsg())
 		}
 		if s.AdditionalItems.Schema != nil {
 			for i := itemsSize; i < size-itemsSize+1; i++ {
@@ -115,17 +115,17 @@ func (s *schemaSliceValidator) Validate(data any) *Result {
 
 	if s.MinItems != nil {
 		if err := MinItems(s.Path.dotted(), s.In, int64(size), *s.MinItems); err != nil {
-			result.AddErrors(err)
+			result.addErrorsAt(s.Path, err)
 		}
 	}
 	if s.MaxItems != nil {
 		if err := MaxItems(s.Path.dotted(), s.In, int64(size), *s.MaxItems); err != nil {
-			result.AddErrors(err)
+			result.addErrorsAt(s.Path, err)
 		}
 	}
 	if s.UniqueItems {
 		if err := UniqueItems(s.Path.dotted(), s.In, val.Interface()); err != nil {
-			result.AddErrors(err)
+			result.addErrorsAt(s.Path, err)
 		}
 	}
 	result.Inc()

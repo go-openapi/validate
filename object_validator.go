@@ -69,16 +69,16 @@ func (o *objectValidator) Validate(data any) *Result {
 		var ok bool
 		val, ok = data.(map[string]any)
 		if !ok {
-			return errorHelp.sErr(invalidObjectMsg(o.Path.dotted(), o.In), o.Options.recycleResult)
+			return errorHelp.sErrAt(o.Path, invalidObjectMsg(o.Path.dotted(), o.In), o.Options.recycleResult)
 		}
 	}
 	numKeys := int64(len(val))
 
 	if o.MinProperties != nil && numKeys < *o.MinProperties {
-		return errorHelp.sErr(errors.TooFewProperties(o.Path.dotted(), o.In, *o.MinProperties), o.Options.recycleResult)
+		return errorHelp.sErrAt(o.Path, errors.TooFewProperties(o.Path.dotted(), o.In, *o.MinProperties), o.Options.recycleResult)
 	}
 	if o.MaxProperties != nil && numKeys > *o.MaxProperties {
-		return errorHelp.sErr(errors.TooManyProperties(o.Path.dotted(), o.In, *o.MaxProperties), o.Options.recycleResult)
+		return errorHelp.sErrAt(o.Path, errors.TooManyProperties(o.Path.dotted(), o.In, *o.MaxProperties), o.Options.recycleResult)
 	}
 
 	var res *Result
@@ -176,7 +176,7 @@ func (o *objectValidator) checkArrayMustHaveItems(res *Result, val map[string]an
 		return
 	}
 
-	res.AddErrors(errors.Required(jsonItems, o.Path.dotted(), item))
+	res.addErrorsAt(o.Path.child(jsonItems), errors.Required(jsonItems, o.Path.dotted(), item))
 }
 
 func (o *objectValidator) checkItemsMustBeTypeArray(res *Result, val map[string]any) {
@@ -196,11 +196,11 @@ func (o *objectValidator) checkItemsMustBeTypeArray(res *Result, val map[string]
 	t, typeFound := val[jsonType]
 	if !typeFound {
 		// there is no type
-		res.AddErrors(errors.Required(jsonType, o.Path.dotted(), t))
+		res.addErrorsAt(o.Path.child(jsonType), errors.Required(jsonType, o.Path.dotted(), t))
 	}
 
 	if tpe, isString := t.(string); !isString || tpe != arrayType {
-		res.AddErrors(errors.InvalidType(o.Path.dotted(), o.In, arrayType, nil))
+		res.addErrorsAt(o.Path, errors.InvalidType(o.Path.dotted(), o.In, arrayType, nil))
 	}
 }
 
@@ -240,7 +240,7 @@ func (o *objectValidator) validateNoAdditionalProperties(val map[string]any, res
 			continue
 		}
 
-		res.AddErrors(errors.PropertyNotAllowed(o.Path.dotted(), o.In, k))
+		res.addErrorsAt(o.Path.child(k), errors.PropertyNotAllowed(o.Path.dotted(), o.In, k))
 
 		// BUG(fredbi): This section should move to a part dedicated to spec validation as
 		// it will conflict with regular schemas where a property "headers" is defined.
@@ -284,7 +284,7 @@ func (o *objectValidator) validateNoAdditionalProperties(val map[string]any, res
 			}
 
 			msg := strings.Join([]string{", one may not use $ref=\":", refString, "\""}, "")
-			res.AddErrors(refNotAllowedInHeaderMsg(o.Path.dotted(), headerKey, msg))
+			res.addErrorsAt(o.Path, refNotAllowedInHeaderMsg(o.Path.dotted(), headerKey, msg))
 			/*
 				case "$ref":
 					if val[k] != nil {
@@ -371,7 +371,7 @@ func (o *objectValidator) validatePropertiesSchema(val map[string]any, res *Resu
 			continue
 		}
 
-		res.AddErrors(errors.Required(o.Path.child(k).dotted(), o.In, v))
+		res.addErrorsAt(o.Path.child(k), errors.Required(o.Path.child(k).dotted(), o.In, v))
 	}
 }
 

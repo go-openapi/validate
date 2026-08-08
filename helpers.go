@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/go-openapi/errors"
+	"github.com/go-openapi/jsonpointer"
 	"github.com/go-openapi/spec"
 )
 
@@ -36,8 +37,8 @@ const (
 	jsonProperties = "properties"
 	jsonItems      = "items"
 	jsonType       = "type"
-	// jsonSchema     = "schema".
-	jsonDefault = "default"
+	jsonSchema     = "schema"
+	jsonDefault    = "default"
 
 	jsonAllOf                = "allOf"
 	jsonAdditionalItems      = "additionalItems"
@@ -47,11 +48,31 @@ const (
 	swaggerDefinitions = "definitions"
 	swaggerResponses   = "responses"
 	swaggerParameters  = "parameters"
+	swaggerHeaders     = "headers"
 )
+
+// operationPath locates an operation in the spec document.
+func operationPath(path, method string) pathSegments {
+	return newPathSegments(swaggerPaths, path, methodToken(method))
+}
+
+// parameterPath locates a parameter of an operation.
+//
+// Parameters are held in an array, so a name is not how the document addresses
+// them. It is used all the same: it is what a reader recognizes, and resolving
+// the index would mean carrying it down every recursion.
+func parameterPath(path, method, name string) pathSegments {
+	return operationPath(path, method).children(swaggerParameters, name)
+}
 
 // responsePath locates a response of an operation in the spec document.
 func responsePath(path, method, responseCode string) pathSegments {
-	return newPathSegments(swaggerPaths, path, methodToken(method), swaggerResponses, responseCode)
+	return operationPath(path, method).children(swaggerResponses, responseCode)
+}
+
+// responseHeaderPath locates a header declared by a response.
+func responseHeaderPath(path, method, responseCode, header string) pathSegments {
+	return responsePath(path, method, responseCode).children(swaggerHeaders, header)
 }
 
 // methodToken normalizes an HTTP method into the key under which the operation
@@ -59,6 +80,25 @@ func responsePath(path, method, responseCode string) pathSegments {
 // path item spells them in lower case.
 func methodToken(method string) string {
 	return strings.ToLower(method)
+}
+
+// localRefPath turns a local JSON reference such as "#/definitions/Pet" into
+// the location of what it points to.
+//
+// It yields the document root for anything that does not address a local
+// fragment, a remote reference in particular.
+func localRefPath(ref string) pathSegments {
+	rest, isLocal := strings.CutPrefix(ref, "#/")
+	if !isLocal {
+		return rootPath()
+	}
+
+	tokens := strings.Split(rest, "/")
+	for i, token := range tokens {
+		tokens[i] = jsonpointer.Unescape(token)
+	}
+
+	return newPathSegments(tokens...)
 }
 
 const (
@@ -112,24 +152,33 @@ type errorHelper struct {
 }
 
 func (h *errorHelper) sErr(err errors.Error, recycle bool) *Result {
-	// Builds a Result from standard errors.Error
+	return h.sErrAt(nil, err, recycle)
+}
+
+// sErrAt builds a Result from a standard errors.Error reported at a known location.
+func (h *errorHelper) sErrAt(at pathSegments, err errors.Error, recycle bool) *Result {
 	var result *Result
 	if recycle {
 		result = pools.poolOfResults.BorrowResult()
 	} else {
 		result = new(Result)
 	}
-	result.Errors = []error{err}
+	result.addErrorsAt(at, err)
 
 	return result
 }
 
 func (h *errorHelper) addPointerError(res *Result, err error, ref string, fromPath string) *Result {
-	// Provides more context on error messages
-	// reported by the jsoinpointer package by altering the passed Result
+	return h.addPointerErrorAt(res, nil, err, ref, fromPath)
+}
+
+// addPointerErrorAt provides more context on error messages reported by the
+// jsonpointer package, by altering the passed Result.
+func (h *errorHelper) addPointerErrorAt(res *Result, at pathSegments, err error, ref string, fromPath string) *Result {
 	if err != nil {
-		res.AddErrors(cannotResolveRefMsg(fromPath, ref, err))
+		res.addErrorsAt(at, cannotResolveRefMsg(fromPath, ref, err))
 	}
+
 	return res
 }
 
@@ -246,9 +295,9 @@ func (h *paramHelper) safeExpandedParamsFor(path, method, operationID string, re
 		for _, ppr := range s.expandedAnalyzer().SafeParamsFor(method, path,
 			func(_ spec.Parameter, err error) bool {
 				// since params have already been expanded, there are few causes for error
-				res.AddErrors(someParametersBrokenMsg(path, method, operationID))
+				res.addErrorsAt(operationPath(path, method), someParametersBrokenMsg(path, method, operationID))
 				// original error from analyzer
-				res.AddErrors(err)
+				res.addErrorsAt(operationPath(path, method), err)
 				return true
 			}) {
 			params = append(params, ppr)
@@ -270,14 +319,16 @@ func (h *paramHelper) resolveParam(path, method, operationID string, param *spec
 	if err != nil { // Safeguard
 		// NOTE: we may enter here when the whole parameter is an unresolved $ref
 		refPath := strings.Join([]string{"\"" + path + "\"", method}, ".")
-		errorHelp.addPointerError(res, err, param.Ref.String(), refPath)
+		errorHelp.addPointerErrorAt(res, parameterPath(path, method, param.Name), err, param.Ref.String(), refPath)
 		return nil, res
 	}
-	res.Merge(h.checkExpandedParam(param, param.Name, param.In, operationID, isRef))
+	res.Merge(h.checkExpandedParam(param, param.Name, param.In, operationID, parameterPath(path, method, param.Name), isRef))
 	return param, res
 }
 
-func (h *paramHelper) checkExpandedParam(pr *spec.Parameter, path, in, operation string, isRef bool) *Result {
+func (h *paramHelper) checkExpandedParam(
+	pr *spec.Parameter, path, in, operation string, at pathSegments, isRef bool,
+) *Result {
 	// Secure parameter structure after $ref resolution
 	res := new(Result)
 	simpleZero := spec.SimpleSchema{}
@@ -288,17 +339,17 @@ func (h *paramHelper) checkExpandedParam(pr *spec.Parameter, path, in, operation
 			// Most likely, a $ref with a sibling is an unwanted situation: in itself this is a warning...
 			// but we detect it because of the following error:
 			// schema took over Parameter for an unexplained reason
-			res.AddWarnings(refShouldNotHaveSiblingsMsg(path, operation))
+			res.addWarningsAt(at, refShouldNotHaveSiblingsMsg(path, operation))
 		}
-		res.AddErrors(invalidParameterDefinitionMsg(path, in, operation))
+		res.addErrorsAt(at, invalidParameterDefinitionMsg(path, in, operation))
 	case pr.In != swaggerBody && pr.Schema != nil:
 		if isRef {
-			res.AddWarnings(refShouldNotHaveSiblingsMsg(path, operation))
+			res.addWarningsAt(at, refShouldNotHaveSiblingsMsg(path, operation))
 		}
-		res.AddErrors(invalidParameterDefinitionAsSchemaMsg(path, in, operation))
+		res.addErrorsAt(at, invalidParameterDefinitionAsSchemaMsg(path, in, operation))
 	case (pr.In == swaggerBody && pr.Schema == nil) || (pr.In != swaggerBody && pr.SimpleSchema == simpleZero):
 		// Other unexpected mishaps
-		res.AddErrors(invalidParameterDefinitionMsg(path, in, operation))
+		res.addErrorsAt(at, invalidParameterDefinitionMsg(path, in, operation))
 	}
 	return res
 }

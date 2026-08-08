@@ -196,7 +196,7 @@ func (s *SchemaValidator) Validate(data any) *Result {
 		// to map[string]interface{}.
 		var dd any
 		if err := jsonutils.FromDynamicJSON(data, &dd); err != nil {
-			result.AddErrors(err)
+			result.addErrorsAt(s.path, err)
 			result.Inc()
 
 			return result
@@ -212,7 +212,7 @@ func (s *SchemaValidator) Validate(data any) *Result {
 		if s.Schema.Type.Contains(integerType) { // avoid lossy conversion
 			in, erri := num.Int64()
 			if erri != nil {
-				result.AddErrors(invalidTypeConversionMsg(s.Path, erri))
+				result.addErrorsAt(s.path, invalidTypeConversionMsg(s.Path, erri))
 				result.Inc()
 
 				return result
@@ -221,7 +221,7 @@ func (s *SchemaValidator) Validate(data any) *Result {
 		} else {
 			nf, errf := num.Float64()
 			if errf != nil {
-				result.AddErrors(invalidTypeConversionMsg(s.Path, errf))
+				result.addErrorsAt(s.path, invalidTypeConversionMsg(s.Path, errf))
 				result.Inc()
 
 				return result

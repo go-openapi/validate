@@ -68,7 +68,7 @@ func (t *typeValidator) Validate(data any) *Result {
 	if data == nil {
 		// nil or zero value for the passed structure require Type: null
 		if len(t.Type) > 0 && !t.Type.Contains(nullType) && !t.Nullable { // NOTE: if a property is not required it also passes this
-			return errorHelp.sErr(errors.InvalidType(t.Path.dotted(), t.In, strings.Join(t.Type, ","), nullType), t.Options.recycleResult)
+			return errorHelp.sErrAt(t.Path, errors.InvalidType(t.Path.dotted(), t.In, strings.Join(t.Type, ","), nullType), t.Options.recycleResult)
 		}
 
 		return emptyResult
@@ -94,7 +94,7 @@ func (t *typeValidator) Validate(data any) *Result {
 		!isFloatInt && !isIntFloat && !isLowerInt && !isLowerFloat
 	if formatMismatch {
 		// NOTE: test case
-		return errorHelp.sErr(errors.InvalidType(t.Path.dotted(), t.In, t.Format, format), t.Options.recycleResult)
+		return errorHelp.sErrAt(t.Path, errors.InvalidType(t.Path.dotted(), t.In, t.Format, format), t.Options.recycleResult)
 	}
 
 	if !t.Type.Contains(numberType) && !t.Type.Contains(integerType) && t.Format != "" && (kind == reflect.String || kind == reflect.Slice) {
@@ -102,7 +102,7 @@ func (t *typeValidator) Validate(data any) *Result {
 	}
 
 	if !t.Type.Contains(schType) && !isFloatInt && !isIntFloat {
-		return errorHelp.sErr(errors.InvalidType(t.Path.dotted(), t.In, strings.Join(t.Type, ","), schType), t.Options.recycleResult)
+		return errorHelp.sErrAt(t.Path, errors.InvalidType(t.Path.dotted(), t.In, strings.Join(t.Type, ","), schType), t.Options.recycleResult)
 	}
 
 	return emptyResult
