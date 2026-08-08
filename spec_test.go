@@ -229,7 +229,7 @@ func TestSpec_Issue18(t *testing.T) {
 			assert.SliceContainsT(t, verifiedErrors, "body param \"user\" for \"\" has invalid items pattern: \")<-- bad pattern\"")
 			assert.SliceContainsT(t, verifiedErrors, "default value for user in body does not validate its schema")
 			assert.SliceContainsT(t, verifiedErrors,
-				"paths./foo.get.parameters.user.items in body has invalid pattern: \")<-- bad pattern\"")
+				"paths./foo.parameters.user.items in body has invalid pattern: \")<-- bad pattern\"")
 		case strings.Contains(path, "parameters.json"):
 			assert.SliceContainsT(t, verifiedErrors, "operation \"\" has invalid pattern in param \"userId\": \")<-- bad pattern\"")
 		case strings.Contains(path, "schema.json"):
@@ -405,6 +405,7 @@ func TestSpec_ValidateParameters(t *testing.T) {
 		validator := NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
 		validator.spec = doc
 		validator.analyzer = analysis.New(doc.Spec())
+		validator.paramLocations = newParamLocations(doc.Spec())
 
 		return validator
 	}

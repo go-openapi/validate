@@ -22,7 +22,27 @@ import (
 // The zero value is the location of the document root.
 //
 // [RFC 6901]: https://datatracker.ietf.org/doc/html/rfc6901
-type pathSegments []string
+type pathSegments []pathToken
+
+// pathToken is one step of a location.
+//
+// A token addresses a member the way the document does, which is not always
+// the way a reader recognizes it: an operation addresses its parameters by
+// index, while a message is far more useful naming them. When the two differ,
+// display carries the readable form and only the message uses it.
+type pathToken struct {
+	token   string
+	display string
+}
+
+// readable renders a token the way a message should spell it.
+func (t pathToken) readable() string {
+	if t.display != "" {
+		return t.display
+	}
+
+	return t.token
+}
 
 // newPathSegments builds a location from a list of unescaped tokens.
 func newPathSegments(tokens ...string) pathSegments {
@@ -30,7 +50,12 @@ func newPathSegments(tokens ...string) pathSegments {
 		return nil
 	}
 
-	return pathSegments(tokens)
+	segments := make(pathSegments, len(tokens))
+	for i, token := range tokens {
+		segments[i] = pathToken{token: token}
+	}
+
+	return segments
 }
 
 // rootPath is the location of the document root.
@@ -45,6 +70,16 @@ func (p pathSegments) String() string { return p.dotted() }
 // The receiver is never modified: sibling children may be derived from the
 // same parent without aliasing one another.
 func (p pathSegments) child(token string) pathSegments {
+	return p.appendToken(pathToken{token: token})
+}
+
+// childAs returns the location of a member the document addresses as token,
+// which messages should spell as display instead.
+func (p pathSegments) childAs(token, display string) pathSegments {
+	return p.appendToken(pathToken{token: token, display: display})
+}
+
+func (p pathSegments) appendToken(token pathToken) pathSegments {
 	child := make(pathSegments, len(p)+1)
 	copy(child, p)
 	child[len(p)] = token
@@ -56,7 +91,9 @@ func (p pathSegments) child(token string) pathSegments {
 func (p pathSegments) children(tokens ...string) pathSegments {
 	child := make(pathSegments, len(p)+len(tokens))
 	copy(child, p)
-	copy(child[len(p):], tokens)
+	for i, token := range tokens {
+		child[len(p)+i] = pathToken{token: token}
+	}
 
 	return child
 }
@@ -75,7 +112,7 @@ func (p pathSegments) last() string {
 		return ""
 	}
 
-	return p[len(p)-1]
+	return p[len(p)-1].token
 }
 
 // beforeLast returns the token before the trailing one, or an empty string
@@ -86,7 +123,7 @@ func (p pathSegments) beforeLast() string {
 		return ""
 	}
 
-	return p[len(p)-beforeLast]
+	return p[len(p)-beforeLast].token
 }
 
 // trimIndexes returns p without its trailing array index tokens.
@@ -95,7 +132,7 @@ func (p pathSegments) beforeLast() string {
 // array it sits: the items of an example are still an example.
 func (p pathSegments) trimIndexes() pathSegments {
 	end := len(p)
-	for end > 0 && isIndexToken(p[end-1]) {
+	for end > 0 && isIndexToken(p[end-1].token) {
 		end--
 	}
 
@@ -125,7 +162,7 @@ func (p pathSegments) hasSuffix(suffix pathSegments) bool {
 
 	offset := len(p) - len(suffix)
 	for i, token := range suffix {
-		if p[offset+i] != token {
+		if p[offset+i].token != token.token {
 			return false
 		}
 	}
@@ -141,7 +178,12 @@ func (p pathSegments) hasSuffix(suffix pathSegments) bool {
 // name of a validation error, and API consumers of go-swagger servers see it.
 // Use [pathSegments.pointer] whenever the location needs to be unambiguous.
 func (p pathSegments) dotted() string {
-	return strings.Join(p, ".")
+	readable := make([]string, len(p))
+	for i, token := range p {
+		readable[i] = token.readable()
+	}
+
+	return strings.Join(readable, ".")
 }
 
 // pointer renders the location as an RFC 6901 JSON pointer, e.g.
@@ -154,7 +196,7 @@ func (p pathSegments) pointer() string {
 	var w strings.Builder
 	for _, token := range p {
 		w.WriteByte('/')
-		w.WriteString(jsonpointer.Escape(token))
+		w.WriteString(jsonpointer.Escape(token.token))
 	}
 
 	return w.String()

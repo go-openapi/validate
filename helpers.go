@@ -58,13 +58,9 @@ func operationPath(path, method string) pathSegments {
 	return newPathSegments(swaggerPaths, path, methodToken(method))
 }
 
-// parameterPath locates a parameter of an operation.
-//
-// Parameters are held in an array, so a name is not how the document addresses
-// them. It is used all the same: it is what a reader recognizes, and resolving
-// the index would mean carrying it down every recursion.
-func parameterPath(path, method, name string) pathSegments {
-	return operationPath(path, method).children(swaggerParameters, name)
+// parameterPath locates a parameter of an operation in the spec document.
+func (s *SpecValidator) parameterPath(path, method, in, name string) pathSegments {
+	return s.paramLocations.at(path, method, in, name)
 }
 
 // responsePath locates a response of an operation in the spec document.
@@ -321,10 +317,10 @@ func (h *paramHelper) resolveParam(path, method, operationID string, param *spec
 	if err != nil { // Safeguard
 		// NOTE: we may enter here when the whole parameter is an unresolved $ref
 		refPath := strings.Join([]string{"\"" + path + "\"", method}, ".")
-		errorHelp.addPointerErrorAt(res, parameterPath(path, method, param.Name), err, param.Ref.String(), refPath)
+		errorHelp.addPointerErrorAt(res, s.parameterPath(path, method, param.In, param.Name), err, param.Ref.String(), refPath)
 		return nil, res
 	}
-	res.Merge(h.checkExpandedParam(param, param.Name, param.In, operationID, parameterPath(path, method, param.Name), isRef))
+	res.Merge(h.checkExpandedParam(param, param.Name, param.In, operationID, s.parameterPath(path, method, param.In, param.Name), isRef))
 	return param, res
 }
 

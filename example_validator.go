@@ -83,7 +83,7 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 					// check param default value is valid
 					red := newParamValidator(&param, s.KnownFormats, ex.schemaOptions).Validate(param.Example) //#nosec
 					if red.HasErrorsOrWarnings() {
-						res.addWarningsAt(parameterPath(path, method, param.Name), exampleValueDoesNotValidateMsg(param.Name, param.In))
+						res.addWarningsAt(s.parameterPath(path, method, param.In, param.Name), exampleValueDoesNotValidateMsg(param.Name, param.In))
 						res.MergeAsWarnings(red)
 					} else if red.wantsRedeemOnMerge {
 						pools.poolOfResults.RedeemResult(red)
@@ -92,9 +92,9 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 
 				// Recursively follows Items and Schemas
 				if param.Items != nil {
-					red := ex.validateExampleValueItemsAgainstSchema(parameterPath(path, method, param.Name), param.In, &param, param.Items) //#nosec
+					red := ex.validateExampleValueItemsAgainstSchema(s.parameterPath(path, method, param.In, param.Name), param.In, &param, param.Items) //#nosec
 					if red.HasErrorsOrWarnings() {
-						res.addWarningsAt(parameterPath(path, method, param.Name), exampleValueItemsDoesNotValidateMsg(param.Name, param.In))
+						res.addWarningsAt(s.parameterPath(path, method, param.In, param.Name), exampleValueItemsDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
 					} else if red.wantsRedeemOnMerge {
 						pools.poolOfResults.RedeemResult(red)
@@ -103,9 +103,9 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 
 				if param.Schema != nil {
 					// Validate example value against schema
-					red := ex.validateExampleValueSchemaAgainstSchema(parameterPath(path, method, param.Name), param.In, param.Schema)
+					red := ex.validateExampleValueSchemaAgainstSchema(s.parameterPath(path, method, param.In, param.Name), param.In, param.Schema)
 					if red.HasErrorsOrWarnings() {
-						res.addWarningsAt(parameterPath(path, method, param.Name), exampleValueDoesNotValidateMsg(param.Name, param.In))
+						res.addWarningsAt(s.parameterPath(path, method, param.In, param.Name), exampleValueDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
 					} else if red.wantsRedeemOnMerge {
 						pools.poolOfResults.RedeemResult(red)

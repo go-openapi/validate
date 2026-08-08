@@ -81,7 +81,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 			// parameters
 			for _, param := range paramHelp.safeExpandedParamsFor(path, method, op.ID, res, s) {
 				if param.Default != nil && param.Required {
-					res.addWarningsAt(parameterPath(path, method, param.Name), requiredHasDefaultMsg(param.Name, param.In))
+					res.addWarningsAt(s.parameterPath(path, method, param.In, param.Name), requiredHasDefaultMsg(param.Name, param.In))
 				}
 
 				// reset explored schemas to get depth-first recursive-proof exploration
@@ -93,7 +93,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 					// check param default value is valid
 					red := newParamValidator(&param, s.KnownFormats, d.schemaOptions).Validate(param.Default) //#nosec
 					if red.HasErrorsOrWarnings() {
-						res.addErrorsAt(parameterPath(path, method, param.Name), defaultValueDoesNotValidateMsg(param.Name, param.In))
+						res.addErrorsAt(s.parameterPath(path, method, param.In, param.Name), defaultValueDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
 					} else if red.wantsRedeemOnMerge {
 						pools.poolOfResults.RedeemResult(red)
@@ -102,9 +102,9 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 
 				// Recursively follows Items and Schemas
 				if param.Items != nil {
-					red := d.validateDefaultValueItemsAgainstSchema(parameterPath(path, method, param.Name), param.In, &param, param.Items) //#nosec
+					red := d.validateDefaultValueItemsAgainstSchema(s.parameterPath(path, method, param.In, param.Name), param.In, &param, param.Items) //#nosec
 					if red.HasErrorsOrWarnings() {
-						res.addErrorsAt(parameterPath(path, method, param.Name), defaultValueItemsDoesNotValidateMsg(param.Name, param.In))
+						res.addErrorsAt(s.parameterPath(path, method, param.In, param.Name), defaultValueItemsDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
 					} else if red.wantsRedeemOnMerge {
 						pools.poolOfResults.RedeemResult(red)
@@ -113,9 +113,9 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 
 				if param.Schema != nil {
 					// Validate default value against schema
-					red := d.validateDefaultValueSchemaAgainstSchema(parameterPath(path, method, param.Name), param.In, param.Schema)
+					red := d.validateDefaultValueSchemaAgainstSchema(s.parameterPath(path, method, param.In, param.Name), param.In, param.Schema)
 					if red.HasErrorsOrWarnings() {
-						res.addErrorsAt(parameterPath(path, method, param.Name), defaultValueDoesNotValidateMsg(param.Name, param.In))
+						res.addErrorsAt(s.parameterPath(path, method, param.In, param.Name), defaultValueDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
 					} else if red.wantsRedeemOnMerge {
 						pools.poolOfResults.RedeemResult(red)

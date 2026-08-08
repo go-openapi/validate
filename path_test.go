@@ -80,6 +80,34 @@ func TestPathSegmentsRendering(t *testing.T) {
 	}
 }
 
+func TestPathSegmentsDisplayDiffersFromPointer(t *testing.T) {
+	t.Parallel()
+
+	// a document addresses an array member by index, while a message reads
+	// far better naming it
+	path := newPathSegments("paths", "/pets", "get", "parameters").childAs("1", "tags")
+
+	assert.EqualT(t, "/paths/~1pets/get/parameters/1", path.pointer())
+	assert.EqualT(t, "paths./pets.get.parameters.tags", path.dotted())
+
+	t.Run("structure reads the addressed token, not the readable one", func(t *testing.T) {
+		t.Parallel()
+
+		assert.EqualT(t, "1", path.last(), "expected the token the document uses")
+		assert.True(t, path.hasSuffix(newPathSegments("parameters", "1")))
+		assert.False(t, path.hasSuffix(newPathSegments("parameters", "tags")))
+		assert.EqualT(t, "paths./pets.get.parameters", path.trimIndexes().dotted())
+	})
+
+	t.Run("children of a renamed token keep both forms", func(t *testing.T) {
+		t.Parallel()
+
+		child := path.child("items")
+		assert.EqualT(t, "/paths/~1pets/get/parameters/1/items", child.pointer())
+		assert.EqualT(t, "paths./pets.get.parameters.tags.items", child.dotted())
+	})
+}
+
 func TestPathSegmentsAppendIsCopyOnWrite(t *testing.T) {
 	t.Parallel()
 

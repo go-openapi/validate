@@ -49,14 +49,15 @@ func Spec(doc *loads.Document, formats strfmt.Registry, options ...Option) error
 
 // SpecValidator validates a swagger 2.0 spec.
 type SpecValidator struct {
-	schema        *spec.Schema // swagger 2.0 schema
-	spec          *loads.Document
-	analyzer      *analysis.Spec
-	expanded      *loads.Document
-	refLocations  refLocations
-	KnownFormats  strfmt.Registry
-	Options       Opts // validation options
-	schemaOptions *SchemaValidatorOptions
+	schema         *spec.Schema // swagger 2.0 schema
+	spec           *loads.Document
+	analyzer       *analysis.Spec
+	expanded       *loads.Document
+	refLocations   refLocations
+	paramLocations paramLocations
+	KnownFormats   strfmt.Registry
+	Options        Opts // validation options
+	schemaOptions  *SchemaValidatorOptions
 }
 
 // NewSpecValidator creates a new swagger spec validator instance.
@@ -103,6 +104,9 @@ func (s *SpecValidator) Validate(data any) (*Result, *Result) {
 	// where each $ref sits, as authored: refs are reported against the
 	// unexpanded document, before expansion flattens them away
 	s.refLocations = newRefLocations(s.analyzer)
+	// where each operation declares its parameters: the document addresses
+	// them by index, and expansion loses that
+	s.paramLocations = newParamLocations(sd.Spec())
 
 	// Raw spec unmarshalling errors
 	var obj any
@@ -374,7 +378,7 @@ func (s *SpecValidator) validateItems() *Result {
 			for _, param := range paramHelp.safeExpandedParamsFor(path, method, op.ID, res, s) {
 
 				if param.TypeName() == arrayType && param.ItemsTypeName() == "" {
-					res.addErrorsAt(parameterPath(path, method, param.Name), arrayInParamRequiresItemsMsg(param.Name, op.ID))
+					res.addErrorsAt(s.parameterPath(path, method, param.In, param.Name), arrayInParamRequiresItemsMsg(param.Name, op.ID))
 					continue
 				}
 				if param.In != swaggerBody {
@@ -382,7 +386,7 @@ func (s *SpecValidator) validateItems() *Result {
 						items := param.Items
 						for items.TypeName() == arrayType {
 							if items.ItemsTypeName() == "" {
-								res.addErrorsAt(parameterPath(path, method, param.Name), arrayInParamRequiresItemsMsg(param.Name, op.ID))
+								res.addErrorsAt(s.parameterPath(path, method, param.In, param.Name), arrayInParamRequiresItemsMsg(param.Name, op.ID))
 								break
 							}
 							items = items.Items
@@ -391,7 +395,7 @@ func (s *SpecValidator) validateItems() *Result {
 				} else {
 					// In: body
 					if param.Schema != nil {
-						res.Merge(s.validateSchemaItems(*param.Schema, parameterPath(path, method, param.Name).child(jsonSchema),
+						res.Merge(s.validateSchemaItems(*param.Schema, s.parameterPath(path, method, param.In, param.Name).child(jsonSchema),
 							fmt.Sprintf("body param %q", param.Name), op.ID))
 					}
 				}
@@ -721,10 +725,10 @@ func (s *SpecValidator) validateParameters() *Result {
 
 			for _, pr := range paramHelp.safeExpandedParamsFor(path, method, op.ID, res, s) {
 				// An expanded parameter must validate the Parameter schema (an unexpanded $ref always passes high-level schema validation)
-				schv := newSchemaValidator(&paramSchema, s.schema, newPathSegments(swaggerPaths, path, methodToken(method), swaggerParameters, pr.Name), s.KnownFormats, s.schemaOptions)
+				schv := newSchemaValidator(&paramSchema, s.schema, s.parameterPath(path, method, pr.In, pr.Name), s.KnownFormats, s.schemaOptions)
 				var obj any
 				if err := jsonutils.FromDynamicJSON(pr, &obj); err != nil {
-					res.addErrorsAt(parameterPath(path, method, pr.Name), err)
+					res.addErrorsAt(s.parameterPath(path, method, pr.In, pr.Name), err)
 
 					return res
 				}
@@ -733,7 +737,7 @@ func (s *SpecValidator) validateParameters() *Result {
 
 				// Validate pattern regexp for parameters with a Pattern property
 				if _, err := compileRegexp(pr.Pattern); err != nil {
-					res.addErrorsAt(parameterPath(path, method, pr.Name), invalidPatternInParamMsg(op.ID, pr.Name, pr.Pattern))
+					res.addErrorsAt(s.parameterPath(path, method, pr.In, pr.Name), invalidPatternInParamMsg(op.ID, pr.Name, pr.Pattern))
 				}
 
 				// There must be at most one parameter in body: list them all
@@ -746,7 +750,7 @@ func (s *SpecValidator) validateParameters() *Result {
 					paramNames = append(paramNames, pr.Name)
 					// Path declared in path must have the required: true property
 					if !pr.Required {
-						res.addErrorsAt(parameterPath(path, method, pr.Name), pathParamRequiredMsg(op.ID, pr.Name))
+						res.addErrorsAt(s.parameterPath(path, method, pr.In, pr.Name), pathParamRequiredMsg(op.ID, pr.Name))
 					}
 				}
 
@@ -757,19 +761,19 @@ func (s *SpecValidator) validateParameters() *Result {
 				if pr.Type != numberType && pr.Type != integerType &&
 					(pr.Maximum != nil || pr.Minimum != nil || pr.MultipleOf != nil) {
 					// A non-numeric parameter has validation keywords for numeric instances (number and integer)
-					res.addWarningsAt(parameterPath(path, method, pr.Name), parameterValidationTypeMismatchMsg(pr.Name, path, pr.Type))
+					res.addWarningsAt(s.parameterPath(path, method, pr.In, pr.Name), parameterValidationTypeMismatchMsg(pr.Name, path, pr.Type))
 				}
 
 				if pr.Type != stringType &&
 					// A non-string parameter has validation keywords for strings
 					(pr.MaxLength != nil || pr.MinLength != nil || pr.Pattern != "") {
-					res.addWarningsAt(parameterPath(path, method, pr.Name), parameterValidationTypeMismatchMsg(pr.Name, path, pr.Type))
+					res.addWarningsAt(s.parameterPath(path, method, pr.In, pr.Name), parameterValidationTypeMismatchMsg(pr.Name, path, pr.Type))
 				}
 
 				if pr.Type != arrayType &&
 					// A non-array parameter has validation keywords for arrays
 					(pr.MaxItems != nil || pr.MinItems != nil || pr.UniqueItems) {
-					res.addWarningsAt(parameterPath(path, method, pr.Name), parameterValidationTypeMismatchMsg(pr.Name, path, pr.Type))
+					res.addWarningsAt(s.parameterPath(path, method, pr.In, pr.Name), parameterValidationTypeMismatchMsg(pr.Name, path, pr.Type))
 				}
 			}
 
@@ -854,7 +858,7 @@ func (s *SpecValidator) checkUniqueParams(path, method string, op *spec.Operatio
 				key := fmt.Sprintf("%s#%s", pr.In, pr.Name)
 
 				if _, ok = pnames[key]; ok {
-					res.addErrorsAt(parameterPath(path, method, pr.Name), duplicateParamNameMsg(pr.In, pr.Name, op.ID))
+					res.addErrorsAt(s.parameterPath(path, method, pr.In, pr.Name), duplicateParamNameMsg(pr.In, pr.Name, op.ID))
 				}
 				pnames[key] = struct{}{}
 			}
