@@ -95,6 +95,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 				if param.Default != nil && param.Schema == nil {
 					// check param default value is valid
 					red := newParamValidator(&param, s.KnownFormats, d.schemaOptions).Validate(param.Default) //#nosec
+					red.relocate(s.parameterPath(path, method, param.In, param.Name).child(jsonDefault))
 					if red.HasErrorsOrWarnings() {
 						res.addErrorsAt(s.parameterPath(path, method, param.In, param.Name), defaultValueDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
@@ -116,7 +117,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 
 				if param.Schema != nil {
 					// Validate default value against schema
-					red := d.validateDefaultValueSchemaAgainstSchema(s.parameterPath(path, method, param.In, param.Name), param.In, param.Schema)
+					red := d.validateDefaultValueSchemaAgainstSchema(s.parameterPath(path, method, param.In, param.Name).structuralChild(jsonSchema), param.In, param.Schema)
 					if red.HasErrorsOrWarnings() {
 						res.addErrorsAt(s.parameterPath(path, method, param.In, param.Name), defaultValueDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
@@ -161,12 +162,11 @@ func (d *defaultValidator) validateDefaultInResponse(
 ) *Result {
 	s := d.SpecValidator
 
-	response, res := responseHelp.expandResponseRef(resp, path, s)
+	responseName, responseCodeAsStr := responseHelp.responseMsgVariants(responseType, responseCode)
+	response, res := responseHelp.expandResponseRef(resp, path, responsePath(path, method, responseCodeAsStr), s)
 	if !res.IsValid() {
 		return res
 	}
-
-	responseName, responseCodeAsStr := responseHelp.responseMsgVariants(responseType, responseCode)
 
 	if response.Headers != nil { // Safeguard
 		for _, nm := range sortedKeys(response.Headers) {
@@ -176,6 +176,7 @@ func (d *defaultValidator) validateDefaultInResponse(
 
 			if h.Default != nil {
 				red := newHeaderValidator(nm, &h, s.KnownFormats, d.schemaOptions).Validate(h.Default) //#nosec
+				red.relocate(responseHeaderPath(path, method, responseCodeAsStr, nm).child(jsonDefault))
 				if red.HasErrorsOrWarnings() {
 					res.addErrorsAt(responseHeaderPath(path, method, responseCodeAsStr, nm), defaultValueHeaderDoesNotValidateMsg(operationID, nm, responseName))
 					res.Merge(red)

@@ -402,6 +402,43 @@ func (r *Result) addLocatedWarnings(pointer string, warnings ...error) {
 	}
 }
 
+// relocate rewrites every location this result recorded.
+//
+// The parameter and header validators are the ones a generated client uses at
+// runtime, so they locate a finding by the name of the parameter or header it
+// concerns: a name is all the caller has. When spec validation borrows them to
+// check a default or an example, that name addresses nothing in the document,
+// and the value's own node is the best location available for everything the
+// borrowed validator found.
+func (r *Result) relocate(at pathSegments) {
+	if r == nil {
+		return
+	}
+
+	pointer := at.pointer()
+	r.errorLocations = fillLocations(r.errorLocations[:0], len(r.Errors), pointer)
+	r.warningLocations = fillLocations(r.warningLocations[:0], len(r.Warnings), pointer)
+}
+
+// fillLocations records the same location for a whole run of findings.
+func fillLocations(locations []string, count int, pointer string) []string {
+	for range count {
+		locations = append(locations, pointer)
+	}
+
+	return locations
+}
+
+// redirect rewrites every location this result recorded with the given mapping.
+func (r *Result) redirect(through func(string) string) {
+	for i, pointer := range r.errorLocations {
+		r.errorLocations[i] = through(pointer)
+	}
+	for i, pointer := range r.warningLocations {
+		r.warningLocations[i] = through(pointer)
+	}
+}
+
 // carryErrors adds errors from another result as errors, one by one, so that
 // each keeps the location that result recorded for it.
 func (r *Result) carryErrors(errs []error, locations []string) {

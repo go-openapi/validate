@@ -54,7 +54,9 @@ type SpecValidator struct {
 	analyzer       *analysis.Spec
 	expanded       *loads.Document
 	refLocations   refLocations
+	refRedirects   refRedirects
 	paramLocations paramLocations
+	document       any // the document as decoded, to tell what it holds
 	KnownFormats   strfmt.Registry
 	Options        Opts // validation options
 	schemaOptions  *SchemaValidatorOptions
@@ -107,6 +109,9 @@ func (s *SpecValidator) Validate(data any) (*Result, *Result) {
 	// where each operation declares its parameters: the document addresses
 	// them by index, and expansion loses that
 	s.paramLocations = newParamLocations(sd.Spec())
+	// where each $ref leads: checks walk the expanded document, and a finding
+	// below a $ref has to be brought back to a node the document contains
+	s.refRedirects = newRefRedirects(s.analyzer)
 
 	// Raw spec unmarshalling errors
 	var obj any
@@ -115,8 +120,13 @@ func (s *SpecValidator) Validate(data any) (*Result, *Result) {
 		// So this one is just a paranoid check on the behavior of the spec package
 		panic(InvalidDocumentError)
 	}
+	s.document = obj
 
 	defer func() {
+		// bring findings reached through a $ref back onto the document, then
+		// hold every location to what the document actually addresses
+		errs.redirect(s.refRedirects.through)
+		errs.redirect(s.resolvable)
 		// errs holds all errors and warnings,
 		// warnings only warnings
 		errs.MergeAsWarnings(warnings)
@@ -180,8 +190,9 @@ func (s *SpecValidator) SetContinueOnErrors(c bool) {
 func (s *SpecValidator) validateNonEmptyPathParamNames() *Result {
 	res := validatorPools.results.Borrow()
 	if s.spec.Spec().Paths == nil {
-		// There is no Paths object: error
-		res.addErrorsAt(newPathSegments(swaggerPaths), noValidPathMsg())
+		// There is no Paths object: the document itself is what lacks it, so
+		// there is no node below it to point at
+		res.addErrorsAt(rootPath(), noValidPathMsg())
 
 		return res
 	}
@@ -213,18 +224,52 @@ func (s *SpecValidator) validateDuplicateOperationIDs() *Result {
 		analyzer = s.analyzer
 	}
 	res := validatorPools.results.Borrow()
+
+	// the message says how many times an identifier is used, so the count is
+	// what it needs; a reader needs somewhere to go, so the first operation to
+	// declare the identifier is remembered along with it
 	known := make(map[string]int)
-	for _, v := range analyzer.OperationIDs() {
-		if v != "" {
-			known[v]++
+	declaredAt := make(map[string]pathSegments)
+	operations := analyzer.Operations()
+	for _, method := range sortedKeys(operations) {
+		byPath := operations[method]
+		for _, path := range sortedKeys(byPath) {
+			op := byPath[path]
+			id := operationIdentity(method, path, op)
+			known[id]++
+			if _, isKnown := declaredAt[id]; !isKnown {
+				declaredAt[id] = operationIDPath(path, method, op)
+			}
 		}
 	}
+
 	for _, k := range sortedKeys(known) {
 		if v := known[k]; v > 1 {
-			res.AddErrors(nonUniqueOperationIDMsg(k, v))
+			res.addErrorsAt(declaredAt[k], nonUniqueOperationIDMsg(k, v))
 		}
 	}
 	return res
+}
+
+// operationIdentity names an operation the way the analyzer does: by its
+// operationId, or by method and path when it declares none.
+func operationIdentity(method, path string, op *spec.Operation) string {
+	if op == nil || op.ID == "" {
+		return strings.ToUpper(method) + " " + path
+	}
+
+	return op.ID
+}
+
+// operationIDPath locates the operationId of an operation, or the operation
+// itself when it declares none.
+func operationIDPath(path, method string, op *spec.Operation) pathSegments {
+	at := operationPath(path, method)
+	if op == nil || op.ID == "" {
+		return at
+	}
+
+	return at.child(swaggerOperationID)
 }
 
 type dupProp struct {
@@ -485,7 +530,7 @@ func (s *SpecValidator) validatePathParamPresence(path string, fromPath, fromOpe
 			}
 		}
 		if !matched {
-			res.addErrorsAt(newPathSegments(swaggerPaths, l), noParameterInPathMsg(l))
+			res.addErrorsAt(newPathSegments(swaggerPaths, path), noParameterInPathMsg(l))
 		}
 	}
 
@@ -854,11 +899,46 @@ func (s *SpecValidator) validateReferencesValid() *Result {
 		// is set, this is a no-op: loads falls back to the document's own loader.
 		exp, err := s.spec.Expanded(s.schemaOptions.expandOptions(""))
 		if err != nil {
-			res.AddErrors(unresolvedReferencesMsg(err))
+			res.addErrorsAt(s.firstUnresolvableRef(), unresolvedReferencesMsg(err))
 		}
 		s.expanded = exp
 	}
 	return res
+}
+
+// firstUnresolvableRef locates the declaration of the first local $ref, in
+// document order, that points at a node the document does not hold.
+//
+// Expansion reports the whole document in a single message, naming only the
+// reference it happened to trip on, so the finding has no location of its own.
+// A document usually has one broken reference; when it has several, this is the
+// first one a reader would meet.
+func (s *SpecValidator) firstUnresolvableRef() pathSegments {
+	first := rootPath()
+	found := false
+
+	for _, r := range s.analyzer.AllRefs() {
+		value := r.String()
+		if !strings.HasPrefix(value, "#/") {
+			// a remote reference cannot be checked against the document alone
+			continue
+		}
+
+		pointer, err := jsonpointer.New(strings.TrimPrefix(value, "#"))
+		if err != nil {
+			continue
+		}
+		if _, _, err := pointer.Get(s.document); err == nil {
+			continue
+		}
+
+		at := s.refLocations.at(value)
+		if !found || at.pointer() < first.pointer() {
+			first, found = at, true
+		}
+	}
+
+	return first
 }
 
 func (s *SpecValidator) checkUniqueParams(path, method string, op *spec.Operation) *Result {

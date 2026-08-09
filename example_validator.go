@@ -85,6 +85,7 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 				if param.Example != nil && param.Schema == nil {
 					// check param default value is valid
 					red := newParamValidator(&param, s.KnownFormats, ex.schemaOptions).Validate(param.Example) //#nosec
+					red.relocate(s.parameterPath(path, method, param.In, param.Name).child(swaggerExample))
 					if red.HasErrorsOrWarnings() {
 						res.addWarningsAt(s.parameterPath(path, method, param.In, param.Name), exampleValueDoesNotValidateMsg(param.Name, param.In))
 						res.MergeAsWarnings(red)
@@ -106,7 +107,7 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 
 				if param.Schema != nil {
 					// Validate example value against schema
-					red := ex.validateExampleValueSchemaAgainstSchema(s.parameterPath(path, method, param.In, param.Name), param.In, param.Schema)
+					red := ex.validateExampleValueSchemaAgainstSchema(s.parameterPath(path, method, param.In, param.Name).structuralChild(jsonSchema), param.In, param.Schema)
 					if red.HasErrorsOrWarnings() {
 						res.addWarningsAt(s.parameterPath(path, method, param.In, param.Name), exampleValueDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
@@ -151,12 +152,11 @@ func (ex *exampleValidator) validateExampleInResponse(
 ) *Result {
 	s := ex.SpecValidator
 
-	response, res := responseHelp.expandResponseRef(resp, path, s)
+	responseName, responseCodeAsStr := responseHelp.responseMsgVariants(responseType, responseCode)
+	response, res := responseHelp.expandResponseRef(resp, path, responsePath(path, method, responseCodeAsStr), s)
 	if !res.IsValid() { // Safeguard
 		return res
 	}
-
-	responseName, responseCodeAsStr := responseHelp.responseMsgVariants(responseType, responseCode)
 
 	if response.Headers != nil { // Safeguard
 		for _, nm := range sortedKeys(response.Headers) {
@@ -166,6 +166,7 @@ func (ex *exampleValidator) validateExampleInResponse(
 
 			if h.Example != nil {
 				red := newHeaderValidator(nm, &h, s.KnownFormats, ex.schemaOptions).Validate(h.Example) //#nosec
+				red.relocate(responseHeaderPath(path, method, responseCodeAsStr, nm).child(swaggerExample))
 				if red.HasErrorsOrWarnings() {
 					res.addWarningsAt(responseHeaderPath(path, method, responseCodeAsStr, nm), exampleValueHeaderDoesNotValidateMsg(operationID, nm, responseName))
 					res.MergeAsWarnings(red)

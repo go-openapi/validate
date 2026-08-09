@@ -52,6 +52,7 @@ const (
 	swaggerResponses   = "responses"
 	swaggerParameters  = "parameters"
 	swaggerHeaders     = "headers"
+	swaggerOperationID = "operationId"
 
 	jsonMimeApplicationJSON = "application/json"
 )
@@ -365,7 +366,7 @@ type responseHelper struct {
 
 func (r *responseHelper) expandResponseRef(
 	response *spec.Response,
-	path string, s *SpecValidator,
+	path string, at pathSegments, s *SpecValidator,
 ) (*spec.Response, *Result) {
 	// Ensure response is expanded
 	var err error
@@ -378,7 +379,7 @@ func (r *responseHelper) expandResponseRef(
 	}
 	if err != nil { // Safeguard
 		// NOTE: we may enter here when the whole response is an unresolved $ref.
-		errorHelp.addPointerError(res, err, response.Ref.String(), path)
+		errorHelp.addPointerErrorAt(res, at, err, response.Ref.String(), path)
 		return nil, res
 	}
 
