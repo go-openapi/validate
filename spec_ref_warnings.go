@@ -39,7 +39,7 @@ func (s *SpecValidator) validateDubiousRefs() *Result {
 	baseDir, hasBase := s.localBaseDir()
 
 	remoteHosts := make(map[string]struct{})
-	for _, r := range s.analyzer.AllRefs() {
+	for _, r := range sortedRefs(s.analyzer.AllRefs()) {
 		u := r.GetURL()
 		if u == nil { // Safeguard: a valid spec always yields parseable refs
 			continue

@@ -76,8 +76,11 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 	res := validatorPools.results.Borrow() // will redeem when merged
 	s := d.SpecValidator
 
-	for method, pathItem := range s.expandedAnalyzer().Operations() {
-		for path, op := range pathItem {
+	operations := s.expandedAnalyzer().Operations()
+	for _, method := range sortedKeys(operations) {
+		pathItem := operations[method]
+		for _, path := range sortedKeys(pathItem) {
+			op := pathItem[path]
 			// parameters
 			for _, param := range paramHelp.safeExpandedParamsFor(path, method, op.ID, res, s) {
 				if param.Default != nil && param.Required {
@@ -92,6 +95,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 				if param.Default != nil && param.Schema == nil {
 					// check param default value is valid
 					red := newParamValidator(&param, s.KnownFormats, d.schemaOptions).Validate(param.Default) //#nosec
+					red.relocate(s.parameterPath(path, method, param.In, param.Name).child(jsonDefault))
 					if red.HasErrorsOrWarnings() {
 						res.addErrorsAt(s.parameterPath(path, method, param.In, param.Name), defaultValueDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
@@ -113,7 +117,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 
 				if param.Schema != nil {
 					// Validate default value against schema
-					red := d.validateDefaultValueSchemaAgainstSchema(s.parameterPath(path, method, param.In, param.Name), param.In, param.Schema)
+					red := d.validateDefaultValueSchemaAgainstSchema(s.parameterPath(path, method, param.In, param.Name).structuralChild(jsonSchema), param.In, param.Schema)
 					if red.HasErrorsOrWarnings() {
 						res.addErrorsAt(s.parameterPath(path, method, param.In, param.Name), defaultValueDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
@@ -130,8 +134,9 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 				}
 				// Same constraint on regular Responses
 				if op.Responses.StatusCodeResponses != nil { // Safeguard
-					for code, r := range op.Responses.StatusCodeResponses {
-						res.Merge(d.validateDefaultInResponse(&r, "response", path, method, code, op.ID)) //#nosec
+					for _, code := range sortedKeys(op.Responses.StatusCodeResponses) {
+						r := op.Responses.StatusCodeResponses[code]
+						res.Merge(d.validateDefaultInResponse(&r, "response", path, method, code, op.ID))
 					}
 				}
 			} else if op.ID != "" {
@@ -143,8 +148,10 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 	if s.spec.Spec().Definitions != nil { // Safeguard
 		// reset explored schemas to get depth-first recursive-proof exploration
 		d.resetVisited()
-		for nm, sch := range s.spec.Spec().Definitions {
-			res.Merge(d.validateDefaultValueSchemaAgainstSchema(newPathSegments(swaggerDefinitions, nm), "body", &sch)) //#nosec
+		definitions := s.spec.Spec().Definitions
+		for _, nm := range sortedKeys(definitions) {
+			sch := definitions[nm]
+			res.Merge(d.validateDefaultValueSchemaAgainstSchema(newPathSegments(swaggerDefinitions, nm), "body", &sch))
 		}
 	}
 	return res
@@ -155,20 +162,21 @@ func (d *defaultValidator) validateDefaultInResponse(
 ) *Result {
 	s := d.SpecValidator
 
-	response, res := responseHelp.expandResponseRef(resp, path, s)
+	responseName, responseCodeAsStr := responseHelp.responseMsgVariants(responseType, responseCode)
+	response, res := responseHelp.expandResponseRef(resp, path, responsePath(path, method, responseCodeAsStr), s)
 	if !res.IsValid() {
 		return res
 	}
 
-	responseName, responseCodeAsStr := responseHelp.responseMsgVariants(responseType, responseCode)
-
 	if response.Headers != nil { // Safeguard
-		for nm, h := range response.Headers {
+		for _, nm := range sortedKeys(response.Headers) {
+			h := response.Headers[nm]
 			// reset explored schemas to get depth-first recursive-proof exploration
 			d.resetVisited()
 
 			if h.Default != nil {
 				red := newHeaderValidator(nm, &h, s.KnownFormats, d.schemaOptions).Validate(h.Default) //#nosec
+				red.relocate(responseHeaderPath(path, method, responseCodeAsStr, nm).child(jsonDefault))
 				if red.HasErrorsOrWarnings() {
 					res.addErrorsAt(responseHeaderPath(path, method, responseCodeAsStr, nm), defaultValueHeaderDoesNotValidateMsg(operationID, nm, responseName))
 					res.Merge(red)
@@ -244,11 +252,13 @@ func (d *defaultValidator) validateDefaultValueSchemaAgainstSchema(path pathSegm
 		// NOTE: we keep validating values, even though additionalItems is not supported by Swagger 2.0 (and 3.0 as well)
 		res.Merge(d.validateDefaultValueSchemaAgainstSchema(path.child(jsonAdditionalItems), in, schema.AdditionalItems.Schema))
 	}
-	for propName, prop := range schema.Properties {
-		res.Merge(d.validateDefaultValueSchemaAgainstSchema(path.structuralChild(jsonProperties).child(propName), in, &prop)) //#nosec
+	for _, propName := range sortedKeys(schema.Properties) {
+		prop := schema.Properties[propName]
+		res.Merge(d.validateDefaultValueSchemaAgainstSchema(path.structuralChild(jsonProperties).child(propName), in, &prop))
 	}
-	for propName, prop := range schema.PatternProperties {
-		res.Merge(d.validateDefaultValueSchemaAgainstSchema(path.structuralChild(jsonPatternProperties).child(propName), in, &prop)) //#nosec
+	for _, propName := range sortedKeys(schema.PatternProperties) {
+		prop := schema.PatternProperties[propName]
+		res.Merge(d.validateDefaultValueSchemaAgainstSchema(path.structuralChild(jsonPatternProperties).child(propName), in, &prop))
 	}
 	if schema.AdditionalProperties != nil && schema.AdditionalProperties.Schema != nil {
 		res.Merge(d.validateDefaultValueSchemaAgainstSchema(path.child(jsonAdditionalProperties), in, schema.AdditionalProperties.Schema))

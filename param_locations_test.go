@@ -108,11 +108,11 @@ func TestParamLocations_UnknownParameterKeepsItsName(t *testing.T) {
 
 	locations := paramLocationsOf(t)
 
-	// a parameter too broken to be identified has no index to point at, so
-	// the name stands in: the location no longer resolves, but a message
-	// built from it still says what it is about
+	// a parameter too broken to be identified has no index to point at, so the
+	// pointer stops on the array that holds it — a node the document does have
+	// — while the message still says which parameter it is about
 	unknown := locations.at("/pets", methodGet, inQuery, "neverDeclared")
-	assert.EqualT(t, "/paths/~1pets/get/parameters/neverDeclared", unknown.pointer())
+	assert.EqualT(t, "/paths/~1pets/get/parameters", unknown.pointer())
 	assert.EqualT(t, "paths./pets.get.parameters.neverDeclared", unknown.dotted())
 }
 

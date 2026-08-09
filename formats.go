@@ -78,7 +78,7 @@ func (f *formatValidator) Validate(val any) *Result {
 	}
 
 	if err := FormatOf(f.Path.dotted(), f.In, f.Format, str, f.KnownFormats); err != nil {
-		result.AddErrors(err)
+		result.addErrorsAt(f.Path, err)
 	}
 
 	return result

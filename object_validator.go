@@ -103,7 +103,8 @@ func (o *objectValidator) Validate(data any) *Result {
 
 	// Check patternProperties
 	// NOTE: it looks like we have done that twice in many cases
-	for key, value := range val {
+	for _, key := range sortedKeys(val) {
+		value := val[key]
 		_, regularProperty := o.Properties[key]
 		matched, _, patterns := o.validatePatternProperty(key, value, res) // applies to regular properties as well
 		if regularProperty || !matched {
@@ -214,7 +215,7 @@ func (o *objectValidator) precheck(res *Result, val map[string]any) {
 }
 
 func (o *objectValidator) validateNoAdditionalProperties(val map[string]any, res *Result) {
-	for k := range val {
+	for _, k := range sortedKeys(val) {
 		if k == "$schema" || k == "id" {
 			// special properties "$schema" and "id" are ignored
 			continue
@@ -263,7 +264,8 @@ func (o *objectValidator) validateNoAdditionalProperties(val map[string]any, res
 			continue
 		}
 
-		for headerKey, headerBody := range headers {
+		for _, headerKey := range sortedKeys(headers) {
+			headerBody := headers[headerKey]
 			if headerBody == nil {
 				continue
 			}
@@ -296,7 +298,8 @@ func (o *objectValidator) validateNoAdditionalProperties(val map[string]any, res
 }
 
 func (o *objectValidator) validateAdditionalProperties(val map[string]any, res *Result) {
-	for key, value := range val {
+	for _, key := range sortedKeys(val) {
+		value := val[key]
 		_, regularProperty := o.Properties[key]
 		if regularProperty {
 			continue
@@ -333,7 +336,7 @@ func (o *objectValidator) validatePropertiesSchema(val map[string]any, res *Resu
 		validatorPools.schemas.Redeem(pSchema)
 	}()
 
-	for pName := range o.Properties {
+	for _, pName := range sortedKeys(o.Properties) {
 		*pSchema = o.Properties[pName]
 		rName := o.Path.child(pName)
 
@@ -392,7 +395,7 @@ func (o *objectValidator) validatePatternProperty(key string, value any, result 
 		validatorPools.schemas.Redeem(schema)
 	}()
 
-	for k := range o.PatternProperties {
+	for _, k := range sortedKeys(o.PatternProperties) {
 		re, err := compileRegexp(k)
 		if err != nil {
 			continue

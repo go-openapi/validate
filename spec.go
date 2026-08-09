@@ -54,7 +54,9 @@ type SpecValidator struct {
 	analyzer       *analysis.Spec
 	expanded       *loads.Document
 	refLocations   refLocations
+	refRedirects   refRedirects
 	paramLocations paramLocations
+	document       any // the document as decoded, to tell what it holds
 	KnownFormats   strfmt.Registry
 	Options        Opts // validation options
 	schemaOptions  *SchemaValidatorOptions
@@ -107,6 +109,9 @@ func (s *SpecValidator) Validate(data any) (*Result, *Result) {
 	// where each operation declares its parameters: the document addresses
 	// them by index, and expansion loses that
 	s.paramLocations = newParamLocations(sd.Spec())
+	// where each $ref leads: checks walk the expanded document, and a finding
+	// below a $ref has to be brought back to a node the document contains
+	s.refRedirects = newRefRedirects(s.analyzer)
 
 	// Raw spec unmarshalling errors
 	var obj any
@@ -115,8 +120,13 @@ func (s *SpecValidator) Validate(data any) (*Result, *Result) {
 		// So this one is just a paranoid check on the behavior of the spec package
 		panic(InvalidDocumentError)
 	}
+	s.document = obj
 
 	defer func() {
+		// bring findings reached through a $ref back onto the document, then
+		// hold every location to what the document actually addresses
+		errs.redirect(s.refRedirects.through)
+		errs.redirect(s.resolvable)
 		// errs holds all errors and warnings,
 		// warnings only warnings
 		errs.MergeAsWarnings(warnings)
@@ -180,8 +190,9 @@ func (s *SpecValidator) SetContinueOnErrors(c bool) {
 func (s *SpecValidator) validateNonEmptyPathParamNames() *Result {
 	res := validatorPools.results.Borrow()
 	if s.spec.Spec().Paths == nil {
-		// There is no Paths object: error
-		res.addErrorsAt(newPathSegments(swaggerPaths), noValidPathMsg())
+		// There is no Paths object: the document itself is what lacks it, so
+		// there is no node below it to point at
+		res.addErrorsAt(rootPath(), noValidPathMsg())
 
 		return res
 	}
@@ -193,7 +204,7 @@ func (s *SpecValidator) validateNonEmptyPathParamNames() *Result {
 		return res
 	}
 
-	for k := range s.spec.Spec().Paths.Paths {
+	for _, k := range sortedKeys(s.spec.Spec().Paths.Paths) {
 		if strings.Contains(k, "{}") {
 			res.addErrorsAt(newPathSegments(swaggerPaths, k), emptyPathParameterMsg(k))
 		}
@@ -213,18 +224,52 @@ func (s *SpecValidator) validateDuplicateOperationIDs() *Result {
 		analyzer = s.analyzer
 	}
 	res := validatorPools.results.Borrow()
+
+	// the message says how many times an identifier is used, so the count is
+	// what it needs; a reader needs somewhere to go, so the first operation to
+	// declare the identifier is remembered along with it
 	known := make(map[string]int)
-	for _, v := range analyzer.OperationIDs() {
-		if v != "" {
-			known[v]++
+	declaredAt := make(map[string]pathSegments)
+	operations := analyzer.Operations()
+	for _, method := range sortedKeys(operations) {
+		byPath := operations[method]
+		for _, path := range sortedKeys(byPath) {
+			op := byPath[path]
+			id := operationIdentity(method, path, op)
+			known[id]++
+			if _, isKnown := declaredAt[id]; !isKnown {
+				declaredAt[id] = operationIDPath(path, method, op)
+			}
 		}
 	}
-	for k, v := range known {
-		if v > 1 {
-			res.AddErrors(nonUniqueOperationIDMsg(k, v))
+
+	for _, k := range sortedKeys(known) {
+		if v := known[k]; v > 1 {
+			res.addErrorsAt(declaredAt[k], nonUniqueOperationIDMsg(k, v))
 		}
 	}
 	return res
+}
+
+// operationIdentity names an operation the way the analyzer does: by its
+// operationId, or by method and path when it declares none.
+func operationIdentity(method, path string, op *spec.Operation) string {
+	if op == nil || op.ID == "" {
+		return strings.ToUpper(method) + " " + path
+	}
+
+	return op.ID
+}
+
+// operationIDPath locates the operationId of an operation, or the operation
+// itself when it declares none.
+func operationIDPath(path, method string, op *spec.Operation) pathSegments {
+	at := operationPath(path, method)
+	if op == nil || op.ID == "" {
+		return at
+	}
+
+	return at.child(swaggerOperationID)
 }
 
 type dupProp struct {
@@ -235,7 +280,9 @@ type dupProp struct {
 func (s *SpecValidator) validateDuplicatePropertyNames() *Result {
 	// definition can't declare a property that's already defined by one of its ancestors
 	res := validatorPools.results.Borrow()
-	for k, sch := range s.spec.Spec().Definitions {
+	definitions := s.spec.Spec().Definitions
+	for _, k := range sortedKeys(definitions) {
+		sch := definitions[k]
 		if len(sch.AllOf) == 0 {
 			continue
 		}
@@ -250,7 +297,14 @@ func (s *SpecValidator) validateDuplicatePropertyNames() *Result {
 		}
 		if len(ancs) > 0 {
 			res.addErrorsAt(newPathSegments(swaggerDefinitions, k), circularAncestryDefinitionMsg(k, ancs))
-			return res
+			if !s.Options.ContinueOnErrors {
+				return res
+			}
+
+			// the ancestry loops back on itself: searching it for duplicate
+			// property names would not terminate, so this definition stops here
+			// and the next one is examined.
+			continue
 		}
 
 		knowns := make(map[string]struct{})
@@ -307,7 +361,7 @@ func (s *SpecValidator) validateSchemaPropertyNames(nm string, sch spec.Schema, 
 		return dups, res
 	}
 
-	for k := range schc.Properties {
+	for _, k := range sortedKeys(schc.Properties) {
 		_, ok := knowns[k]
 		if ok {
 			dups = append(dups, dupProp{Name: k, Definition: schn})
@@ -373,8 +427,11 @@ func (s *SpecValidator) validateItems() *Result {
 	// validate parameter, items, schema and response objects for presence of item if type is array
 	res := validatorPools.results.Borrow()
 
-	for method, pi := range s.analyzer.Operations() {
-		for path, op := range pi {
+	operations := s.analyzer.Operations()
+	for _, method := range sortedKeys(operations) {
+		pi := operations[method]
+		for _, path := range sortedKeys(pi) {
+			op := pi[path]
 			for _, param := range paramHelp.safeExpandedParamsFor(path, method, op.ID, res, s) {
 
 				if param.TypeName() == arrayType && param.ItemsTypeName() == "" {
@@ -411,8 +468,11 @@ func (s *SpecValidator) validateItems() *Result {
 					responses = append(responses, codedResponse{code: jsonDefault, resp: *op.Responses.Default})
 				}
 				if op.Responses.StatusCodeResponses != nil {
-					for code, v := range op.Responses.StatusCodeResponses {
-						responses = append(responses, codedResponse{code: strconv.Itoa(code), resp: v})
+					for _, code := range sortedKeys(op.Responses.StatusCodeResponses) {
+						responses = append(responses, codedResponse{
+							code: strconv.Itoa(code),
+							resp: op.Responses.StatusCodeResponses[code],
+						})
 					}
 				}
 			}
@@ -420,8 +480,8 @@ func (s *SpecValidator) validateItems() *Result {
 			for _, resp := range responses {
 				at := responsePath(path, method, resp.code)
 				// Response headers with array
-				for hn, hv := range resp.resp.Headers {
-					if hv.TypeName() == arrayType && hv.ItemsTypeName() == "" {
+				for _, hn := range sortedKeys(resp.resp.Headers) {
+					if hv := resp.resp.Headers[hn]; hv.TypeName() == arrayType && hv.ItemsTypeName() == "" {
 						res.addErrorsAt(at.children(swaggerHeaders, hn), arrayInHeaderRequiresItemsMsg(hn, op.ID))
 					}
 				}
@@ -470,7 +530,7 @@ func (s *SpecValidator) validatePathParamPresence(path string, fromPath, fromOpe
 			}
 		}
 		if !matched {
-			res.addErrorsAt(newPathSegments(swaggerPaths, l), noParameterInPathMsg(l))
+			res.addErrorsAt(newPathSegments(swaggerPaths, path), noParameterInPathMsg(l))
 		}
 	}
 
@@ -514,7 +574,7 @@ func (s *SpecValidator) validateReferencedParameters() *Result {
 		return nil
 	}
 	result := validatorPools.results.Borrow()
-	for k := range expected {
+	for _, k := range sortedKeys(expected) {
 		result.addWarningsAt(localRefPath(k), unusedParamMsg(k))
 	}
 	return result
@@ -538,10 +598,12 @@ func (s *SpecValidator) validateReferencedResponses() *Result {
 	if len(expected) == 0 {
 		return nil
 	}
+
 	result := validatorPools.results.Borrow()
-	for k := range expected {
+	for _, k := range sortedKeys(expected) {
 		result.addWarningsAt(localRefPath(k), unusedResponseMsg(k))
 	}
+
 	return result
 }
 
@@ -565,7 +627,7 @@ func (s *SpecValidator) validateReferencedDefinitions() *Result {
 	}
 
 	result := new(Result)
-	for k := range expected {
+	for _, k := range sortedKeys(expected) {
 		result.addWarningsAt(localRefPath(k), unusedDefinitionMsg(k))
 	}
 	return result
@@ -575,37 +637,30 @@ func (s *SpecValidator) validateRequiredDefinitions() *Result {
 	// Each property listed in the required array must be defined in the properties of the model
 	res := validatorPools.results.Borrow()
 
+	definitions := s.spec.Spec().Definitions
+
 DEFINITIONS:
-	for d, schema := range s.spec.Spec().Definitions {
-		if schema.Required != nil { // Safeguard
-			definitionAt := newPathSegments(swaggerDefinitions, d)
-			for i, pn := range schema.Required {
-				// the offending entry of the required array, not the definition
-				// holding it: that is what a reader has to go and amend
-				requiredAt := definitionAt.child(jsonRequired).item(i)
-				red := s.validateRequiredProperties(pn, d, definitionAt, requiredAt, &schema) //#nosec
-				// NOTE: capture validity before merging: Merge may redeem `red` to the
-				// pool (wantsRedeemOnMerge), after which reading it races with a concurrent
-				// BorrowResult().cleared() in another goroutine sharing the global pool.
-				isValid := red.IsValid()
-				res.Merge(red)
-				if !isValid && !s.Options.ContinueOnErrors {
-					break DEFINITIONS // there is an error, let's stop that bleeding
-				}
-			}
+	for _, d := range sortedKeys(definitions) {
+		schema := definitions[d]
+		red := validatorPools.results.Borrow()
+		keepGoing := s.walkRequired(newPathSegments(swaggerDefinitions, d), &schema, red) //#nosec
+		res.Merge(red)
+		if !keepGoing {
+			break DEFINITIONS // there is an error, let's stop that bleeding
 		}
 	}
 	return res
 }
 
-// validateRequiredProperties checks one entry of a definition's required array.
+// validateRequiredProperties checks one entry of a required array.
 //
 // schemaAt locates the schema being searched for the property, which moves as
 // the search descends into additionalProperties. requiredAt locates the entry
 // of the required array that started it, and stays put.
 func (s *SpecValidator) validateRequiredProperties(
-	path, in string, schemaAt, requiredAt pathSegments, v *spec.Schema,
+	path string, of schemaIdentity, schemaAt, requiredAt pathSegments, v *spec.Schema,
 ) *Result {
+	in := of.name
 	// Takes care of recursive property definitions, which may be nested in additionalProperties schemas
 	res := validatorPools.results.Borrow()
 	propertyMatch := false
@@ -613,22 +668,22 @@ func (s *SpecValidator) validateRequiredProperties(
 	additionalPropertiesMatch := false
 	isReadOnly := false
 
-	// Regular properties
-	if _, ok := v.Properties[path]; ok {
+	// Regular properties, including those a base definition contributes
+	if readOnly, declared := s.declaresProperty(v, path, maxCompositionHops); declared {
 		propertyMatch = true
-		isReadOnly = v.Properties[path].ReadOnly
+		isReadOnly = readOnly
 	}
 
 	// NOTE: patternProperties are not supported in swagger. Even though, we continue validation here
 	// We check all defined patterns: if one regexp is invalid, croaks an error
-	for pp, pv := range v.PatternProperties {
+	for _, pp := range sortedKeys(v.PatternProperties) {
 		re, err := compileRegexp(pp)
 		if err != nil {
 			res.addErrorsAt(schemaAt, invalidPatternMsg(pp, in))
 		} else if re.MatchString(path) {
 			patternMatch = true
 			if !propertyMatch {
-				isReadOnly = pv.ReadOnly
+				isReadOnly = v.PatternProperties[pp].ReadOnly
 			}
 		}
 	}
@@ -641,7 +696,7 @@ func (s *SpecValidator) validateRequiredProperties(
 				// additionalProperties as schema are upported in swagger
 				// recursively validates additionalProperties schema
 				// Proposal for enhancement: anyOf, allOf, oneOf like in schemaPropsValidator
-				red := s.validateRequiredProperties(path, in, schemaAt.child(jsonAdditionalProperties), requiredAt, v.AdditionalProperties.Schema)
+				red := s.validateRequiredProperties(path, of, schemaAt.child(jsonAdditionalProperties), requiredAt, v.AdditionalProperties.Schema)
 				if red.IsValid() {
 					additionalPropertiesMatch = true
 					if !propertyMatch && !patternMatch {
@@ -654,7 +709,7 @@ func (s *SpecValidator) validateRequiredProperties(
 	}
 
 	if !propertyMatch && !patternMatch && !additionalPropertiesMatch {
-		res.addErrorsAt(requiredAt, requiredButNotDefinedMsg(path, in))
+		res.addErrorsAt(requiredAt, of.requiredButNotDefined(path))
 	}
 
 	if isReadOnly {
@@ -676,9 +731,12 @@ func (s *SpecValidator) validateParameters() *Result {
 	// - path param must be required
 	res := validatorPools.results.Borrow()
 	rexGarbledPathSegment := mustCompileRegexp(`.*[{}\s]+.*`)
-	for method, pi := range s.expandedAnalyzer().Operations() {
+	operations := s.expandedAnalyzer().Operations()
+	for _, method := range sortedKeys(operations) {
+		pi := operations[method]
 		methodPaths := make(map[string]map[string]string)
-		for path, op := range pi {
+		for _, path := range sortedKeys(pi) {
+			op := pi[path]
 			if s.Options.StrictPathParamUniqueness {
 				pathToAdd := pathHelp.stripParametersInPath(path)
 
@@ -817,7 +875,7 @@ func (s *SpecValidator) validateParameters() *Result {
 func (s *SpecValidator) validateReferencesValid() *Result {
 	// each reference must point to a valid object
 	res := validatorPools.results.Borrow()
-	for _, r := range s.analyzer.AllRefs() {
+	for _, r := range sortedRefs(s.analyzer.AllRefs()) {
 		if !r.IsValidURI(s.spec.SpecFilePath()) { // Safeguard - spec should always yield a valid URI
 			res.addErrorsAt(s.refLocations.at(r.String()), invalidRefMsg(r.String()))
 		}
@@ -831,11 +889,46 @@ func (s *SpecValidator) validateReferencesValid() *Result {
 		// is set, this is a no-op: loads falls back to the document's own loader.
 		exp, err := s.spec.Expanded(s.schemaOptions.expandOptions(""))
 		if err != nil {
-			res.AddErrors(unresolvedReferencesMsg(err))
+			res.addErrorsAt(s.firstUnresolvableRef(), unresolvedReferencesMsg(err))
 		}
 		s.expanded = exp
 	}
 	return res
+}
+
+// firstUnresolvableRef locates the declaration of the first local $ref, in
+// document order, that points at a node the document does not hold.
+//
+// Expansion reports the whole document in a single message, naming only the
+// reference it happened to trip on, so the finding has no location of its own.
+// A document usually has one broken reference; when it has several, this is the
+// first one a reader would meet.
+func (s *SpecValidator) firstUnresolvableRef() pathSegments {
+	first := rootPath()
+	found := false
+
+	for _, r := range s.analyzer.AllRefs() {
+		value := r.String()
+		if !strings.HasPrefix(value, "#/") {
+			// a remote reference cannot be checked against the document alone
+			continue
+		}
+
+		pointer, err := jsonpointer.New(strings.TrimPrefix(value, "#"))
+		if err != nil {
+			continue
+		}
+		if _, _, err := pointer.Get(s.document); err == nil {
+			continue
+		}
+
+		at := s.refLocations.at(value)
+		if !found || at.pointer() < first.pointer() {
+			first, found = at, true
+		}
+	}
+
+	return first
 }
 
 func (s *SpecValidator) checkUniqueParams(path, method string, op *spec.Operation) *Result {
