@@ -66,7 +66,7 @@ func TestNumberValidator_EdgeCases(t *testing.T) {
 	maximum := float64(math.MaxInt32 + 1)
 
 	v := newNumberValidator(
-		"path",
+		newPathSegments("path"),
 		"in",
 		nil,
 		nil,
@@ -129,7 +129,7 @@ func TestStringValidator_EdgeCases(t *testing.T) {
 	// Apply
 
 	v := newStringValidator(
-		"", "", nil, false, false, nil, nil, "", nil,
+		nil, "", nil, false, false, nil, nil, "", nil,
 	)
 
 	// stringValidator applies to: Parameter,Schema,Items,Header
@@ -160,7 +160,7 @@ func TestBasicCommonValidator_EdgeCases(t *testing.T) {
 	// Apply
 
 	v := newBasicCommonValidator(
-		"", "",
+		nil, "",
 		nil, []any{"a", nil, 3}, nil,
 	)
 
@@ -190,7 +190,7 @@ func TestBasicCommonValidator_EdgeCases(t *testing.T) {
 
 	t.Run("shoud validate empty Enum", func(t *testing.T) {
 		ev := newBasicCommonValidator(
-			"", "",
+			nil, "",
 			nil, nil, nil,
 		)
 		res := ev.Validate("a")
@@ -213,7 +213,7 @@ func testCommonApply(t *testing.T, v *basicCommonValidator, sources []any) {
 func TestBasicSliceValidator_EdgeCases(t *testing.T) {
 	t.Run("should Apply", func(t *testing.T) {
 		v := newBasicSliceValidator(
-			"", "",
+			nil, "",
 			nil, nil, nil, false, nil, nil, strfmt.Default, nil,
 		)
 
@@ -233,7 +233,7 @@ func TestBasicSliceValidator_EdgeCases(t *testing.T) {
 
 	t.Run("with recycling", func(t *testing.T) {
 		v := newBasicSliceValidator(
-			"", "",
+			nil, "",
 			nil, nil, nil, false, nil, nil, strfmt.Default,
 			&SchemaValidatorOptions{recycleValidators: true},
 		)

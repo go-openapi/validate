@@ -1,7 +1,7 @@
 module github.com/go-openapi/validate
 
 require (
-	github.com/go-openapi/analysis v0.25.5
+	github.com/go-openapi/analysis v0.26.0
 	github.com/go-openapi/errors v0.22.8
 	github.com/go-openapi/jsonpointer v1.0.0
 	github.com/go-openapi/loads v0.25.0
@@ -18,7 +18,7 @@ require (
 
 require (
 	github.com/go-openapi/jsonreference v1.0.0 // indirect
-	github.com/go-openapi/swag/mangling v0.27.3 // indirect
+	github.com/go-openapi/swag/mangling v0.28.0 // indirect
 	github.com/go-openapi/swag/pools v0.28.0 // indirect
 	github.com/go-openapi/swag/typeutils v0.28.0 // indirect
 	github.com/go-openapi/swag/yamlutils v0.28.0 // indirect

@@ -148,6 +148,10 @@ func dubiousValidatorFromJSON(t *testing.T, doc string) *SpecValidator {
 	s := NewSpecValidator(d.Schema(), strfmt.Default)
 	s.spec = d
 	s.analyzer = analysis.New(d.Spec())
+
+	// as Validate does, so that warnings can say where a $ref sits
+	s.refLocations = newRefLocations(s.analyzer)
+
 	return s
 }
 

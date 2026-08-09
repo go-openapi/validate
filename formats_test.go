@@ -17,9 +17,9 @@ import (
 func TestFormatValidator_EdgeCases(t *testing.T) {
 	// Apply
 	v := newFormatValidator(
-		"", "", "", strfmt.Default, nil,
+		nil, "", "", strfmt.Default, nil,
 	)
-	v.SetPath("a.b.c")
+	v.setPath(newPathSegments("a", "b", "c"))
 
 	// formatValidator applies to: Items, Parameter,Schema
 

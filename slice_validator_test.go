@@ -13,9 +13,9 @@ import (
 // to simulate with specs
 // (this one is a trivial, just to check all methods are filled).
 func TestSliceValidator_EdgeCases(t *testing.T) {
-	s := newSliceValidator("", "", nil, nil, false, nil, nil, nil, nil, nil)
-	s.SetPath("path")
-	assert.EqualT(t, "path", s.Path)
+	s := newSliceValidator(nil, "", nil, nil, false, nil, nil, nil, nil, nil)
+	s.setPath(newPathSegments("path"))
+	assert.EqualT(t, "path", s.Path.dotted())
 
 	r := s.Validate(nil)
 	assert.NotNil(t, r)

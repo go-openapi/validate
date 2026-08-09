@@ -18,15 +18,15 @@ import (
 func TestSchemaPropsValidator_EdgeCases(t *testing.T) {
 	t.Run("should validate props against empty validator", func(t *testing.T) {
 		s := newSchemaPropsValidator(
-			"", "", nil, nil, nil, nil, nil, nil, strfmt.Default, nil)
-		s.SetPath("path")
-		assert.EqualT(t, "path", s.Path)
+			nil, "", nil, nil, nil, nil, nil, nil, strfmt.Default, nil)
+		s.setPath(newPathSegments("path"))
+		assert.EqualT(t, "path", s.Path.dotted())
 	})
 
 	t.Run("with allOf", func(t *testing.T) {
 		makeValidator := func() EntityValidator {
 			return newSchemaPropsValidator(
-				"path", "body",
+				newPathSegments("path"), "body",
 				[]spec.Schema{
 					*spec.StringProperty(),
 					*spec.StrFmtProperty("date"),
@@ -64,7 +64,7 @@ func TestSchemaPropsValidator_EdgeCases(t *testing.T) {
 	t.Run("with oneOf", func(t *testing.T) {
 		makeValidator := func() EntityValidator {
 			return newSchemaPropsValidator(
-				"path", "body",
+				newPathSegments("path"), "body",
 				nil,
 				[]spec.Schema{
 					*spec.Int64Property(),
@@ -94,7 +94,7 @@ func TestSchemaPropsValidator_EdgeCases(t *testing.T) {
 	t.Run("with anyOf", func(t *testing.T) {
 		makeValidator := func() EntityValidator {
 			return newSchemaPropsValidator(
-				"path", "body",
+				newPathSegments("path"), "body",
 				nil,
 				nil,
 				[]spec.Schema{
@@ -125,7 +125,7 @@ func TestSchemaPropsValidator_EdgeCases(t *testing.T) {
 	t.Run("with not", func(t *testing.T) {
 		makeValidator := func() EntityValidator {
 			return newSchemaPropsValidator(
-				"path", "body",
+				newPathSegments("path"), "body",
 				nil,
 				nil,
 				nil,
@@ -182,7 +182,7 @@ func TestSchemaPropsValidator_EdgeCases(t *testing.T) {
 					},
 				},
 				nil,
-				"root",
+				newPathSegments("root"),
 				strfmt.Default, &SchemaValidatorOptions{recycleValidators: true})
 		}
 
