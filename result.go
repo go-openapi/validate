@@ -134,7 +134,7 @@ func (r *Result) Merge(others ...*Result) *Result {
 		r.mergeWithoutRootSchemata(other)
 		r.rootObjectSchemata.Append(other.rootObjectSchemata)
 		if other.wantsRedeemOnMerge {
-			pools.poolOfResults.RedeemResult(other)
+			redeemResult(other)
 		}
 	}
 	return r
@@ -201,7 +201,7 @@ func (r *Result) MergeAsErrors(others ...*Result) *Result {
 			r.carryErrors(other.Warnings, other.warningLocations)
 			r.MatchCount += other.MatchCount
 			if other.wantsRedeemOnMerge {
-				pools.poolOfResults.RedeemResult(other)
+				redeemResult(other)
 			}
 		}
 	}
@@ -219,7 +219,7 @@ func (r *Result) MergeAsWarnings(others ...*Result) *Result {
 			r.carryWarnings(other.Warnings, other.warningLocations)
 			r.MatchCount += other.MatchCount
 			if other.wantsRedeemOnMerge {
-				pools.poolOfResults.RedeemResult(other)
+				redeemResult(other)
 			}
 		}
 	}
@@ -443,7 +443,7 @@ func (r *Result) mergeForField(obj map[string]any, field string, other *Result) 
 		})
 	}
 	if other.wantsRedeemOnMerge {
-		pools.poolOfResults.RedeemResult(other)
+		redeemResult(other)
 	}
 
 	return r
@@ -471,7 +471,7 @@ func (r *Result) mergeForSlice(slice reflect.Value, i int, other *Result) *Resul
 	}
 
 	if other.wantsRedeemOnMerge {
-		pools.poolOfResults.RedeemResult(other)
+		redeemResult(other)
 	}
 
 	return r
@@ -574,7 +574,7 @@ func (r *Result) keepRelevantErrors() *Result {
 	}
 	var strippedResult *Result
 	if r.wantsRedeemOnMerge {
-		strippedResult = pools.poolOfResults.BorrowResult()
+		strippedResult = validatorPools.results.Borrow()
 	} else {
 		strippedResult = new(Result)
 	}
@@ -583,6 +583,14 @@ func (r *Result) keepRelevantErrors() *Result {
 	strippedResult.Warnings = strippedWarnings
 	strippedResult.warningLocations = strippedWarningLocations
 	return strippedResult
+}
+
+// Reset clears this result so it may be reused, keeping allocated capacity.
+//
+// It implements the hook the pool calls when a result is borrowed and when it
+// is redeemed. Calling it on a result still in use loses its findings.
+func (r *Result) Reset() {
+	_ = r.cleared()
 }
 
 func (r *Result) cleared() *Result {

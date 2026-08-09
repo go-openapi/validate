@@ -34,7 +34,7 @@ const minDistinctHostsToWarn = 2
 //
 // All findings are warnings: they do not affect validity (see Result.IsValid).
 func (s *SpecValidator) validateDubiousRefs() *Result {
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 
 	baseDir, hasBase := s.localBaseDir()
 
