@@ -1,3 +1,5 @@
+//go:build !windows && !darwin
+
 // SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
 // SPDX-License-Identifier: Apache-2.0
 
@@ -14,6 +16,10 @@ import (
 )
 
 func Test_ParallelPool(t *testing.T) {
+	// Hitting more stringent memory & threads constraints on windows, when running -race, so we disable this on
+	// that target OS. Typically, a CI runner breaks with "ThreadSanitizer failed to allocate ..."
+	// Also -race in this context times out on macos. We need our validation on our platform only.
+
 	fixture1 := filepath.Join("fixtures", "bugs", "1429", "swagger.yaml")
 	fixture2 := filepath.Join("fixtures", "bugs", "2866", "2866.yaml")
 	fixture3 := filepath.Join("fixtures", "bugs", "43", "fixture-43.yaml")
