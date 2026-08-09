@@ -44,6 +44,9 @@ const (
 	jsonDefault           = "default"
 
 	jsonAllOf                = "allOf"
+	jsonAnyOf                = "anyOf"
+	jsonOneOf                = "oneOf"
+	jsonNot                  = "not"
 	jsonAdditionalItems      = "additionalItems"
 	jsonAdditionalProperties = "additionalProperties"
 

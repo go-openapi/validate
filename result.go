@@ -362,6 +362,14 @@ func (r *Result) AsError() error {
 	return errors.CompositeValidationError(r.Errors...)
 }
 
+// Reset clears this result so it may be reused, keeping allocated capacity.
+//
+// It implements the hook the pool calls when a result is borrowed and when it
+// is redeemed. Calling it on a result still in use loses its findings.
+func (r *Result) Reset() {
+	_ = r.cleared()
+}
+
 // addErrorsAt adds errors located at the given path.
 func (r *Result) addErrorsAt(at pathSegments, errors ...error) {
 	r.addLocatedErrors(at.pointer(), errors...)
@@ -620,14 +628,6 @@ func (r *Result) keepRelevantErrors() *Result {
 	strippedResult.Warnings = strippedWarnings
 	strippedResult.warningLocations = strippedWarningLocations
 	return strippedResult
-}
-
-// Reset clears this result so it may be reused, keeping allocated capacity.
-//
-// It implements the hook the pool calls when a result is borrowed and when it
-// is redeemed. Calling it on a result still in use loses its findings.
-func (r *Result) Reset() {
-	_ = r.cleared()
 }
 
 func (r *Result) cleared() *Result {
