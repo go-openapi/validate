@@ -199,7 +199,8 @@ func (d *defaultValidator) validateDefaultInResponse(
 		// reset explored schemas to get depth-first recursive-proof exploration
 		d.resetVisited()
 
-		red := d.validateDefaultValueSchemaAgainstSchema(responsePath(path, method, responseCodeAsStr), "response", response.Schema)
+		red := d.validateDefaultValueSchemaAgainstSchema(
+			responsePath(path, method, responseCodeAsStr).structuralChild(jsonSchema), "response", response.Schema)
 		if red.HasErrorsOrWarnings() {
 			// Additional message to make sure the context of the error is not lost
 			res.addErrorsAt(responsePath(path, method, responseCodeAsStr), defaultValueInDoesNotValidateMsg(operationID, responseName))
@@ -244,10 +245,10 @@ func (d *defaultValidator) validateDefaultValueSchemaAgainstSchema(path pathSegm
 		res.Merge(d.validateDefaultValueSchemaAgainstSchema(path.child(jsonAdditionalItems), in, schema.AdditionalItems.Schema))
 	}
 	for propName, prop := range schema.Properties {
-		res.Merge(d.validateDefaultValueSchemaAgainstSchema(path.child(propName), in, &prop)) //#nosec
+		res.Merge(d.validateDefaultValueSchemaAgainstSchema(path.structuralChild(jsonProperties).child(propName), in, &prop)) //#nosec
 	}
 	for propName, prop := range schema.PatternProperties {
-		res.Merge(d.validateDefaultValueSchemaAgainstSchema(path.child(propName), in, &prop)) //#nosec
+		res.Merge(d.validateDefaultValueSchemaAgainstSchema(path.structuralChild(jsonPatternProperties).child(propName), in, &prop)) //#nosec
 	}
 	if schema.AdditionalProperties != nil && schema.AdditionalProperties.Schema != nil {
 		res.Merge(d.validateDefaultValueSchemaAgainstSchema(path.child(jsonAdditionalProperties), in, schema.AdditionalProperties.Schema))

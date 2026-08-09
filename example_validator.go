@@ -189,7 +189,8 @@ func (ex *exampleValidator) validateExampleInResponse(
 		// reset explored schemas to get depth-first recursive-proof exploration
 		ex.resetVisited()
 
-		red := ex.validateExampleValueSchemaAgainstSchema(responsePath(path, method, responseCodeAsStr), "response", response.Schema)
+		red := ex.validateExampleValueSchemaAgainstSchema(
+			responsePath(path, method, responseCodeAsStr).structuralChild(jsonSchema), "response", response.Schema)
 		if red.HasErrorsOrWarnings() {
 			// Additional message to make sure the context of the error is not lost
 			res.addWarningsAt(responsePath(path, method, responseCodeAsStr), exampleValueInDoesNotValidateMsg(operationID, responseName))
@@ -201,9 +202,13 @@ func (ex *exampleValidator) validateExampleInResponse(
 
 	if response.Examples != nil {
 		if response.Schema != nil {
-			if example, ok := response.Examples["application/json"]; ok {
+			if example, ok := response.Examples[jsonMimeApplicationJSON]; ok {
+				exampleAt := responsePath(path, method, responseCodeAsStr).
+					child(swaggerExamples).
+					structuralChild(jsonMimeApplicationJSON)
 				res.MergeAsWarnings(
-					newSchemaValidator(response.Schema, s.spec.Spec(), responsePath(path, method, responseCodeAsStr).child(swaggerExamples), s.KnownFormats, s.schemaOptions).Validate(example),
+					newSchemaValidator(response.Schema, s.spec.Spec(),
+						exampleAt, s.KnownFormats, s.schemaOptions).Validate(example),
 				)
 			} else {
 				// Proposal for enhancement: validate other media types too
@@ -249,10 +254,10 @@ func (ex *exampleValidator) validateExampleValueSchemaAgainstSchema(path pathSeg
 		res.Merge(ex.validateExampleValueSchemaAgainstSchema(path.child(jsonAdditionalItems), in, schema.AdditionalItems.Schema))
 	}
 	for propName, prop := range schema.Properties {
-		res.Merge(ex.validateExampleValueSchemaAgainstSchema(path.child(propName), in, &prop)) //#nosec
+		res.Merge(ex.validateExampleValueSchemaAgainstSchema(path.structuralChild(jsonProperties).child(propName), in, &prop)) //#nosec
 	}
 	for propName, prop := range schema.PatternProperties {
-		res.Merge(ex.validateExampleValueSchemaAgainstSchema(path.child(propName), in, &prop)) //#nosec
+		res.Merge(ex.validateExampleValueSchemaAgainstSchema(path.structuralChild(jsonPatternProperties).child(propName), in, &prop)) //#nosec
 	}
 	if schema.AdditionalProperties != nil && schema.AdditionalProperties.Schema != nil {
 		res.Merge(ex.validateExampleValueSchemaAgainstSchema(path.child(jsonAdditionalProperties), in, schema.AdditionalProperties.Schema))

@@ -159,7 +159,9 @@ func TestResultLocations_SchemaValidation(t *testing.T) {
 	}
 
 	assert.SliceContainsT(t, pointers, "/friends/0/name")
-	assert.SliceContainsT(t, pointers, "/friends/0/age")
+	// a missing property has no node of its own: the object lacking it is
+	// what has to be amended, and what a document can address
+	assert.SliceContainsT(t, pointers, "/friends/0")
 	assert.SliceContainsT(t, pointers, "/n~0x~1y", "expected the token to be escaped")
 }
 
@@ -203,12 +205,12 @@ func TestResultLocations_SpecValidation(t *testing.T) {
 	require.False(t, res.IsValid())
 
 	t.Run("a default is located in the definition that declares it", func(t *testing.T) {
-		assert.SliceContainsT(t, pointersOf(res.LocatedErrors()), "/definitions/Pet/name/default")
+		assert.SliceContainsT(t, pointersOf(res.LocatedErrors()), "/definitions/Pet/properties/name/default")
 	})
 
 	t.Run("an example is located under its response", func(t *testing.T) {
 		assert.SliceContainsT(t, pointersOf(warns.LocatedErrors()),
-			"/paths/~1pets~1{id}/get/responses/200/examples/friends/0/name")
+			"/paths/~1pets~1{id}/get/responses/200/examples/application~1json/friends/0/name")
 	})
 
 	t.Run("an unused definition is located", func(t *testing.T) {
@@ -225,6 +227,37 @@ func TestResultLocations_SpecValidation(t *testing.T) {
 				"expected a pointer to start with a separator, got %q", located.Pointer)
 		}
 	})
+}
+
+func TestResultLocations_MissingValueIsLocatedOnItsHolder(t *testing.T) {
+	t.Parallel()
+
+	// what is absent has no node to point at, so the value that should hold
+	// it is reported: that is what a reader has to open, and the only thing a
+	// document can address
+	schema := new(spec.Schema)
+	require.NoError(t, json.Unmarshal([]byte(`{
+		"type": "object",
+		"required": ["atRoot"],
+		"properties": {
+			"nested": {"type": "object", "required": ["deep"]}
+		}
+	}`), schema))
+
+	res := NewSchemaValidator(schema, nil, "", strfmt.Default).
+		Validate(map[string]any{"nested": map[string]any{}})
+	require.False(t, res.IsValid())
+
+	located := res.LocatedErrors()
+	byMessage := make(map[string]string, len(located))
+	for _, l := range located {
+		byMessage[l.Err.Error()] = l.Pointer
+	}
+
+	assert.EqualT(t, "/nested", byMessage["nested.deep in body is required"],
+		"expected the object lacking the property")
+	assert.EqualT(t, "", byMessage["atRoot in body is required"],
+		"expected the document root, which an empty pointer addresses")
 }
 
 func TestResultLocations_RequiredEntryIsLocated(t *testing.T) {

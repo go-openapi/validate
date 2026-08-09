@@ -20,8 +20,16 @@ type Located struct {
 	Err error
 
 	// Pointer locates the offending value as an RFC 6901 JSON pointer,
-	// relative to the validated document. It is empty when the producer of
-	// the error did not know where it happened.
+	// relative to the validated document.
+	//
+	// It is empty when the document as a whole is the answer: either because
+	// the finding is about the document rather than a value in it, such as a
+	// duplicate operation id, or because the value in question is the root.
+	// An empty pointer is a valid one, addressing the whole document.
+	//
+	// A finding about something a document does not contain, a missing
+	// required property say, is located on the value that should contain it:
+	// what is absent has no node to point at.
 	Pointer string
 }
 

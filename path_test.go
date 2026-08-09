@@ -108,6 +108,37 @@ func TestPathSegmentsDisplayDiffersFromPointer(t *testing.T) {
 	})
 }
 
+func TestPathSegmentsStructuralTokensAreAddressedNotShown(t *testing.T) {
+	t.Parallel()
+
+	// a document needs "properties" to address a member of a schema, but no
+	// message has ever spelled it
+	path := newPathSegments("definitions", "Pet").
+		structuralChild(jsonProperties).
+		child("name").
+		child(jsonDefault)
+
+	assert.EqualT(t, "/definitions/Pet/properties/name/default", path.pointer())
+	assert.EqualT(t, "definitions.Pet.name.default", path.dotted())
+
+	t.Run("a structural token is not what the value is", func(t *testing.T) {
+		t.Parallel()
+
+		// the predicates telling schema from data ask what the value is, and
+		// plumbing must not answer
+		inside := newPathSegments("responses", "200", "examples").structuralChild("application/json")
+		assert.EqualT(t, swaggerExamples, inside.last())
+		assert.EqualT(t, "200", inside.beforeLast())
+	})
+
+	t.Run("structural tokens still address", func(t *testing.T) {
+		t.Parallel()
+
+		assert.True(t, path.hasSuffix(newPathSegments("properties", "name", "default")),
+			"expected structure to see the token a document uses")
+	})
+}
+
 func TestPathSegmentsAppendIsCopyOnWrite(t *testing.T) {
 	t.Parallel()
 

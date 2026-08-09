@@ -34,13 +34,14 @@ const (
 )
 
 const (
-	jsonProperties = "properties"
-	jsonItems      = "items"
-	jsonType       = "type"
-	jsonSchema     = "schema"
-	jsonRequired   = "required"
-	jsonRef        = "$ref"
-	jsonDefault    = "default"
+	jsonProperties        = "properties"
+	jsonPatternProperties = "patternProperties"
+	jsonItems             = "items"
+	jsonType              = "type"
+	jsonSchema            = "schema"
+	jsonRequired          = "required"
+	jsonRef               = "$ref"
+	jsonDefault           = "default"
 
 	jsonAllOf                = "allOf"
 	jsonAdditionalItems      = "additionalItems"
@@ -51,6 +52,8 @@ const (
 	swaggerResponses   = "responses"
 	swaggerParameters  = "parameters"
 	swaggerHeaders     = "headers"
+
+	jsonMimeApplicationJSON = "application/json"
 )
 
 // operationPath locates an operation in the spec document.

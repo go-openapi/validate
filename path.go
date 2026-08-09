@@ -4,6 +4,7 @@
 package validate
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 
@@ -33,6 +34,12 @@ type pathSegments []pathToken
 type pathToken struct {
 	token   string
 	display string
+
+	// structural marks a token a document needs to address the value, but
+	// that messages have never shown: a "properties" between a schema and one
+	// of its members, say. It is part of the pointer and absent from the
+	// dotted form.
+	structural bool
 }
 
 // readable renders a token the way a message should spell it.
@@ -79,6 +86,12 @@ func (p pathSegments) childAs(token, display string) pathSegments {
 	return p.appendToken(pathToken{token: token, display: display})
 }
 
+// structuralChild returns the location of a member a document addresses but
+// messages do not name.
+func (p pathSegments) structuralChild(token string) pathSegments {
+	return p.appendToken(pathToken{token: token, structural: true})
+}
+
 func (p pathSegments) appendToken(token pathToken) pathSegments {
 	child := make(pathSegments, len(p)+1)
 	copy(child, p)
@@ -106,24 +119,46 @@ func (p pathSegments) item(index int) pathSegments {
 // isEmpty tells if p locates the document root.
 func (p pathSegments) isEmpty() bool { return len(p) == 0 }
 
-// last returns the trailing token, or an empty string at the document root.
+// last returns the trailing meaningful token, or an empty string at the
+// document root.
+//
+// Structural tokens are skipped: they say how a document addresses the value,
+// not what the value is, and the callers here are asking the latter.
 func (p pathSegments) last() string {
-	if len(p) == 0 {
-		return ""
+	if token, ok := p.meaningfulAt(0); ok {
+		return token
 	}
 
-	return p[len(p)-1].token
+	return ""
 }
 
-// beforeLast returns the token before the trailing one, or an empty string
-// when p holds fewer than two tokens.
+// beforeLast returns the meaningful token before the trailing one, or an empty
+// string when p holds fewer than two of them.
 func (p pathSegments) beforeLast() string {
-	const beforeLast = 2
-	if len(p) < beforeLast {
-		return ""
+	if token, ok := p.meaningfulAt(1); ok {
+		return token
 	}
 
-	return p[len(p)-beforeLast].token
+	return ""
+}
+
+// meaningfulAt returns the nth token from the end, counting only the tokens a
+// message would show.
+func (p pathSegments) meaningfulAt(n int) (string, bool) {
+	seen := 0
+	for _, token := range slices.Backward(p) {
+		if token.structural {
+			continue
+		}
+
+		if seen == n {
+			return token.token, true
+		}
+
+		seen++
+	}
+
+	return "", false
 }
 
 // trimIndexes returns p without its trailing array index tokens.
@@ -178,9 +213,13 @@ func (p pathSegments) hasSuffix(suffix pathSegments) bool {
 // name of a validation error, and API consumers of go-swagger servers see it.
 // Use [pathSegments.pointer] whenever the location needs to be unambiguous.
 func (p pathSegments) dotted() string {
-	readable := make([]string, len(p))
-	for i, token := range p {
-		readable[i] = token.readable()
+	readable := make([]string, 0, len(p))
+	for _, token := range p {
+		if token.structural {
+			continue
+		}
+
+		readable = append(readable, token.readable())
 	}
 
 	return strings.Join(readable, ".")

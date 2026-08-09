@@ -176,7 +176,7 @@ func (o *objectValidator) checkArrayMustHaveItems(res *Result, val map[string]an
 		return
 	}
 
-	res.addErrorsAt(o.Path.child(jsonItems), errors.Required(jsonItems, o.Path.dotted(), item))
+	res.addErrorsAt(o.Path, errors.Required(jsonItems, o.Path.dotted(), item))
 }
 
 func (o *objectValidator) checkItemsMustBeTypeArray(res *Result, val map[string]any) {
@@ -196,7 +196,7 @@ func (o *objectValidator) checkItemsMustBeTypeArray(res *Result, val map[string]
 	t, typeFound := val[jsonType]
 	if !typeFound {
 		// there is no type
-		res.addErrorsAt(o.Path.child(jsonType), errors.Required(jsonType, o.Path.dotted(), t))
+		res.addErrorsAt(o.Path, errors.Required(jsonType, o.Path.dotted(), t))
 	}
 
 	if tpe, isString := t.(string); !isString || tpe != arrayType {
@@ -371,7 +371,9 @@ func (o *objectValidator) validatePropertiesSchema(val map[string]any, res *Resu
 			continue
 		}
 
-		res.addErrorsAt(o.Path.child(k), errors.Required(o.Path.child(k).dotted(), o.In, v))
+		// located on the object that lacks the property: the property itself
+		// has no node to point at, and the object is what has to be amended
+		res.addErrorsAt(o.Path, errors.Required(o.Path.child(k).dotted(), o.In, v))
 	}
 }
 
