@@ -37,7 +37,7 @@ func newObjectValidator(path pathSegments, in string,
 
 	var v *objectValidator
 	if opts.recycleValidators {
-		v = pools.poolOfObjectValidators.BorrowValidator()
+		v = validatorPools.objectValidators.Borrow()
 	} else {
 		v = new(objectValidator)
 	}
@@ -83,7 +83,7 @@ func (o *objectValidator) Validate(data any) *Result {
 
 	var res *Result
 	if o.Options.recycleResult {
-		res = pools.poolOfResults.BorrowResult()
+		res = validatorPools.results.Borrow()
 	} else {
 		res = new(Result)
 	}
@@ -328,9 +328,9 @@ func (o *objectValidator) validatePropertiesSchema(val map[string]any, res *Resu
 
 	// Property types:
 	// - regular Property
-	pSchema := pools.poolOfSchemas.BorrowSchema() // recycle a spec.Schema object which lifespan extends only to the validation of properties
+	pSchema := validatorPools.schemas.Borrow() // recycle a spec.Schema object which lifespan extends only to the validation of properties
 	defer func() {
-		pools.poolOfSchemas.RedeemSchema(pSchema)
+		validatorPools.schemas.Redeem(pSchema)
 	}()
 
 	for pName := range o.Properties {
@@ -387,9 +387,9 @@ func (o *objectValidator) validatePatternProperty(key string, value any, result 
 	succeededOnce := false
 	patterns := make([]string, 0, len(o.PatternProperties))
 
-	schema := pools.poolOfSchemas.BorrowSchema()
+	schema := validatorPools.schemas.Borrow()
 	defer func() {
-		pools.poolOfSchemas.RedeemSchema(schema)
+		validatorPools.schemas.Redeem(schema)
 	}()
 
 	for k := range o.PatternProperties {
@@ -420,5 +420,5 @@ func (o *objectValidator) setPath(path pathSegments) {
 }
 
 func (o *objectValidator) redeem() {
-	pools.poolOfObjectValidators.RedeemValidator(o)
+	validatorPools.objectValidators.Redeem(o)
 }

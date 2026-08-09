@@ -17,7 +17,7 @@ type defaultValidator struct {
 
 // Validate validates the default values declared in the swagger spec.
 func (d *defaultValidator) Validate() *Result {
-	errs := pools.poolOfResults.BorrowResult() // will redeem when merged
+	errs := validatorPools.results.Borrow() // will redeem when merged
 
 	if d == nil || d.SpecValidator == nil {
 		return errs
@@ -73,7 +73,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 	// every default value that is specified must validate against the schema for that property
 	// headers, items, parameters, schema
 
-	res := pools.poolOfResults.BorrowResult() // will redeem when merged
+	res := validatorPools.results.Borrow() // will redeem when merged
 	s := d.SpecValidator
 
 	for method, pathItem := range s.expandedAnalyzer().Operations() {
@@ -96,7 +96,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 						res.addErrorsAt(s.parameterPath(path, method, param.In, param.Name), defaultValueDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
 					} else if red.wantsRedeemOnMerge {
-						pools.poolOfResults.RedeemResult(red)
+						redeemResult(red)
 					}
 				}
 
@@ -107,7 +107,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 						res.addErrorsAt(s.parameterPath(path, method, param.In, param.Name), defaultValueItemsDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
 					} else if red.wantsRedeemOnMerge {
-						pools.poolOfResults.RedeemResult(red)
+						redeemResult(red)
 					}
 				}
 
@@ -118,7 +118,7 @@ func (d *defaultValidator) validateDefaultValueValidAgainstSchema() *Result {
 						res.addErrorsAt(s.parameterPath(path, method, param.In, param.Name), defaultValueDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
 					} else if red.wantsRedeemOnMerge {
-						pools.poolOfResults.RedeemResult(red)
+						redeemResult(red)
 					}
 				}
 			}
@@ -173,7 +173,7 @@ func (d *defaultValidator) validateDefaultInResponse(
 					res.addErrorsAt(responseHeaderPath(path, method, responseCodeAsStr, nm), defaultValueHeaderDoesNotValidateMsg(operationID, nm, responseName))
 					res.Merge(red)
 				} else if red.wantsRedeemOnMerge {
-					pools.poolOfResults.RedeemResult(red)
+					redeemResult(red)
 				}
 			}
 
@@ -184,7 +184,7 @@ func (d *defaultValidator) validateDefaultInResponse(
 					res.addErrorsAt(responseHeaderPath(path, method, responseCodeAsStr, nm), defaultValueHeaderItemsDoesNotValidateMsg(operationID, nm, responseName))
 					res.Merge(red)
 				} else if red.wantsRedeemOnMerge {
-					pools.poolOfResults.RedeemResult(red)
+					redeemResult(red)
 				}
 			}
 
@@ -206,7 +206,7 @@ func (d *defaultValidator) validateDefaultInResponse(
 			res.addErrorsAt(responsePath(path, method, responseCodeAsStr), defaultValueInDoesNotValidateMsg(operationID, responseName))
 			res.Merge(red)
 		} else if red.wantsRedeemOnMerge {
-			pools.poolOfResults.RedeemResult(red)
+			redeemResult(red)
 		}
 	}
 	return res
@@ -218,7 +218,7 @@ func (d *defaultValidator) validateDefaultValueSchemaAgainstSchema(path pathSegm
 		return nil
 	}
 	d.beingVisited(path)
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 	s := d.SpecValidator
 
 	if schema.Default != nil {
@@ -264,7 +264,7 @@ func (d *defaultValidator) validateDefaultValueSchemaAgainstSchema(path pathSegm
 // NOTE: Temporary duplicated code. Need to refactor with examples
 
 func (d *defaultValidator) validateDefaultValueItemsAgainstSchema(path pathSegments, in string, root any, items *spec.Items) *Result {
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 	s := d.SpecValidator
 	if items != nil {
 		if items.Default != nil {

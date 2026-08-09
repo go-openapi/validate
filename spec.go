@@ -178,7 +178,7 @@ func (s *SpecValidator) SetContinueOnErrors(c bool) {
 }
 
 func (s *SpecValidator) validateNonEmptyPathParamNames() *Result {
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 	if s.spec.Spec().Paths == nil {
 		// There is no Paths object: error
 		res.addErrorsAt(newPathSegments(swaggerPaths), noValidPathMsg())
@@ -212,7 +212,7 @@ func (s *SpecValidator) validateDuplicateOperationIDs() *Result {
 		// fallback on possible incomplete picture because of previous errors
 		analyzer = s.analyzer
 	}
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 	known := make(map[string]int)
 	for _, v := range analyzer.OperationIDs() {
 		if v != "" {
@@ -234,7 +234,7 @@ type dupProp struct {
 
 func (s *SpecValidator) validateDuplicatePropertyNames() *Result {
 	// definition can't declare a property that's already defined by one of its ancestors
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 	for k, sch := range s.spec.Spec().Definitions {
 		if len(sch.AllOf) == 0 {
 			continue
@@ -283,7 +283,7 @@ func (s *SpecValidator) validateSchemaPropertyNames(nm string, sch spec.Schema, 
 
 	schn := nm
 	schc := &sch
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 
 	for schc.Ref.String() != "" {
 		// gather property names
@@ -320,7 +320,7 @@ func (s *SpecValidator) validateSchemaPropertyNames(nm string, sch spec.Schema, 
 }
 
 func (s *SpecValidator) validateCircularAncestry(nm string, sch spec.Schema, knowns map[string]struct{}) ([]string, *Result) {
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 
 	if sch.Ref.String() == "" && len(sch.AllOf) == 0 { // Safeguard. We should not be able to actually get there
 		return nil, res
@@ -371,7 +371,7 @@ func (s *SpecValidator) validateCircularAncestry(nm string, sch spec.Schema, kno
 //nolint:gocognit // refactor in a forthcoming PR
 func (s *SpecValidator) validateItems() *Result {
 	// validate parameter, items, schema and response objects for presence of item if type is array
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 
 	for method, pi := range s.analyzer.Operations() {
 		for path, op := range pi {
@@ -436,7 +436,7 @@ func (s *SpecValidator) validateItems() *Result {
 
 // Verifies constraints on array type.
 func (s *SpecValidator) validateSchemaItems(schema spec.Schema, at pathSegments, prefix, opID string) *Result {
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 	if !schema.Type.Contains(arrayType) {
 		return res
 	}
@@ -460,7 +460,7 @@ func (s *SpecValidator) validateSchemaItems(schema spec.Schema, at pathSegments,
 func (s *SpecValidator) validatePathParamPresence(path string, fromPath, fromOperation []string) *Result {
 	// Each defined operation path parameters must correspond to a named element in the API's path pattern.
 	// (For example, you cannot have a path parameter named id for the following path /pets/{petId} but you must have a path parameter named petId.)
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 	for _, l := range fromPath {
 		var matched bool
 		for _, r := range fromOperation {
@@ -513,7 +513,7 @@ func (s *SpecValidator) validateReferencedParameters() *Result {
 	if len(expected) == 0 {
 		return nil
 	}
-	result := pools.poolOfResults.BorrowResult()
+	result := validatorPools.results.Borrow()
 	for k := range expected {
 		result.addWarningsAt(localRefPath(k), unusedParamMsg(k))
 	}
@@ -538,7 +538,7 @@ func (s *SpecValidator) validateReferencedResponses() *Result {
 	if len(expected) == 0 {
 		return nil
 	}
-	result := pools.poolOfResults.BorrowResult()
+	result := validatorPools.results.Borrow()
 	for k := range expected {
 		result.addWarningsAt(localRefPath(k), unusedResponseMsg(k))
 	}
@@ -573,7 +573,7 @@ func (s *SpecValidator) validateReferencedDefinitions() *Result {
 
 func (s *SpecValidator) validateRequiredDefinitions() *Result {
 	// Each property listed in the required array must be defined in the properties of the model
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 
 DEFINITIONS:
 	for d, schema := range s.spec.Spec().Definitions {
@@ -607,7 +607,7 @@ func (s *SpecValidator) validateRequiredProperties(
 	path, in string, schemaAt, requiredAt pathSegments, v *spec.Schema,
 ) *Result {
 	// Takes care of recursive property definitions, which may be nested in additionalProperties schemas
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 	propertyMatch := false
 	patternMatch := false
 	additionalPropertiesMatch := false
@@ -674,7 +674,7 @@ func (s *SpecValidator) validateParameters() *Result {
 	// - parameters with pattern property must specify valid patterns
 	// - $ref in parameters must resolve
 	// - path param must be required
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 	rexGarbledPathSegment := mustCompileRegexp(`.*[{}\s]+.*`)
 	for method, pi := range s.expandedAnalyzer().Operations() {
 		methodPaths := make(map[string]map[string]string)
@@ -816,7 +816,7 @@ func (s *SpecValidator) validateParameters() *Result {
 
 func (s *SpecValidator) validateReferencesValid() *Result {
 	// each reference must point to a valid object
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 	for _, r := range s.analyzer.AllRefs() {
 		if !r.IsValidURI(s.spec.SpecFilePath()) { // Safeguard - spec should always yield a valid URI
 			res.addErrorsAt(s.refLocations.at(r.String()), invalidRefMsg(r.String()))
@@ -845,7 +845,7 @@ func (s *SpecValidator) checkUniqueParams(path, method string, op *spec.Operatio
 	// However, there are some issues with such a factorization:
 	// - analysis does not seem to fully expand params
 	// - param keys may be altered by x-go-name
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 	pnames := make(map[string]struct{})
 
 	if op.Parameters != nil { // Safeguard

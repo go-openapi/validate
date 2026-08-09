@@ -160,7 +160,7 @@ func (h *errorHelper) sErr(err errors.Error, recycle bool) *Result {
 func (h *errorHelper) sErrAt(at pathSegments, err errors.Error, recycle bool) *Result {
 	var result *Result
 	if recycle {
-		result = pools.poolOfResults.BorrowResult()
+		result = validatorPools.results.Borrow()
 	} else {
 		result = new(Result)
 	}

@@ -97,7 +97,7 @@ func TestResultLocations_DedupeKeepsTheFirstLocation(t *testing.T) {
 func TestResultLocations_ClearedOnRecycle(t *testing.T) {
 	t.Parallel()
 
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 	res.addErrorsAt(newPathSegments("a"), errOne)
 	require.Len(t, res.LocatedErrors(), 1)
 

@@ -22,7 +22,7 @@ type exampleValidator struct {
 //   - individual property
 //   - responses
 func (ex *exampleValidator) Validate() *Result {
-	errs := pools.poolOfResults.BorrowResult()
+	errs := validatorPools.results.Borrow()
 
 	if ex == nil || ex.SpecValidator == nil {
 		return errs
@@ -63,7 +63,7 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 	// in: schemas, properties, object, items
 	// not in: headers, parameters without schema
 
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 	s := ex.SpecValidator
 
 	for method, pathItem := range s.expandedAnalyzer().Operations() {
@@ -86,7 +86,7 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 						res.addWarningsAt(s.parameterPath(path, method, param.In, param.Name), exampleValueDoesNotValidateMsg(param.Name, param.In))
 						res.MergeAsWarnings(red)
 					} else if red.wantsRedeemOnMerge {
-						pools.poolOfResults.RedeemResult(red)
+						redeemResult(red)
 					}
 				}
 
@@ -97,7 +97,7 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 						res.addWarningsAt(s.parameterPath(path, method, param.In, param.Name), exampleValueItemsDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
 					} else if red.wantsRedeemOnMerge {
-						pools.poolOfResults.RedeemResult(red)
+						redeemResult(red)
 					}
 				}
 
@@ -108,7 +108,7 @@ func (ex *exampleValidator) validateExampleValueValidAgainstSchema() *Result {
 						res.addWarningsAt(s.parameterPath(path, method, param.In, param.Name), exampleValueDoesNotValidateMsg(param.Name, param.In))
 						res.Merge(red)
 					} else if red.wantsRedeemOnMerge {
-						pools.poolOfResults.RedeemResult(red)
+						redeemResult(red)
 					}
 				}
 			}
@@ -163,7 +163,7 @@ func (ex *exampleValidator) validateExampleInResponse(
 					res.addWarningsAt(responseHeaderPath(path, method, responseCodeAsStr, nm), exampleValueHeaderDoesNotValidateMsg(operationID, nm, responseName))
 					res.MergeAsWarnings(red)
 				} else if red.wantsRedeemOnMerge {
-					pools.poolOfResults.RedeemResult(red)
+					redeemResult(red)
 				}
 			}
 
@@ -174,7 +174,7 @@ func (ex *exampleValidator) validateExampleInResponse(
 					res.addWarningsAt(responseHeaderPath(path, method, responseCodeAsStr, nm), exampleValueHeaderItemsDoesNotValidateMsg(operationID, nm, responseName))
 					res.MergeAsWarnings(red)
 				} else if red.wantsRedeemOnMerge {
-					pools.poolOfResults.RedeemResult(red)
+					redeemResult(red)
 				}
 			}
 
@@ -196,7 +196,7 @@ func (ex *exampleValidator) validateExampleInResponse(
 			res.addWarningsAt(responsePath(path, method, responseCodeAsStr), exampleValueInDoesNotValidateMsg(operationID, responseName))
 			res.Merge(red)
 		} else if red.wantsRedeemOnMerge {
-			pools.poolOfResults.RedeemResult(red)
+			redeemResult(red)
 		}
 	}
 
@@ -228,7 +228,7 @@ func (ex *exampleValidator) validateExampleValueSchemaAgainstSchema(path pathSeg
 	}
 	ex.beingVisited(path)
 	s := ex.SpecValidator
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 
 	if schema.Example != nil {
 		res.MergeAsWarnings(
@@ -274,7 +274,7 @@ func (ex *exampleValidator) validateExampleValueSchemaAgainstSchema(path pathSeg
 //
 
 func (ex *exampleValidator) validateExampleValueItemsAgainstSchema(path pathSegments, in string, root any, items *spec.Items) *Result {
-	res := pools.poolOfResults.BorrowResult()
+	res := validatorPools.results.Borrow()
 	s := ex.SpecValidator
 	if items != nil {
 		if items.Example != nil {
