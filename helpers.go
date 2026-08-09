@@ -293,15 +293,19 @@ func (h *paramHelper) safeExpandedParamsFor(path, method, operationID string, re
 		// remove params with invalid expansion from Slice
 		operation.Parameters = resolvedParams
 
-		for _, ppr := range s.expandedAnalyzer().SafeParamsFor(method, path,
+		// the analyzer keys parameters by name and location: walk those keys in
+		// order, so that findings about an operation's parameters come out the
+		// same way on every run
+		safeParams := s.expandedAnalyzer().SafeParamsFor(method, path,
 			func(_ spec.Parameter, err error) bool {
 				// since params have already been expanded, there are few causes for error
 				res.addErrorsAt(operationPath(path, method), someParametersBrokenMsg(path, method, operationID))
 				// original error from analyzer
 				res.addErrorsAt(operationPath(path, method), err)
 				return true
-			}) {
-			params = append(params, ppr)
+			})
+		for _, k := range sortedKeys(safeParams) {
+			params = append(params, safeParams[k])
 		}
 	}
 	return

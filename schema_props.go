@@ -279,7 +279,7 @@ func (s *schemaPropsValidator) validateNot(data any, mainResult *Result) {
 
 func (s *schemaPropsValidator) validateDependencies(data any, mainResult *Result) {
 	val := data.(map[string]any) //nolint:forcetypeassert // caller guarantees map[string]any
-	for key := range val {
+	for _, key := range sortedKeys(val) {
 		dep, ok := s.Dependencies[key]
 		if !ok {
 			continue

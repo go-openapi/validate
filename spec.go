@@ -193,7 +193,7 @@ func (s *SpecValidator) validateNonEmptyPathParamNames() *Result {
 		return res
 	}
 
-	for k := range s.spec.Spec().Paths.Paths {
+	for _, k := range sortedKeys(s.spec.Spec().Paths.Paths) {
 		if strings.Contains(k, "{}") {
 			res.addErrorsAt(newPathSegments(swaggerPaths, k), emptyPathParameterMsg(k))
 		}
@@ -219,8 +219,8 @@ func (s *SpecValidator) validateDuplicateOperationIDs() *Result {
 			known[v]++
 		}
 	}
-	for k, v := range known {
-		if v > 1 {
+	for _, k := range sortedKeys(known) {
+		if v := known[k]; v > 1 {
 			res.AddErrors(nonUniqueOperationIDMsg(k, v))
 		}
 	}
@@ -235,7 +235,9 @@ type dupProp struct {
 func (s *SpecValidator) validateDuplicatePropertyNames() *Result {
 	// definition can't declare a property that's already defined by one of its ancestors
 	res := validatorPools.results.Borrow()
-	for k, sch := range s.spec.Spec().Definitions {
+	definitions := s.spec.Spec().Definitions
+	for _, k := range sortedKeys(definitions) {
+		sch := definitions[k]
 		if len(sch.AllOf) == 0 {
 			continue
 		}
@@ -250,7 +252,14 @@ func (s *SpecValidator) validateDuplicatePropertyNames() *Result {
 		}
 		if len(ancs) > 0 {
 			res.addErrorsAt(newPathSegments(swaggerDefinitions, k), circularAncestryDefinitionMsg(k, ancs))
-			return res
+			if !s.Options.ContinueOnErrors {
+				return res
+			}
+
+			// the ancestry loops back on itself: searching it for duplicate
+			// property names would not terminate, so this definition stops here
+			// and the next one is examined.
+			continue
 		}
 
 		knowns := make(map[string]struct{})
@@ -307,7 +316,7 @@ func (s *SpecValidator) validateSchemaPropertyNames(nm string, sch spec.Schema, 
 		return dups, res
 	}
 
-	for k := range schc.Properties {
+	for _, k := range sortedKeys(schc.Properties) {
 		_, ok := knowns[k]
 		if ok {
 			dups = append(dups, dupProp{Name: k, Definition: schn})
@@ -373,8 +382,11 @@ func (s *SpecValidator) validateItems() *Result {
 	// validate parameter, items, schema and response objects for presence of item if type is array
 	res := validatorPools.results.Borrow()
 
-	for method, pi := range s.analyzer.Operations() {
-		for path, op := range pi {
+	operations := s.analyzer.Operations()
+	for _, method := range sortedKeys(operations) {
+		pi := operations[method]
+		for _, path := range sortedKeys(pi) {
+			op := pi[path]
 			for _, param := range paramHelp.safeExpandedParamsFor(path, method, op.ID, res, s) {
 
 				if param.TypeName() == arrayType && param.ItemsTypeName() == "" {
@@ -411,8 +423,11 @@ func (s *SpecValidator) validateItems() *Result {
 					responses = append(responses, codedResponse{code: jsonDefault, resp: *op.Responses.Default})
 				}
 				if op.Responses.StatusCodeResponses != nil {
-					for code, v := range op.Responses.StatusCodeResponses {
-						responses = append(responses, codedResponse{code: strconv.Itoa(code), resp: v})
+					for _, code := range sortedKeys(op.Responses.StatusCodeResponses) {
+						responses = append(responses, codedResponse{
+							code: strconv.Itoa(code),
+							resp: op.Responses.StatusCodeResponses[code],
+						})
 					}
 				}
 			}
@@ -420,8 +435,8 @@ func (s *SpecValidator) validateItems() *Result {
 			for _, resp := range responses {
 				at := responsePath(path, method, resp.code)
 				// Response headers with array
-				for hn, hv := range resp.resp.Headers {
-					if hv.TypeName() == arrayType && hv.ItemsTypeName() == "" {
+				for _, hn := range sortedKeys(resp.resp.Headers) {
+					if hv := resp.resp.Headers[hn]; hv.TypeName() == arrayType && hv.ItemsTypeName() == "" {
 						res.addErrorsAt(at.children(swaggerHeaders, hn), arrayInHeaderRequiresItemsMsg(hn, op.ID))
 					}
 				}
@@ -514,7 +529,7 @@ func (s *SpecValidator) validateReferencedParameters() *Result {
 		return nil
 	}
 	result := validatorPools.results.Borrow()
-	for k := range expected {
+	for _, k := range sortedKeys(expected) {
 		result.addWarningsAt(localRefPath(k), unusedParamMsg(k))
 	}
 	return result
@@ -538,10 +553,12 @@ func (s *SpecValidator) validateReferencedResponses() *Result {
 	if len(expected) == 0 {
 		return nil
 	}
+
 	result := validatorPools.results.Borrow()
-	for k := range expected {
+	for _, k := range sortedKeys(expected) {
 		result.addWarningsAt(localRefPath(k), unusedResponseMsg(k))
 	}
+
 	return result
 }
 
@@ -565,7 +582,7 @@ func (s *SpecValidator) validateReferencedDefinitions() *Result {
 	}
 
 	result := new(Result)
-	for k := range expected {
+	for _, k := range sortedKeys(expected) {
 		result.addWarningsAt(localRefPath(k), unusedDefinitionMsg(k))
 	}
 	return result
@@ -575,8 +592,11 @@ func (s *SpecValidator) validateRequiredDefinitions() *Result {
 	// Each property listed in the required array must be defined in the properties of the model
 	res := validatorPools.results.Borrow()
 
+	definitions := s.spec.Spec().Definitions
+
 DEFINITIONS:
-	for d, schema := range s.spec.Spec().Definitions {
+	for _, d := range sortedKeys(definitions) {
+		schema := definitions[d]
 		if schema.Required != nil { // Safeguard
 			definitionAt := newPathSegments(swaggerDefinitions, d)
 			for i, pn := range schema.Required {
@@ -621,14 +641,14 @@ func (s *SpecValidator) validateRequiredProperties(
 
 	// NOTE: patternProperties are not supported in swagger. Even though, we continue validation here
 	// We check all defined patterns: if one regexp is invalid, croaks an error
-	for pp, pv := range v.PatternProperties {
+	for _, pp := range sortedKeys(v.PatternProperties) {
 		re, err := compileRegexp(pp)
 		if err != nil {
 			res.addErrorsAt(schemaAt, invalidPatternMsg(pp, in))
 		} else if re.MatchString(path) {
 			patternMatch = true
 			if !propertyMatch {
-				isReadOnly = pv.ReadOnly
+				isReadOnly = v.PatternProperties[pp].ReadOnly
 			}
 		}
 	}
@@ -676,9 +696,12 @@ func (s *SpecValidator) validateParameters() *Result {
 	// - path param must be required
 	res := validatorPools.results.Borrow()
 	rexGarbledPathSegment := mustCompileRegexp(`.*[{}\s]+.*`)
-	for method, pi := range s.expandedAnalyzer().Operations() {
+	operations := s.expandedAnalyzer().Operations()
+	for _, method := range sortedKeys(operations) {
+		pi := operations[method]
 		methodPaths := make(map[string]map[string]string)
-		for path, op := range pi {
+		for _, path := range sortedKeys(pi) {
+			op := pi[path]
 			if s.Options.StrictPathParamUniqueness {
 				pathToAdd := pathHelp.stripParametersInPath(path)
 
@@ -817,7 +840,7 @@ func (s *SpecValidator) validateParameters() *Result {
 func (s *SpecValidator) validateReferencesValid() *Result {
 	// each reference must point to a valid object
 	res := validatorPools.results.Borrow()
-	for _, r := range s.analyzer.AllRefs() {
+	for _, r := range sortedRefs(s.analyzer.AllRefs()) {
 		if !r.IsValidURI(s.spec.SpecFilePath()) { // Safeguard - spec should always yield a valid URI
 			res.addErrorsAt(s.refLocations.at(r.String()), invalidRefMsg(r.String()))
 		}
