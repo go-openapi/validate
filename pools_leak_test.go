@@ -28,7 +28,7 @@ func TestPools_NoLeakOnSpecValidation(t *testing.T) {
 	pools.ResetTracking()
 	t.Cleanup(pools.ResetTracking)
 
-	fp := filepath.Join("fixtures", "bugs", "2866", "2866.yaml")
+	fp := filepath.Join("testdata", "bugs", "2866", "2866.yaml")
 	doc, err := loads.Spec(fp)
 	require.NoError(t, err)
 	require.NotNil(t, doc)

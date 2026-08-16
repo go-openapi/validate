@@ -27,7 +27,7 @@ var (
 )
 
 func init() {
-	petstoreFixture := filepath.Join("fixtures", "petstore", "swagger.json")
+	petstoreFixture := filepath.Join("testdata", "petstore", "swagger.json")
 	petstore, err := os.ReadFile(petstoreFixture)
 	if err != nil {
 		log.Fatalf("could not initialize fixture: %s: %v", petstoreFixture, err)

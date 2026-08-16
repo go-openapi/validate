@@ -27,7 +27,7 @@ func skipNotifyGoSwagger(t *testing.T) {
 
 // Exercise validate will all tests cases from package go-swagger
 // A copy of all fixtures available in go-swagger/go-swagger
-// is maintained in fixtures/go-swagger
+// is maintained in testdata/go-swagger
 //
 // Proposal for enhancement: move this list to a YAML fixture config file.
 func Test_GoSwaggerTestCases(t *testing.T) {
@@ -37,75 +37,75 @@ func Test_GoSwaggerTestCases(t *testing.T) {
 	}
 	// A list of test cases which fail on "swagger validate" at spec load time
 	expectedLoadFailures := map[string]bool{
-		"fixtures/go-swagger/bugs/342/fixture-342.yaml":   false,
-		"fixtures/go-swagger/bugs/342/fixture-342-2.yaml": true,
+		"testdata/go-swagger/bugs/342/fixture-342.yaml":   false,
+		"testdata/go-swagger/bugs/342/fixture-342-2.yaml": true,
 	}
 
 	// A list of test cases which fail on "swagger validate"
 	expectedFailures := map[string]bool{
-		"fixtures/go-swagger/bugs/1010/swagger.yml":                      true,
-		"fixtures/go-swagger/bugs/103/swagger.json":                      true,
-		"fixtures/go-swagger/bugs/106/swagger.json":                      true,
-		"fixtures/go-swagger/bugs/1171/swagger.yaml":                     true,
-		"fixtures/go-swagger/bugs/1238/swagger.yaml":                     true,
-		"fixtures/go-swagger/bugs/1289/fixture-1289-2.yaml":              true,
-		"fixtures/go-swagger/bugs/1289/fixture-1289.yaml":                true,
-		"fixtures/go-swagger/bugs/193/spec2.json":                        true,
-		"fixtures/go-swagger/bugs/195/swagger.json":                      true,
-		"fixtures/go-swagger/bugs/248/swagger.json":                      true,
-		"fixtures/go-swagger/bugs/249/swagger.json":                      true,
-		"fixtures/go-swagger/bugs/342/fixture-342-2.yaml":                true,
-		"fixtures/go-swagger/bugs/342/fixture-342.yaml":                  true,
-		"fixtures/go-swagger/bugs/423/swagger.json":                      true,
-		"fixtures/go-swagger/bugs/453/swagger.yml":                       true,
-		"fixtures/go-swagger/bugs/455/swagger.yml":                       true,
-		"fixtures/go-swagger/bugs/628/swagger.yml":                       true,
-		"fixtures/go-swagger/bugs/733/swagger.json":                      false,
-		"fixtures/go-swagger/bugs/763/swagger.yml":                       true,
-		"fixtures/go-swagger/bugs/774/swagger.yml":                       true,
-		"fixtures/go-swagger/bugs/776/error.yaml":                        true,
-		"fixtures/go-swagger/bugs/776/item.yaml":                         true,
-		"fixtures/go-swagger/bugs/809/swagger.yml":                       true,
-		"fixtures/go-swagger/bugs/825/swagger.yml":                       true,
-		"fixtures/go-swagger/bugs/890/path/health_check.yaml":            true,
-		"fixtures/go-swagger/bugs/981/swagger.json":                      true,
-		"fixtures/go-swagger/canary/docker/swagger.json":                 true,
-		"fixtures/go-swagger/canary/ms-cog-sci/swagger.json":             true,
-		"fixtures/go-swagger/codegen/azure-text-analyis.json":            true,
-		"fixtures/go-swagger/codegen/issue72.json":                       true,
-		"fixtures/go-swagger/codegen/simplesearch.yml":                   true,
-		"fixtures/go-swagger/codegen/swagger-codegen-tests.json":         true,
-		"fixtures/go-swagger/codegen/todolist.allparams.yml":             true,
-		"fixtures/go-swagger/codegen/todolist.bodyparams.yml":            true,
-		"fixtures/go-swagger/codegen/todolist.discriminators.yml":        true,
-		"fixtures/go-swagger/codegen/todolist.enums.yml":                 true,
-		"fixtures/go-swagger/codegen/todolist.models.yml":                true,
-		"fixtures/go-swagger/codegen/todolist.responses.yml":             true,
-		"fixtures/go-swagger/codegen/todolist.schemavalidation.yml":      true,
-		"fixtures/go-swagger/codegen/todolist.simplepath.yml":            true,
-		"fixtures/go-swagger/codegen/todolist.simple.yml":                true,
-		"fixtures/go-swagger/codegen/todolist.url.basepath.yml":          true,
-		"fixtures/go-swagger/codegen/todolist.url.simple.yml":            true,
-		"fixtures/go-swagger/expansion/all-the-things.json":              true,
-		"fixtures/go-swagger/expansion/circularRefs.json":                true,
-		"fixtures/go-swagger/expansion/invalid-refs.json":                true,
-		"fixtures/go-swagger/expansion/params.json":                      true,
-		"fixtures/go-swagger/expansion/schemas1.json":                    true,
-		"fixtures/go-swagger/expansion/schemas2.json":                    true,
-		"fixtures/go-swagger/petstores/petstore-expanded.json":           true,
-		"fixtures/go-swagger/petstores/petstore-simple.json":             true,
-		"fixtures/go-swagger/petstores/petstore-with-external-docs.json": true,
-		"fixtures/go-swagger/remotes/folder/folderInteger.json":          true,
-		"fixtures/go-swagger/remotes/integer.json":                       true,
-		"fixtures/go-swagger/remotes/subSchemas.json":                    true,
-		"fixtures/go-swagger/specs/deeper/arrayProp.json":                true,
-		"fixtures/go-swagger/specs/deeper/stringProp.json":               true,
-		"fixtures/go-swagger/specs/refed.json":                           true,
-		"fixtures/go-swagger/specs/resolution2.json":                     true,
-		"fixtures/go-swagger/specs/resolution.json":                      true,
+		"testdata/go-swagger/bugs/1010/swagger.yml":                      true,
+		"testdata/go-swagger/bugs/103/swagger.json":                      true,
+		"testdata/go-swagger/bugs/106/swagger.json":                      true,
+		"testdata/go-swagger/bugs/1171/swagger.yaml":                     true,
+		"testdata/go-swagger/bugs/1238/swagger.yaml":                     true,
+		"testdata/go-swagger/bugs/1289/fixture-1289-2.yaml":              true,
+		"testdata/go-swagger/bugs/1289/fixture-1289.yaml":                true,
+		"testdata/go-swagger/bugs/193/spec2.json":                        true,
+		"testdata/go-swagger/bugs/195/swagger.json":                      true,
+		"testdata/go-swagger/bugs/248/swagger.json":                      true,
+		"testdata/go-swagger/bugs/249/swagger.json":                      true,
+		"testdata/go-swagger/bugs/342/fixture-342-2.yaml":                true,
+		"testdata/go-swagger/bugs/342/fixture-342.yaml":                  true,
+		"testdata/go-swagger/bugs/423/swagger.json":                      true,
+		"testdata/go-swagger/bugs/453/swagger.yml":                       true,
+		"testdata/go-swagger/bugs/455/swagger.yml":                       true,
+		"testdata/go-swagger/bugs/628/swagger.yml":                       true,
+		"testdata/go-swagger/bugs/733/swagger.json":                      false,
+		"testdata/go-swagger/bugs/763/swagger.yml":                       true,
+		"testdata/go-swagger/bugs/774/swagger.yml":                       true,
+		"testdata/go-swagger/bugs/776/error.yaml":                        true,
+		"testdata/go-swagger/bugs/776/item.yaml":                         true,
+		"testdata/go-swagger/bugs/809/swagger.yml":                       true,
+		"testdata/go-swagger/bugs/825/swagger.yml":                       true,
+		"testdata/go-swagger/bugs/890/path/health_check.yaml":            true,
+		"testdata/go-swagger/bugs/981/swagger.json":                      true,
+		"testdata/go-swagger/canary/docker/swagger.json":                 true,
+		"testdata/go-swagger/canary/ms-cog-sci/swagger.json":             true,
+		"testdata/go-swagger/codegen/azure-text-analyis.json":            true,
+		"testdata/go-swagger/codegen/issue72.json":                       true,
+		"testdata/go-swagger/codegen/simplesearch.yml":                   true,
+		"testdata/go-swagger/codegen/swagger-codegen-tests.json":         true,
+		"testdata/go-swagger/codegen/todolist.allparams.yml":             true,
+		"testdata/go-swagger/codegen/todolist.bodyparams.yml":            true,
+		"testdata/go-swagger/codegen/todolist.discriminators.yml":        true,
+		"testdata/go-swagger/codegen/todolist.enums.yml":                 true,
+		"testdata/go-swagger/codegen/todolist.models.yml":                true,
+		"testdata/go-swagger/codegen/todolist.responses.yml":             true,
+		"testdata/go-swagger/codegen/todolist.schemavalidation.yml":      true,
+		"testdata/go-swagger/codegen/todolist.simplepath.yml":            true,
+		"testdata/go-swagger/codegen/todolist.simple.yml":                true,
+		"testdata/go-swagger/codegen/todolist.url.basepath.yml":          true,
+		"testdata/go-swagger/codegen/todolist.url.simple.yml":            true,
+		"testdata/go-swagger/expansion/all-the-things.json":              true,
+		"testdata/go-swagger/expansion/circularRefs.json":                true,
+		"testdata/go-swagger/expansion/invalid-refs.json":                true,
+		"testdata/go-swagger/expansion/params.json":                      true,
+		"testdata/go-swagger/expansion/schemas1.json":                    true,
+		"testdata/go-swagger/expansion/schemas2.json":                    true,
+		"testdata/go-swagger/petstores/petstore-expanded.json":           true,
+		"testdata/go-swagger/petstores/petstore-simple.json":             true,
+		"testdata/go-swagger/petstores/petstore-with-external-docs.json": true,
+		"testdata/go-swagger/remotes/folder/folderInteger.json":          true,
+		"testdata/go-swagger/remotes/integer.json":                       true,
+		"testdata/go-swagger/remotes/subSchemas.json":                    true,
+		"testdata/go-swagger/specs/deeper/arrayProp.json":                true,
+		"testdata/go-swagger/specs/deeper/stringProp.json":               true,
+		"testdata/go-swagger/specs/refed.json":                           true,
+		"testdata/go-swagger/specs/resolution2.json":                     true,
+		"testdata/go-swagger/specs/resolution.json":                      true,
 	}
 
-	testGoSwaggerSpecs(t, filepath.Join(".", "fixtures", "go-swagger"), expectedFailures, expectedLoadFailures, true)
+	testGoSwaggerSpecs(t, filepath.Join(".", "testdata", "go-swagger"), expectedFailures, expectedLoadFailures, true)
 }
 
 func wantSwaggerTest(info os.FileInfo) bool {
@@ -114,7 +114,7 @@ func wantSwaggerTest(info os.FileInfo) bool {
 }
 
 // A non regression test re "swagger validate" expectations.
-// Just validates all fixtures in ./fixtures/go-swagger (excluded codegen cases).
+// Just validates all fixtures in ./testdata/go-swagger (excluded codegen cases).
 func testGoSwaggerSpecs(t *testing.T, path string, expectToFail, expectToFailOnLoad map[string]bool, haltOnErrors bool) {
 	err := filepath.Walk(path,
 		func(path string, info os.FileInfo, _ error) error {

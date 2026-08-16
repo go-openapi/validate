@@ -16,7 +16,7 @@ import (
 	"github.com/go-openapi/validate"
 )
 
-var defaulterFixturesPath = filepath.Join("..", "fixtures", "defaulting")
+var defaulterFixturesPath = filepath.Join("..", "testdata", "defaulting")
 
 func TestDefaulter(t *testing.T) {
 	schema, err := defaulterFixture()

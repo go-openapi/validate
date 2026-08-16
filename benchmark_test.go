@@ -13,7 +13,7 @@ import (
 )
 
 func Benchmark_KubernetesSpec(b *testing.B) {
-	fp := filepath.Join("fixtures", "go-swagger", "canary", "kubernetes", "swagger.json")
+	fp := filepath.Join("testdata", "go-swagger", "canary", "kubernetes", "swagger.json")
 	doc, err := loads.Spec(fp)
 	require.NoError(b, err)
 	require.NotNil(b, doc)

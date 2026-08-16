@@ -13,5 +13,5 @@ trap finish EXIT SIGHUP SIGINT SIGTERM
 
 cd "$scratch"
 git clone https://github.com/json-schema-org/JSON-Schema-Test-Suite Suite
-cp -r Suite/tests/draft4/* "$dir/fixtures/jsonschema_suite"
-cp -a Suite/remotes "$dir/fixtures/jsonschema_suite"
+cp -r Suite/tests/draft4/* "$dir/testdata/jsonschema_suite"
+cp -a Suite/remotes "$dir/testdata/jsonschema_suite"

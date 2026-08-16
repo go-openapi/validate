@@ -125,9 +125,9 @@ func TestDeterministic_FullReport(t *testing.T) {
 	const runs = 20
 
 	for _, fixture := range []string{
-		filepath.Join("fixtures", "validation", "fixture-1231.yaml"),
-		filepath.Join("fixtures", "validation", "fixture-additional-items-invalid-values.yaml"),
-		filepath.Join("fixtures", "validation", "fixture-342.yaml"),
+		filepath.Join("testdata", "validation", "fixture-1231.yaml"),
+		filepath.Join("testdata", "validation", "fixture-additional-items-invalid-values.yaml"),
+		filepath.Join("testdata", "validation", "fixture-342.yaml"),
 	} {
 		t.Run(filepath.Base(fixture), func(t *testing.T) {
 			t.Parallel()

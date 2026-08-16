@@ -83,20 +83,20 @@ func verifiedTestWarnings(res *Result) []string {
 }
 
 func TestSpec_ExpandResponseLocalFile(t *testing.T) {
-	res, _ := loadAndValidate(t, filepath.Join("fixtures", "local_expansion", "spec.yaml"))
+	res, _ := loadAndValidate(t, filepath.Join("testdata", "local_expansion", "spec.yaml"))
 	assert.TrueT(t, res.IsValid())
 	assert.Empty(t, res.Errors)
 }
 
 func TestSpec_ExpandResponseRecursive(t *testing.T) {
-	res, _ := loadAndValidate(t, filepath.Join("fixtures", "recursive_expansion", "spec.yaml"))
+	res, _ := loadAndValidate(t, filepath.Join("testdata", "recursive_expansion", "spec.yaml"))
 	assert.TrueT(t, res.IsValid())
 	assert.Empty(t, res.Errors)
 }
 
 // Spec with no path.
 func TestSpec_Issue52(t *testing.T) {
-	fp := filepath.Join("fixtures", "bugs", "52", "swagger.json")
+	fp := filepath.Join("testdata", "bugs", "52", "swagger.json")
 	jstext, _ := os.ReadFile(fp)
 
 	// as json schema
@@ -121,7 +121,7 @@ func TestSpec_Issue52(t *testing.T) {
 }
 
 func TestSpec_Issue53(t *testing.T) {
-	fp := filepath.Join("fixtures", "bugs", "53", "noswagger.json")
+	fp := filepath.Join("testdata", "bugs", "53", "noswagger.json")
 	jstext, _ := os.ReadFile(fp)
 
 	// as json schema
@@ -142,7 +142,7 @@ func TestSpec_Issue53(t *testing.T) {
 }
 
 func TestSpec_Issue62(t *testing.T) {
-	fp := filepath.Join("fixtures", "bugs", "62", "swagger.json")
+	fp := filepath.Join("testdata", "bugs", "62", "swagger.json")
 
 	// as swagger spec
 	doc, err := loads.Spec(fp)
@@ -155,25 +155,25 @@ func TestSpec_Issue62(t *testing.T) {
 }
 
 func TestSpec_Issue63(t *testing.T) {
-	res, _ := loadAndValidate(t, filepath.Join("fixtures", "bugs", "63", "swagger.json"))
+	res, _ := loadAndValidate(t, filepath.Join("testdata", "bugs", "63", "swagger.json"))
 	assert.TrueT(t, res.IsValid())
 }
 
 func TestSpec_Issue61_MultipleRefs(t *testing.T) {
-	res, _ := loadAndValidate(t, filepath.Join("fixtures", "bugs", "61", "multiple-refs.json"))
+	res, _ := loadAndValidate(t, filepath.Join("testdata", "bugs", "61", "multiple-refs.json"))
 	assert.Empty(t, res.Errors)
 	assert.TrueT(t, res.IsValid())
 }
 
 func TestSpec_Issue61_ResolvedRef(t *testing.T) {
-	res, _ := loadAndValidate(t, filepath.Join("fixtures", "bugs", "61", "unresolved-ref-for-name.json"))
+	res, _ := loadAndValidate(t, filepath.Join("testdata", "bugs", "61", "unresolved-ref-for-name.json"))
 	assert.Empty(t, res.Errors)
 	assert.TrueT(t, res.IsValid())
 }
 
 // No error with this one.
 func TestSpec_Issue123(t *testing.T) {
-	fp := filepath.Join("fixtures", "bugs", "123", "swagger.yml")
+	fp := filepath.Join("testdata", "bugs", "123", "swagger.yml")
 	res, _ := loadAndValidate(t, fp)
 	assert.TrueT(t, res.IsValid())
 	assert.Empty(t, res.Errors)
@@ -182,7 +182,7 @@ func TestSpec_Issue123(t *testing.T) {
 }
 
 func TestSpec_Issue6(t *testing.T) {
-	files, _ := filepath.Glob(filepath.Join("fixtures", "bugs", "6", "*.json"))
+	files, _ := filepath.Glob(filepath.Join("testdata", "bugs", "6", "*.json"))
 	for _, path := range files {
 		t.Logf("Tested spec=%s", path)
 		res, _ := loadAndValidate(t, path)
@@ -206,7 +206,7 @@ func TestSpec_Issue6(t *testing.T) {
 
 // check if invalid patterns are indeed invalidated.
 func TestSpec_Issue18(t *testing.T) {
-	files, _ := filepath.Glob(filepath.Join("fixtures", "bugs", "18", "*.json"))
+	files, _ := filepath.Glob(filepath.Join("testdata", "bugs", "18", "*.json"))
 	for _, path := range files {
 		t.Logf("Tested spec=%s", path)
 		res, _ := loadAndValidate(t, path)
@@ -246,7 +246,7 @@ func TestSpec_Issue18(t *testing.T) {
 
 // check if a fragment path parameter is recognized, without error.
 func TestSpec_Issue39(t *testing.T) {
-	fp := filepath.Join("fixtures", "bugs", "39", "swagger.yml")
+	fp := filepath.Join("testdata", "bugs", "39", "swagger.yml")
 	res, _ := loadAndValidate(t, fp)
 	assert.TrueT(t, res.IsValid())
 	assert.Empty(t, res.Errors)
@@ -255,7 +255,7 @@ func TestSpec_Issue39(t *testing.T) {
 
 func TestSpec_ValidateDuplicatePropertyNames(t *testing.T) {
 	// simple allOf
-	doc, err := loads.Spec(filepath.Join("fixtures", "validation", "duplicateprops.json"))
+	doc, err := loads.Spec(filepath.Join("testdata", "validation", "duplicateprops.json"))
 	require.NoError(t, err)
 
 	validator := NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
@@ -265,7 +265,7 @@ func TestSpec_ValidateDuplicatePropertyNames(t *testing.T) {
 	assert.Len(t, res.Errors, 1)
 
 	// nested allOf
-	doc, err = loads.Spec(filepath.Join("fixtures", "validation", "nestedduplicateprops.json"))
+	doc, err = loads.Spec(filepath.Join("testdata", "validation", "nestedduplicateprops.json"))
 	require.NoError(t, err)
 
 	validator = NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
@@ -276,7 +276,7 @@ func TestSpec_ValidateDuplicatePropertyNames(t *testing.T) {
 }
 
 func TestSpec_ValidateNonEmptyPathParameterNames(t *testing.T) {
-	doc, err := loads.Spec(filepath.Join("fixtures", "validation", "empty-path-param-name.json"))
+	doc, err := loads.Spec(filepath.Join("testdata", "validation", "empty-path-param-name.json"))
 	require.NoError(t, err)
 
 	validator := NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
@@ -287,7 +287,7 @@ func TestSpec_ValidateNonEmptyPathParameterNames(t *testing.T) {
 }
 
 func TestSpec_ValidateCircularAncestry(t *testing.T) {
-	doc, err := loads.Spec(filepath.Join("fixtures", "validation", "direct-circular-ancestor.json"))
+	doc, err := loads.Spec(filepath.Join("testdata", "validation", "direct-circular-ancestor.json"))
 	require.NoError(t, err)
 
 	validator := NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
@@ -296,7 +296,7 @@ func TestSpec_ValidateCircularAncestry(t *testing.T) {
 	assert.NotEmpty(t, res.Errors)
 	assert.Len(t, res.Errors, 1)
 
-	doc, err = loads.Spec(filepath.Join("fixtures", "validation", "indirect-circular-ancestor.json"))
+	doc, err = loads.Spec(filepath.Join("testdata", "validation", "indirect-circular-ancestor.json"))
 	require.NoError(t, err)
 
 	validator = NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
@@ -305,7 +305,7 @@ func TestSpec_ValidateCircularAncestry(t *testing.T) {
 	assert.NotEmpty(t, res.Errors)
 	assert.Len(t, res.Errors, 1)
 
-	doc, err = loads.Spec(filepath.Join("fixtures", "validation", "recursive-circular-ancestor.json"))
+	doc, err = loads.Spec(filepath.Join("testdata", "validation", "recursive-circular-ancestor.json"))
 	require.NoError(t, err)
 
 	validator = NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
@@ -316,7 +316,7 @@ func TestSpec_ValidateCircularAncestry(t *testing.T) {
 }
 
 func TestSpec_ValidateReferenced(t *testing.T) {
-	doc, err := loads.Spec(filepath.Join("fixtures", "validation", "valid-referenced.yml"))
+	doc, err := loads.Spec(filepath.Join("testdata", "validation", "valid-referenced.yml"))
 	require.NoError(t, err)
 
 	validator := NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
@@ -325,7 +325,7 @@ func TestSpec_ValidateReferenced(t *testing.T) {
 	res := validator.validateReferenced()
 	assert.Empty(t, res.Errors)
 
-	doc, err = loads.Spec(filepath.Join("fixtures", "validation", "invalid-referenced.yml"))
+	doc, err = loads.Spec(filepath.Join("testdata", "validation", "invalid-referenced.yml"))
 	require.NoError(t, err)
 
 	validator = NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
@@ -338,7 +338,7 @@ func TestSpec_ValidateReferenced(t *testing.T) {
 }
 
 func TestSpec_ValidateReferencesValid(t *testing.T) {
-	doc, err := loads.Spec(filepath.Join("fixtures", "validation", "valid-ref.json"))
+	doc, err := loads.Spec(filepath.Join("testdata", "validation", "valid-ref.json"))
 	require.NoError(t, err)
 
 	validator := NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
@@ -347,7 +347,7 @@ func TestSpec_ValidateReferencesValid(t *testing.T) {
 	res := validator.validateReferencesValid()
 	assert.Empty(t, res.Errors)
 
-	doc, err = loads.Spec(filepath.Join("fixtures", "validation", "invalid-ref.json"))
+	doc, err = loads.Spec(filepath.Join("testdata", "validation", "invalid-ref.json"))
 	require.NoError(t, err)
 
 	validator = NewSpecValidator(spec.MustLoadSwagger20Schema(), strfmt.Default)
@@ -449,7 +449,7 @@ func TestSpec_ValidateParameters(t *testing.T) {
 	})
 
 	t.Run("should detect invalid parameter schema in (modified) classic PetStore", func(t *testing.T) {
-		fixture := filepath.Join("fixtures", "petstore", "swagger-invalid.json")
+		fixture := filepath.Join("testdata", "petstore", "swagger-invalid.json")
 
 		t.Run("with raw JSON", func(t *testing.T) {
 			// loading with full root document
@@ -554,7 +554,7 @@ func TestSpec_ValidateParameters(t *testing.T) {
 	})
 
 	t.Run("with issue go-swagger/go-swagger#2527", func(t *testing.T) {
-		basePath := filepath.Join("fixtures", "bugs", "2527")
+		basePath := filepath.Join("testdata", "bugs", "2527")
 
 		t.Run("should detect mismatch between parameter and schema", func(t *testing.T) {
 			doc, err := loads.Spec(filepath.Join(basePath, "swagger.yml"))
@@ -742,7 +742,7 @@ func TestSpec_ValidateItems(t *testing.T) {
 
 // Reuse known validated cases through the higher level Spec() call.
 func TestSpec_ValidDoc(t *testing.T) {
-	fp := filepath.Join("fixtures", "local_expansion", "spec.yaml")
+	fp := filepath.Join("testdata", "local_expansion", "spec.yaml")
 	doc2, err := loads.Spec(fp)
 	require.NoError(t, err)
 	err = Spec(doc2, strfmt.Default)
@@ -751,14 +751,14 @@ func TestSpec_ValidDoc(t *testing.T) {
 
 // Check higher level behavior on invalid spec doc.
 func TestSpec_InvalidDoc(t *testing.T) {
-	doc, err := loads.Spec(filepath.Join("fixtures", "validation", "default", "invalid-default-value-parameter.json"))
+	doc, err := loads.Spec(filepath.Join("testdata", "validation", "default", "invalid-default-value-parameter.json"))
 	require.NoError(t, err)
 	err = Spec(doc, strfmt.Default)
 	require.Error(t, err)
 }
 
 func TestSpec_Validate_InvalidInterface(t *testing.T) {
-	fp := filepath.Join("fixtures", "local_expansion", "spec.yaml")
+	fp := filepath.Join("testdata", "local_expansion", "spec.yaml")
 	doc2, err := loads.Spec(fp)
 	require.NoError(t, err)
 	require.NotNil(t, doc2)
@@ -771,72 +771,72 @@ func TestSpec_Validate_InvalidInterface(t *testing.T) {
 }
 
 func TestSpec_ValidateBodyFormDataParams(t *testing.T) {
-	res, _ := loadAndValidate(t, filepath.Join("fixtures", "validation", "invalid-formdata-body-params.json"))
+	res, _ := loadAndValidate(t, filepath.Join("testdata", "validation", "invalid-formdata-body-params.json"))
 	assert.NotEmpty(t, res.Errors)
 	assert.Len(t, res.Errors, 1)
 }
 
 func TestSpec_Issue73(t *testing.T) {
-	res, _ := loadAndValidate(t, filepath.Join("fixtures", "bugs", "73", "fixture-swagger.yaml"))
+	res, _ := loadAndValidate(t, filepath.Join("testdata", "bugs", "73", "fixture-swagger.yaml"))
 	assert.Empty(t, res.Errors, " in fixture-swagger.yaml")
 
-	res, _ = loadAndValidate(t, filepath.Join("fixtures", "bugs", "73", "fixture-swagger-2.yaml"))
+	res, _ = loadAndValidate(t, filepath.Join("testdata", "bugs", "73", "fixture-swagger-2.yaml"))
 	assert.Empty(t, res.Errors, "in fixture-swagger-2.yaml")
 
-	res, _ = loadAndValidate(t, filepath.Join("fixtures", "bugs", "73", "fixture-swagger-3.yaml"))
+	res, _ = loadAndValidate(t, filepath.Join("testdata", "bugs", "73", "fixture-swagger-3.yaml"))
 	assert.Empty(t, res.Errors, "in fixture-swagger-3.yaml")
 
-	res, _ = loadAndValidate(t, filepath.Join("fixtures", "bugs", "73", "fixture-swagger-good.yaml"))
+	res, _ = loadAndValidate(t, filepath.Join("testdata", "bugs", "73", "fixture-swagger-good.yaml"))
 	assert.Empty(t, res.Errors, " in fixture-swagger-good.yaml")
 }
 
 func TestSpec_Issue1341(t *testing.T) {
 	// testing recursive walk with defaults and examples
-	res, _ := loadAndValidate(t, filepath.Join("fixtures", "bugs", "1341", "fixture-1341-good.yaml"))
+	res, _ := loadAndValidate(t, filepath.Join("testdata", "bugs", "1341", "fixture-1341-good.yaml"))
 	assert.Empty(t, res.Errors, " in fixture-1341-good.yaml")
 	assert.Len(t, res.Warnings, 1, " in fixture-1341-good.yaml")
 
-	res, _ = loadAndValidate(t, filepath.Join("fixtures", "bugs", "1341", "fixture-1341.yaml"))
+	res, _ = loadAndValidate(t, filepath.Join("testdata", "bugs", "1341", "fixture-1341.yaml"))
 	assert.Empty(t, res.Errors, "in fixture-1341.yaml")
 	assert.Empty(t, res.Warnings, "in fixture-1341.yaml")
 
-	res, _ = loadAndValidate(t, filepath.Join("fixtures", "bugs", "1341", "fixture-1341-2.yaml"))
+	res, _ = loadAndValidate(t, filepath.Join("testdata", "bugs", "1341", "fixture-1341-2.yaml"))
 	assert.Empty(t, res.Errors, "in fixture-1341-2.yaml")
 	assert.Empty(t, res.Warnings, "in fixture-1341-2.yaml")
 
-	res, _ = loadAndValidate(t, filepath.Join("fixtures", "bugs", "1341", "fixture-1341-3.yaml"))
+	res, _ = loadAndValidate(t, filepath.Join("testdata", "bugs", "1341", "fixture-1341-3.yaml"))
 	assert.Empty(t, res.Errors, "in fixture-1341-3.yaml")
 	assert.Len(t, res.Warnings, 4, "in fixture-1341-3.yaml")
 
-	res, _ = loadAndValidate(t, filepath.Join("fixtures", "bugs", "1341", "fixture-1341-4.yaml"))
+	res, _ = loadAndValidate(t, filepath.Join("testdata", "bugs", "1341", "fixture-1341-4.yaml"))
 	assert.Empty(t, res.Errors, "in fixture-1341-4.yaml")
 	assert.Empty(t, res.Warnings, "in fixture-1341-4.yaml")
 
-	res, _ = loadAndValidate(t, filepath.Join("fixtures", "bugs", "1341", "fixture-1341-5.yaml"))
+	res, _ = loadAndValidate(t, filepath.Join("testdata", "bugs", "1341", "fixture-1341-5.yaml"))
 	assert.Len(t, res.Errors, 4, "in fixture-1341-5.yaml")
 	assert.Empty(t, res.Warnings, "in fixture-1341-5.yaml")
 }
 
 // test go-swagger/go-swagger#1614 (circular refs).
 func Test_Issue1614(t *testing.T) {
-	path := filepath.Join("fixtures", "bugs", "1614", "gitea.json")
+	path := filepath.Join("testdata", "bugs", "1614", "gitea.json")
 	testIssue(t, path, 0, 3)
 }
 
 // Test go-swagger/go-swagger#1621 (remote $ref).
 func Test_Issue1621(t *testing.T) {
-	path := filepath.Join("fixtures", "bugs", "1621", "fixture-1621.yaml")
+	path := filepath.Join("testdata", "bugs", "1621", "fixture-1621.yaml")
 	testIssue(t, path, 0, 0)
 }
 
 // Test go-swagger/go-swagger#1429 (remote $ref).
 func Test_Issue1429(t *testing.T) {
-	path := filepath.Join("fixtures", "bugs", "1429", "swagger.yaml")
+	path := filepath.Join("testdata", "bugs", "1429", "swagger.yaml")
 	testIssue(t, path, 0, 0)
 }
 
 func TestSpec_ValidationTypeMismatch(t *testing.T) {
-	doc, err := loads.Spec(filepath.Join("fixtures", "validation", "type-keyword-mismatch.yaml"))
+	doc, err := loads.Spec(filepath.Join("testdata", "validation", "type-keyword-mismatch.yaml"))
 	require.NoError(t, err)
 	validator := NewSpecValidator(doc.Schema(), strfmt.Default)
 	validator.spec = doc
@@ -873,7 +873,7 @@ func TestItemsProperty_Issue43(t *testing.T) {
 		"fixture-43-variants.yaml",
 		"fixture-1456.yaml",
 	} {
-		fp := filepath.Join("fixtures", "bugs", "43", fixture)
+		fp := filepath.Join("testdata", "bugs", "43", fixture)
 		res, warnings := loadAndValidate(t, fp)
 		assert.TrueTf(t, res.IsValid(), "expected spec from %s to be valid", fixture)
 		assert.Emptyf(t, res.Errors, "expected no error in %s", fixture)
@@ -881,12 +881,12 @@ func TestItemsProperty_Issue43(t *testing.T) {
 		assert.Emptyf(t, warnings, "expected no warning in %s", fixture)
 	}
 
-	fp := filepath.Join("fixtures", "bugs", "43", "fixture-43-fail.yaml")
+	fp := filepath.Join("testdata", "bugs", "43", "fixture-43-fail.yaml")
 	res, _ := loadAndValidate(t, fp)
 	assert.FalseTf(t, res.IsValid(), "expected spec to be invalid")
 	assert.GreaterT(t, len(res.Errors), 3)
 
-	fp = filepath.Join("fixtures", "validation", "fixture-1171.yaml")
+	fp = filepath.Join("testdata", "validation", "fixture-1171.yaml")
 	res, _ = loadAndValidate(t, fp)
 	assert.FalseTf(t, res.IsValid(), "expected spec to be invalid")
 	assert.GreaterT(t, len(res.Errors), 3)
@@ -901,7 +901,7 @@ func TestItemsProperty_Issue43(t *testing.T) {
 }
 
 func Test_Issue2137(t *testing.T) {
-	fp := filepath.Join("fixtures", "bugs", "2137", "fixture-2137.yaml")
+	fp := filepath.Join("testdata", "bugs", "2137", "fixture-2137.yaml")
 	res, _ := loadAndValidate(t, fp)
 	assert.FalseTf(t, res.IsValid(), "expected spec to be invalid")
 	found := false
@@ -915,7 +915,7 @@ func Test_Issue2137(t *testing.T) {
 }
 
 func Test_Examples(t *testing.T) {
-	fp := filepath.Join("fixtures", "bugs", "2649", "swagger.yaml")
+	fp := filepath.Join("testdata", "bugs", "2649", "swagger.yaml")
 
 	doc, err := loads.Spec(fp)
 	require.NoError(t, err)
@@ -934,7 +934,7 @@ func Test_2866(t *testing.T) {
 	// exercises fixture from go-swagger/go-swagger#2866, a test in go-swagger
 	// that used to be problematic when using memory pools.
 
-	fp := filepath.Join("fixtures", "bugs", "2866", "2866.yaml")
+	fp := filepath.Join("testdata", "bugs", "2866", "2866.yaml")
 
 	doc, err := loads.Spec(fp)
 	require.NoError(t, err)
