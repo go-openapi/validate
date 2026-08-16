@@ -17,7 +17,7 @@ import (
 	validate "github.com/go-openapi/validate"
 )
 
-var pruneFixturesPath = filepath.Join("..", "fixtures", "pruning")
+var pruneFixturesPath = filepath.Join("..", "testdata", "pruning")
 
 func TestPrune(t *testing.T) {
 	schema, err := pruningFixture()

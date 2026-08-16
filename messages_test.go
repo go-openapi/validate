@@ -101,13 +101,13 @@ func testMessageQuality(t *testing.T, haltOnErrors bool, continueOnErrors bool) 
 	// set SWAGGER_DEBUG_TEST=1 env to get a report of messages at the end of each test.
 	// expectedMessage{"", false, false},
 	//
-	// expected messages and warnings are configured in ./fixtures/validation/expected_messages.yaml
+	// expected messages and warnings are configured in ./testdata/validation/expected_messages.yaml
 	//
 	var errs int // error count
 
-	tested := loadTestConfig(t, filepath.Join("fixtures", "validation", "expected_messages.yaml"))
+	tested := loadTestConfig(t, filepath.Join("testdata", "validation", "expected_messages.yaml"))
 
-	if err := filepath.Walk(filepath.Join("fixtures", "validation"), testWalkSpecs(t, tested, haltOnErrors, continueOnErrors)); err != nil {
+	if err := filepath.Walk(filepath.Join("testdata", "validation"), testWalkSpecs(t, tested, haltOnErrors, continueOnErrors)); err != nil {
 		t.Logf("%v", err)
 		errs++
 	}
@@ -433,6 +433,6 @@ func testIssue(t *testing.T, path string, expectedNumErrors, expectedNumWarnings
 // Test unitary fixture for dev and bug fixing.
 func Test_SingleFixture(t *testing.T) {
 	t.SkipNow()
-	path := filepath.Join("fixtures", "validation", "fixture-1231.yaml")
+	path := filepath.Join("testdata", "validation", "fixture-1231.yaml")
 	testIssue(t, path, -1, -1)
 }

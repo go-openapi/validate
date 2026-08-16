@@ -21,7 +21,7 @@ func ExampleSpec() {
 	// Example with high level spec validation call, without showing warnings
 
 	// Example with spec file in this repo:
-	path := "fixtures/validation/valid-ref.json"
+	path := "testdata/validation/valid-ref.json"
 	doc, err := loads.Spec(path)
 	if err == nil {
 		validate.SetContinueOnErrors(true)         // Set global options
@@ -43,7 +43,7 @@ func ExampleSpec_second() {
 
 	// Example with the bundled Petstore spec:
 	// Also works with URL, e.g. http://petstore.swagger.io/v2/swagger.json
-	path := "fixtures/go-swagger/canary/petstore/swagger.json"
+	path := "testdata/go-swagger/canary/petstore/swagger.json"
 	doc, err := loads.JSONSpec(path)
 	if err == nil {
 		validate.SetContinueOnErrors(true)         // Set global options
@@ -74,7 +74,7 @@ func ExampleSpecValidator_Validate() {
 	// doc, err := loads.JSONSpec(url)
 
 	// Example with spec file in this repo:
-	path := "fixtures/validation/valid-ref.json"
+	path := "testdata/validation/valid-ref.json"
 	doc, err := loads.Spec(path)
 	if err == nil {
 		validator := validate.NewSpecValidator(doc.Schema(), strfmt.Default)
@@ -99,7 +99,7 @@ func ExampleSpecValidator_Validate_url() {
 
 	// Example with the bundled Petstore spec:
 	// Also works with URL, e.g. http://petstore.swagger.io/v2/swagger.json
-	path := "fixtures/go-swagger/canary/petstore/swagger.json"
+	path := "testdata/go-swagger/canary/petstore/swagger.json"
 	doc, err := loads.JSONSpec(path)
 	if err == nil {
 		validator := validate.NewSpecValidator(doc.Schema(), strfmt.Default)
@@ -191,8 +191,8 @@ func getSimpleSchema() *spec.Schema {
 func Test_Issue102_Circular(t *testing.T) {
 	// assert that the issue is fixed in go-openapi/spec
 	for _, fixture := range []string{
-		filepath.Join("fixtures", "bugs", "102", "fixture-102.json"),
-		filepath.Join("fixtures", "bugs", "123-validate", "fixture-123.json"),
+		filepath.Join("testdata", "bugs", "102", "fixture-102.json"),
+		filepath.Join("testdata", "bugs", "123-validate", "fixture-123.json"),
 	} {
 		t.Run(fixture, func(t *testing.T) {
 			filebytes, err := os.ReadFile(fixture)

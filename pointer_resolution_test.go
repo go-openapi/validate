@@ -143,13 +143,13 @@ func TestPointerResolution_EveryFixture(t *testing.T) {
 
 	var files []string
 	for _, pattern := range []string{
-		filepath.Join("fixtures", "validation", "*.json"),
-		filepath.Join("fixtures", "validation", "*.yaml"),
-		filepath.Join("fixtures", "bugs", "*", "*.json"),
-		filepath.Join("fixtures", "bugs", "*", "*.yaml"),
-		filepath.Join("fixtures", "go-swagger", "*", "*", "*.json"),
-		filepath.Join("fixtures", "go-swagger", "*", "*", "*.yaml"),
-		filepath.Join("fixtures", "petstore", "*.json"),
+		filepath.Join("testdata", "validation", "*.json"),
+		filepath.Join("testdata", "validation", "*.yaml"),
+		filepath.Join("testdata", "bugs", "*", "*.json"),
+		filepath.Join("testdata", "bugs", "*", "*.yaml"),
+		filepath.Join("testdata", "go-swagger", "*", "*", "*.json"),
+		filepath.Join("testdata", "go-swagger", "*", "*", "*.yaml"),
+		filepath.Join("testdata", "petstore", "*.json"),
 	} {
 		matched, err := filepath.Glob(pattern)
 		require.NoError(t, err)

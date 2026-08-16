@@ -50,7 +50,7 @@ func TestExample_ValidateExamples(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		path := filepath.Join("fixtures", "validation", "example", "valid-example-"+tt+".json")
+		path := filepath.Join("testdata", "validation", "example", "valid-example-"+tt+".json")
 		if DebugTest {
 			t.Logf("Testing valid example values for: %s", path)
 		}
@@ -67,7 +67,7 @@ func TestExample_ValidateExamples(t *testing.T) {
 		*/
 		debugTest(t, path, res)
 
-		path = filepath.Join("fixtures", "validation", "example", "invalid-example-"+tt+".json")
+		path = filepath.Join("testdata", "validation", "example", "invalid-example-"+tt+".json")
 
 		if DebugTest {
 			t.Logf("Testing invalid example values for: %s", path)

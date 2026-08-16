@@ -68,7 +68,7 @@ func TestDefault_ValidateDefaults(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		path := filepath.Join("fixtures", "validation", "default", "valid-default-value-"+tt+jsonExt)
+		path := filepath.Join("testdata", "validation", "default", "valid-default-value-"+tt+jsonExt)
 		if DebugTest {
 			t.Logf("Testing valid default values for: %s", path)
 		}
@@ -83,7 +83,7 @@ func TestDefault_ValidateDefaults(t *testing.T) {
 			assert.SliceContainsT(t, warns, "limit in query has a default value and is required as parameter")
 		}
 
-		path = filepath.Join("fixtures", "validation", "default", "invalid-default-value-"+tt+jsonExt)
+		path = filepath.Join("testdata", "validation", "default", "invalid-default-value-"+tt+jsonExt)
 		if DebugTest {
 			t.Logf("Testing invalid default values for: %s", path)
 		}

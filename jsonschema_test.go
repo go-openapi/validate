@@ -33,9 +33,9 @@ type schemaTestT struct {
 }
 
 var (
-	jsonSchemaFixturesPath = filepath.Join("fixtures", "jsonschema_suite")
-	schemaFixturesPath     = filepath.Join("fixtures", "schemas")
-	formatFixturesPath     = filepath.Join("fixtures", "formats")
+	jsonSchemaFixturesPath = filepath.Join("testdata", "jsonschema_suite")
+	schemaFixturesPath     = filepath.Join("testdata", "schemas")
+	formatFixturesPath     = filepath.Join("testdata", "formats")
 )
 
 func enabled() []string {
