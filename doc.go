@@ -25,6 +25,7 @@
 //	[x] path uniqueness: each api path should be non-verbatim (account for path param names) unique per method. Validation can be laxed by disabling StrictPathParamUniqueness.
 //	[x] each security reference should contain only unique scopes
 //	[x] each security scope in a security definition should be unique
+//	[x] a discriminator must name a property the schema defines and lists as required
 //	[x] each security requirement must name a scheme declared in securityDefinitions
 //	[x] only an oauth2 security requirement may list scopes: every other scheme type must list none
 //	[x] parameters in path must be unique
@@ -73,7 +74,7 @@
 //	[ ] default values and examples on responses only support application/json producer type
 //	[ ] invalid numeric constraints (such as Minimum, etc..) are not checked except for default and example values
 //	[ ] rules for collectionFormat are not implemented
-//	[ ] no validation rule for polymorphism support (discriminator) [not done here]
+//	[ ] a discriminator value is not checked against the schema names it may take [data, not document]
 //	[ ] valid js ECMA regexp not supported by Go regexp engine are considered invalid
 //	[ ] arbitrary large numbers are not supported: max is math.MaxFloat64
 package validate

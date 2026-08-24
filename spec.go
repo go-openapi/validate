@@ -31,7 +31,6 @@ import (
 //
 //   - Proposal for enhancement: $ref should not have siblings
 //   - Proposal for enhancement: make sure documentation reflects all checks and warnings
-//   - Proposal for enhancement: check on discriminators
 //   - Proposal for enhancement: explicit message on unsupported keywords (better than "forbidden property"...)
 //   - Proposal for enhancement: full list of unresolved refs
 //   - Proposal for enhancement: validate numeric constraints (issue#581): this should be handled like defaults and examples
@@ -154,6 +153,7 @@ func (s *SpecValidator) Validate(data any) (*Result, *Result) {
 	errs.Merge(s.validateParameters())             // error -
 	errs.Merge(s.validateItems())                  // error -
 	errs.Merge(s.validateSecurityRequirements())   // error and warning
+	errs.Merge(s.validateDiscriminators())         // error -
 
 	// Properties in required definition MUST validate their schema
 	// Properties SHOULD NOT be declared as both required and readOnly (warning)

@@ -44,6 +44,15 @@ const (
 	// DefaultValueInDoesNotValidateError ...
 	DefaultValueInDoesNotValidateError = "in operation %q, default value in %s does not validate its schema"
 
+	// DiscriminatorNotDefinedError indicates a schema whose discriminator names a property the
+	// schema does not declare. A discriminator tells subtypes apart by the value of that property,
+	// so an instance has nowhere to carry the value when the property is not declared.
+	DiscriminatorNotDefinedError = "discriminator %q of %q is not defined as a property of that schema"
+
+	// DiscriminatorNotRequiredError indicates a schema whose discriminator property is declared but
+	// left optional. An instance that omits it cannot be resolved to a subtype.
+	DiscriminatorNotRequiredError = "discriminator %q of %q is not in the required property list"
+
 	// DuplicateParamNameError ...
 	DuplicateParamNameError = "duplicate parameter name %q for %q in operation %q"
 
@@ -429,6 +438,14 @@ func invalidObjectMsg(path, in string) errors.Error {
 //	func invalidResponseDefinitionAsSchemaMsg(path, method string) errors.Error {
 //		return errors.New(errors.CompositeErrorCode, InvalidResponseDefinitionAsSchemaError, path, method)
 //	}
+
+func discriminatorNotDefinedMsg(discriminator, in string) errors.Error {
+	return errors.New(errors.CompositeErrorCode, DiscriminatorNotDefinedError, discriminator, in)
+}
+
+func discriminatorNotRequiredMsg(discriminator, in string) errors.Error {
+	return errors.New(errors.CompositeErrorCode, DiscriminatorNotRequiredError, discriminator, in)
+}
 
 func securitySchemeNotDeclaredMsg(name string) errors.Error {
 	return errors.New(errors.CompositeErrorCode, SecuritySchemeNotDeclaredError, name)

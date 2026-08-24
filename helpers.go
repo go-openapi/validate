@@ -42,6 +42,7 @@ const (
 	jsonRequired          = "required"
 	jsonRef               = "$ref"
 	jsonDefault           = "default"
+	jsonDiscriminator     = "discriminator"
 
 	jsonAllOf                = "allOf"
 	jsonAnyOf                = "anyOf"
