@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"slices"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/go-openapi/analysis"
@@ -154,6 +153,7 @@ func (s *SpecValidator) Validate(data any) (*Result, *Result) {
 	errs.Merge(s.validateItems())                  // error -
 	errs.Merge(s.validateSecurityRequirements())   // error and warning
 	errs.Merge(s.validateDiscriminators())         // error -
+	errs.Merge(s.validateCollectionFormats())      // warning only
 
 	// Properties in required definition MUST validate their schema
 	// Properties SHOULD NOT be declared as both required and readOnly (warning)
@@ -459,26 +459,7 @@ func (s *SpecValidator) validateItems() *Result {
 				}
 			}
 
-			type codedResponse struct {
-				code string
-				resp spec.Response
-			}
-			var responses []codedResponse
-			if op.Responses != nil {
-				if op.Responses.Default != nil {
-					responses = append(responses, codedResponse{code: jsonDefault, resp: *op.Responses.Default})
-				}
-				if op.Responses.StatusCodeResponses != nil {
-					for _, code := range sortedKeys(op.Responses.StatusCodeResponses) {
-						responses = append(responses, codedResponse{
-							code: strconv.Itoa(code),
-							resp: op.Responses.StatusCodeResponses[code],
-						})
-					}
-				}
-			}
-
-			for _, resp := range responses {
+			for _, resp := range responsesOf(op) {
 				at := responsePath(path, method, resp.code)
 				// Response headers with array
 				for _, hn := range sortedKeys(resp.resp.Headers) {

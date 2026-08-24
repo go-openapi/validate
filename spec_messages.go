@@ -202,6 +202,12 @@ const (
 	// UnusedResponseWarning ...
 	UnusedResponseWarning = "response %q is not used anywhere"
 
+	// CollectionFormatIgnoredWarning flags a collectionFormat on a parameter, header or items whose
+	// type is not array. collectionFormat says how to join the members of an array into one value, so
+	// it does nothing anywhere else. It is a warning, not an error: Swagger 2.0 defines the member as
+	// applying when the type is array, and does not forbid writing it elsewhere.
+	CollectionFormatIgnoredWarning = "collectionFormat %q is ignored in %s: it joins the members of an array, and the type is %q"
+
 	// DubiousAbsoluteRefWarning flags a $ref pointing to an absolute local file location that escapes the
 	// spec's base path. Absolute local references are legitimate when they stay beneath the base path
 	// (flattening/expansion introduces such anchors for cyclical $refs), but an absolute reference that
@@ -438,6 +444,10 @@ func invalidObjectMsg(path, in string) errors.Error {
 //	func invalidResponseDefinitionAsSchemaMsg(path, method string) errors.Error {
 //		return errors.New(errors.CompositeErrorCode, InvalidResponseDefinitionAsSchemaError, path, method)
 //	}
+
+func collectionFormatIgnoredMsg(collectionFormat, in, typ string) errors.Error {
+	return errors.New(errors.CompositeErrorCode, CollectionFormatIgnoredWarning, collectionFormat, in, typ)
+}
 
 func discriminatorNotDefinedMsg(discriminator, in string) errors.Error {
 	return errors.New(errors.CompositeErrorCode, DiscriminatorNotDefinedError, discriminator, in)
