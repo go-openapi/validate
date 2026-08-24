@@ -79,7 +79,11 @@
 //	[ ] errors and warnings are not reported with key/line number in spec
 //	[ ] default values and examples on responses only support application/json producer type
 //	[ ] invalid numeric constraints (such as Minimum, etc..) are not checked except for default and example values
-//	[ ] a discriminator value is not checked against the schema names it may take [data, not document]
 //	[ ] valid js ECMA regexp not supported by Go regexp engine are considered invalid
 //	[ ] arbitrary large numbers are not supported: max is math.MaxFloat64
+//
+// Left out by design, rather than pending: a discriminator value is not checked against the schema
+// names it may take. That clause of the swagger rule constrains an instance rather than the
+// document, so there is nothing in a specification for [SpecValidator] to read, and checking it
+// would mean resolving polymorphic payloads, which this package does not do.
 package validate
