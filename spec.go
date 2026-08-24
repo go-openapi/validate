@@ -4,8 +4,6 @@
 package validate
 
 import (
-	"bytes"
-	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -99,6 +97,17 @@ func (s *SpecValidator) Validate(data any) (*Result, *Result) {
 		errs.AddErrors(invalidDocumentMsg())
 		return errs, warnings // no point in continuing
 	}
+
+	// Validation expands what it walks - schemata, but also parameters, path items and responses -
+	// and expansion rewrites what it is given. Take one copy of the whole document here and work
+	// on that, so the caller gets back the document it handed over. Raw() still reads the bytes as
+	// they were authored, so the checks below that go through them are unaffected.
+	//
+	// Cloning here rather than per schema is what keeps the cost flat: a copy taken inside
+	// newSchemaValidator is paid again at every level of a recursive document.
+	raw := sd.Raw()
+	sd = sd.Pristine()
+	s.schemaOptions.ownSchemata = true
 	s.spec = sd
 	s.analyzer = analysis.New(sd.Spec())
 	// where each $ref sits, as authored: refs are reported against the
@@ -113,7 +122,7 @@ func (s *SpecValidator) Validate(data any) (*Result, *Result) {
 
 	// Raw spec unmarshalling errors
 	var obj any
-	if err := json.Unmarshal(sd.Raw(), &obj); err != nil {
+	if err := json.Unmarshal(raw, &obj); err != nil {
 		// NOTE: under normal conditions, the *load.Document has been already unmarshalled
 		// So this one is just a paranoid check on the behavior of the spec package
 		panic(InvalidDocumentError)
@@ -951,14 +960,15 @@ func (s *SpecValidator) expandedAnalyzer() *analysis.Spec {
 	return s.analyzer
 }
 
+// deepCloneSchema returns a copy of src that shares nothing with it.
+//
+// The copy goes through JSON, which is the form [spec.Schema] is defined by. gob drops any field
+// holding its zero value and flattens a pointer to what it points at, so a *float64 pointing at
+// 0 - "minimum": 0, which the JSON Schema meta-schema spells for every positiveInteger - came
+// back nil and the bound was lost. JSON is also the faster of the two on this model.
 func deepCloneSchema(src spec.Schema) (spec.Schema, error) {
-	var b bytes.Buffer
-	if err := gob.NewEncoder(&b).Encode(src); err != nil {
-		return spec.Schema{}, err
-	}
-
 	var dst spec.Schema
-	if err := gob.NewDecoder(&b).Decode(&dst); err != nil {
+	if err := jsonutils.FromDynamicJSON(src, &dst); err != nil {
 		return spec.Schema{}, err
 	}
 
