@@ -942,3 +942,33 @@ func Test_2866(t *testing.T) {
 
 	require.NoError(t, Spec(doc, strfmt.Default))
 }
+
+// TestSpec_DoesNotMutateDocument checks that validation leaves the caller's document as it was.
+//
+// newSchemaValidator expands a schema carrying a $ref, and several call sites hand it a schema
+// that belongs to the document the caller still holds - additionalProperties here, reached while
+// the default validator walks the specification. Expanding in place replaced the $ref with its
+// target, so callers that went on to flatten the document worked on a different document than the
+// one they loaded (go-swagger works around this by reloading the spec after validating).
+func TestSpec_DoesNotMutateDocument(t *testing.T) {
+	path := filepath.Join("testdata", "bugs", "no-mutation", "fixture.json")
+
+	doc, err := loads.Spec(path)
+	require.NoError(t, err)
+
+	before, err := json.Marshal(doc.Spec())
+	require.NoError(t, err)
+
+	require.NoError(t, Spec(doc, strfmt.Default))
+
+	after, err := json.Marshal(doc.Spec())
+	require.NoError(t, err)
+
+	assert.JSONEqf(t, string(before), string(after), "validation rewrote the caller's document")
+
+	// the $ref that used to be inlined
+	bag := doc.Spec().Definitions["Bag"]
+	require.NotNil(t, bag.AdditionalProperties)
+	require.NotNil(t, bag.AdditionalProperties.Schema)
+	assert.EqualT(t, "#/definitions/Item", bag.AdditionalProperties.Schema.Ref.String())
+}
