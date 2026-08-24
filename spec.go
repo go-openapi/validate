@@ -190,7 +190,7 @@ func (s *SpecValidator) SetContinueOnErrors(c bool) {
 func (s *SpecValidator) validateNonEmptyPathParamNames() *Result {
 	res := validatorPools.results.Borrow()
 	if s.spec.Spec().Paths == nil {
-		// There is no Paths object: the document itself is what lacks it, so
+		// There is no Paths object: the document itself lacks it, so
 		// there is no node below it to point at
 		res.addErrorsAt(rootPath(), noValidPathMsg())
 
