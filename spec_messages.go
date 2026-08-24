@@ -136,6 +136,14 @@ const (
 	// in the definition itself.
 	RequiredButNotDefinedInSchemaError = "%q is present in required but not defined as property in schema %q"
 
+	// SecuritySchemeNotDeclaredError indicates a security requirement naming a scheme that
+	// securityDefinitions does not declare.
+	SecuritySchemeNotDeclaredError = "security requirement %q is not declared in securityDefinitions"
+
+	// SecurityScopesNotEmptyError indicates a security requirement listing scopes on a scheme that is
+	// not oauth2. Only an oauth2 requirement carries scopes; every other type must list none.
+	SecurityScopesNotEmptyError = "security requirement %q lists scopes (%s), but the security scheme it names is of type %q: only oauth2 requirements carry scopes"
+
 	// SomeParametersBrokenError indicates that some parameters could not be resolved, which might result in partial checks to be carried on.
 	SomeParametersBrokenError = "some parameters definitions are broken in %q.%s. Cannot carry on full checks on parameters for operation %s"
 
@@ -170,6 +178,11 @@ const (
 
 	// RequiredHasDefaultWarning indicates that a required parameter property should not have a default.
 	RequiredHasDefaultWarning = "%s in %s has a default value and is required as parameter"
+
+	// SecurityScopeNotDeclaredWarning flags an oauth2 security requirement asking for a scope that the
+	// scheme does not list in its scopes. Swagger 2.0 does not spell out that the two must agree, so
+	// this is reported as a warning: a specification that names an undeclared scope stays valid.
+	SecurityScopeNotDeclaredWarning = "security requirement %q requires scope %q, which the security scheme does not declare"
 
 	// UnusedDefinitionWarning ...
 	UnusedDefinitionWarning = "definition %q is not used anywhere"
@@ -416,6 +429,19 @@ func invalidObjectMsg(path, in string) errors.Error {
 //	func invalidResponseDefinitionAsSchemaMsg(path, method string) errors.Error {
 //		return errors.New(errors.CompositeErrorCode, InvalidResponseDefinitionAsSchemaError, path, method)
 //	}
+
+func securitySchemeNotDeclaredMsg(name string) errors.Error {
+	return errors.New(errors.CompositeErrorCode, SecuritySchemeNotDeclaredError, name)
+}
+
+func securityScopesNotEmptyMsg(name, scopes, schemeType string) errors.Error {
+	return errors.New(errors.CompositeErrorCode, SecurityScopesNotEmptyError, name, scopes, schemeType)
+}
+
+func securityScopeNotDeclaredMsg(name, scope string) errors.Error {
+	return errors.New(errors.CompositeErrorCode, SecurityScopeNotDeclaredWarning, name, scope)
+}
+
 func someParametersBrokenMsg(path, method, operationID string) errors.Error {
 	return errors.New(errors.CompositeErrorCode, SomeParametersBrokenError, path, method, operationID)
 }

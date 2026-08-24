@@ -56,6 +56,10 @@ const (
 	swaggerParameters  = "parameters"
 	swaggerHeaders     = "headers"
 	swaggerOperationID = "operationId"
+	swaggerSecurity    = "security"
+
+	// securitySchemeOAuth2 is the only security scheme type whose requirements carry scopes.
+	securitySchemeOAuth2 = "oauth2"
 
 	jsonMimeApplicationJSON = "application/json"
 )

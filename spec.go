@@ -153,6 +153,7 @@ func (s *SpecValidator) Validate(data any) (*Result, *Result) {
 	errs.Merge(s.validateDuplicatePropertyNames()) // error -
 	errs.Merge(s.validateParameters())             // error -
 	errs.Merge(s.validateItems())                  // error -
+	errs.Merge(s.validateSecurityRequirements())   // error and warning
 
 	// Properties in required definition MUST validate their schema
 	// Properties SHOULD NOT be declared as both required and readOnly (warning)

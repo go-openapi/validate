@@ -25,6 +25,8 @@
 //	[x] path uniqueness: each api path should be non-verbatim (account for path param names) unique per method. Validation can be laxed by disabling StrictPathParamUniqueness.
 //	[x] each security reference should contain only unique scopes
 //	[x] each security scope in a security definition should be unique
+//	[x] each security requirement must name a scheme declared in securityDefinitions
+//	[x] only an oauth2 security requirement may list scopes: every other scheme type must list none
 //	[x] parameters in path must be unique
 //	[x] each path parameter must correspond to a parameter placeholder and vice versa
 //	[x] each referenceable definition must have references
@@ -47,6 +49,7 @@
 //	[x] unsupported validation of examples on non-JSON media types
 //	[x] examples in response without schema
 //	[x] readOnly properties should not be required
+//	[x] an oauth2 security requirement names a scope its security scheme does not declare
 //
 // # Validating a schema
 //
