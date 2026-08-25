@@ -57,7 +57,7 @@ func Test_MessageQualityContinueOnErrors_Issue44(t *testing.T) {
 		skipNotify(t)
 		t.SkipNow()
 	}
-	errs := testMessageQuality(t, true, true) /* set haltOnErrors=true to iterate spec by spec */
+	errs := testMessageQuality(t, DebugTest, true) /* halts on the first failing fixture in dev mode, to iterate spec by spec */
 	assert.Zero(t, errs, "Message testing didn't match expectations")
 }
 
@@ -67,7 +67,7 @@ func Test_MessageQualityStopOnErrors_Issue44(t *testing.T) {
 		skipNotify(t)
 		t.SkipNow()
 	}
-	errs := testMessageQuality(t, true, false) /* set haltOnErrors=true to iterate spec by spec */
+	errs := testMessageQuality(t, DebugTest, false) /* halts on the first failing fixture in dev mode, to iterate spec by spec */
 	assert.Zero(t, errs, "Message testing didn't match expectations")
 }
 
@@ -96,7 +96,9 @@ func testMessageQuality(t *testing.T, haltOnErrors bool, continueOnErrors bool) 
 	//   - messages are stable
 	//   - validation continues as much as possible, even in presence of many errors
 	//
-	// haltOnErrors is used in dev mode to study and fix testcases step by step (output is pretty verbose)
+	// haltOnErrors is used in dev mode to study and fix testcases step by step (output is pretty verbose).
+	// It is tied to dev mode because halting is only meaningful while the fixtures run serially:
+	// with t.Parallel() below, the fixture named in the failure is whichever one lost the race.
 	//
 	// set SWAGGER_DEBUG_TEST=1 env to get a report of messages at the end of each test.
 	// expectedMessage{"", false, false},

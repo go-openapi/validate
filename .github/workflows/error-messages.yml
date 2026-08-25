@@ -1,0 +1,28 @@
+# test suite to assert error message stability
+name: error message
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  error-messages:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      -
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      -
+        name: test
+        env:
+          SWAGGER_DEBUG_TEST: 1 # we want full disclosure to understand what's wrong
+        run: |
+          go test -v -run Quality -args -enable-long
