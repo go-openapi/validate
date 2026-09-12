@@ -13,7 +13,7 @@ require (
 	github.com/go-openapi/swag/loading v0.29.2
 	github.com/go-openapi/swag/pools v0.29.2
 	github.com/go-openapi/swag/stringutils v0.29.2
-	github.com/go-openapi/testify/v2 v2.7.0
+	github.com/go-openapi/testify/v2 v2.8.0
 	go.yaml.in/yaml/v3 v3.0.5
 )
 
