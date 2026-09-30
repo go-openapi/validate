@@ -3,7 +3,7 @@ module github.com/go-openapi/validate
 require (
 	github.com/go-openapi/analysis v1.0.0
 	github.com/go-openapi/errors v0.22.9
-	github.com/go-openapi/jsonpointer v1.0.1
+	github.com/go-openapi/jsonpointer v1.0.2
 	github.com/go-openapi/loads v0.25.3
 	github.com/go-openapi/spec v1.0.1
 	github.com/go-openapi/strfmt v0.27.2
