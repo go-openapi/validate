@@ -24,6 +24,18 @@ func TestSchemaOptions(t *testing.T) {
 		require.TrueT(t, opts.skipSchemataResult)
 	})
 
+	t.Run("maxSchemaCompositionDepth", func(t *testing.T) {
+		opts := &SchemaValidatorOptions{}
+		setter := WithMaxSchemaCompositionDepth(42)
+		setter(opts)
+		require.Equal(t, 42, opts.maxSchemaCompositionDepthLimit())
+	})
+
+	t.Run("default maxSchemaCompositionDepth", func(t *testing.T) {
+		opts := &SchemaValidatorOptions{}
+		require.Equal(t, defaultMaxSchemaCompositionDepth, opts.maxSchemaCompositionDepthLimit())
+	})
+
 	t.Run("default Options()", func(t *testing.T) {
 		opts := &SchemaValidatorOptions{}
 		setters := opts.Options()
@@ -39,6 +51,7 @@ func TestSchemaOptions(t *testing.T) {
 		opts := &SchemaValidatorOptions{
 			EnableObjectArrayTypeCheck:    true,
 			EnableArrayMustHaveItemsCheck: true,
+			maxSchemaCompositionDepth:     128,
 			recycleValidators:             true,
 			recycleResult:                 true,
 			skipSchemataResult:            true,

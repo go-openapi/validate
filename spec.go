@@ -143,6 +143,11 @@ func (s *SpecValidator) Validate(data any) (*Result, *Result) {
 	}()
 
 	// Swagger schema validator
+	errs.Merge(s.validateSchemaCompositionDepth()) // error -
+	if !s.Options.ContinueOnErrors && errs.HasErrors() {
+		return errs, warnings // no point in continuing
+	}
+
 	schv := newSchemaValidator(s.schema, nil, rootPath(), s.KnownFormats, s.schemaOptions)
 	errs.Merge(schv.Validate(obj)) // error -
 	// There may be a point in continuing to try and determine more accurate errors
@@ -622,6 +627,100 @@ func (s *SpecValidator) validateReferencedDefinitions() *Result {
 		result.addWarningsAt(localRefPath(k), unusedDefinitionMsg(k))
 	}
 	return result
+}
+
+func (s *SpecValidator) validateSchemaCompositionDepth() *Result {
+	res := validatorPools.results.Borrow()
+	if s.spec == nil || s.spec.Spec() == nil {
+		return res
+	}
+
+	sp := s.spec.Spec()
+	maxDepth := s.schemaOptions.maxSchemaCompositionDepthLimit()
+
+	for _, name := range sortedKeys(sp.Definitions) {
+		schema := sp.Definitions[name]
+		at := newPathSegments(swaggerDefinitions, name)
+		if exceededAt, exceeded := firstSchemaCompositionDepthExceeded(&schema, at, maxDepth); exceeded {
+			res.addErrorsAt(exceededAt, schemaCompositionNestingTooDeepMsg(exceededAt.dotted(), maxDepth))
+		}
+	}
+
+	for _, name := range sortedKeys(sp.Parameters) {
+		param := sp.Parameters[name]
+		if param.Schema == nil {
+			continue
+		}
+
+		at := newPathSegments(swaggerParameters, name).structuralChild(jsonSchema)
+		if exceededAt, exceeded := firstSchemaCompositionDepthExceeded(param.Schema, at, maxDepth); exceeded {
+			res.addErrorsAt(exceededAt, schemaCompositionNestingTooDeepMsg(exceededAt.dotted(), maxDepth))
+		}
+	}
+
+	for _, name := range sortedKeys(sp.Responses) {
+		resp := sp.Responses[name]
+		if resp.Schema == nil {
+			continue
+		}
+
+		at := newPathSegments(swaggerResponses, name).structuralChild(jsonSchema)
+		if exceededAt, exceeded := firstSchemaCompositionDepthExceeded(resp.Schema, at, maxDepth); exceeded {
+			res.addErrorsAt(exceededAt, schemaCompositionNestingTooDeepMsg(exceededAt.dotted(), maxDepth))
+		}
+	}
+
+	if sp.Paths == nil {
+		return res
+	}
+
+	for _, path := range sortedKeys(sp.Paths.Paths) {
+		pathItem := sp.Paths.Paths[path]
+		pathAt := newPathSegments(swaggerPaths, path)
+
+		for i := range pathItem.Parameters {
+			param := pathItem.Parameters[i]
+			if param.Schema == nil {
+				continue
+			}
+
+			at := pathAt.child(swaggerParameters).item(i).structuralChild(jsonSchema)
+			if exceededAt, exceeded := firstSchemaCompositionDepthExceeded(param.Schema, at, maxDepth); exceeded {
+				res.addErrorsAt(exceededAt, schemaCompositionNestingTooDeepMsg(exceededAt.dotted(), maxDepth))
+			}
+		}
+
+		for method, op := range operationsOf(&pathItem) {
+			if op == nil {
+				continue
+			}
+
+			for i := range op.Parameters {
+				param := op.Parameters[i]
+				if param.Schema == nil {
+					continue
+				}
+
+				at := operationPath(path, method).child(swaggerParameters).item(i).structuralChild(jsonSchema)
+				if exceededAt, exceeded := firstSchemaCompositionDepthExceeded(param.Schema, at, maxDepth); exceeded {
+					res.addErrorsAt(exceededAt, schemaCompositionNestingTooDeepMsg(exceededAt.dotted(), maxDepth))
+				}
+			}
+
+			for _, response := range responsesOf(op) {
+				if response.resp.Schema == nil {
+					continue
+				}
+
+				at := responsePath(path, method, response.code).structuralChild(jsonSchema)
+				if exceededAt, exceeded := firstSchemaCompositionDepthExceeded(response.resp.Schema, at, maxDepth); exceeded {
+					res.addErrorsAt(exceededAt, schemaCompositionNestingTooDeepMsg(exceededAt.dotted(), maxDepth))
+				}
+			}
+		}
+	}
+
+	return res
 }
 
 func (s *SpecValidator) validateRequiredDefinitions() *Result {

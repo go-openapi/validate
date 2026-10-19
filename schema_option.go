@@ -14,6 +14,7 @@ import (
 type SchemaValidatorOptions struct {
 	EnableObjectArrayTypeCheck    bool
 	EnableArrayMustHaveItemsCheck bool
+	maxSchemaCompositionDepth     int
 	recycleValidators             bool
 	recycleResult                 bool
 	skipSchemataResult            bool
@@ -31,6 +32,8 @@ type SchemaValidatorOptions struct {
 
 // Option sets optional rules for schema validation.
 type Option func(*SchemaValidatorOptions)
+
+const defaultMaxSchemaCompositionDepth = 256
 
 // EnableObjectArrayTypeCheck activates the swagger rule: an items must be in type: array.
 func EnableObjectArrayTypeCheck(enable bool) Option {
@@ -70,6 +73,14 @@ func withRecycleResults(enable bool) Option {
 	}
 }
 
+// WithMaxSchemaCompositionDepth sets the maximum allowed nesting depth for schema composition
+// keywords (allOf, anyOf, oneOf, not). Values <= 0 fall back to the default limit.
+func WithMaxSchemaCompositionDepth(limit int) Option {
+	return func(svo *SchemaValidatorOptions) {
+		svo.maxSchemaCompositionDepth = limit
+	}
+}
+
 // WithSkipSchemataResult skips the deep audit payload stored in validation Result.
 func WithSkipSchemataResult(enable bool) Option {
 	return func(svo *SchemaValidatorOptions) {
@@ -101,9 +112,18 @@ func (svo SchemaValidatorOptions) Options() []Option {
 		EnableArrayMustHaveItemsCheck(svo.EnableArrayMustHaveItemsCheck),
 		WithRecycleValidators(svo.recycleValidators),
 		withRecycleResults(svo.recycleResult),
+		WithMaxSchemaCompositionDepth(svo.maxSchemaCompositionDepth),
 		WithSkipSchemataResult(svo.skipSchemataResult),
 		WithPathLoader(svo.pathLoaderWithOptions),
 	}
+}
+
+func (svo *SchemaValidatorOptions) maxSchemaCompositionDepthLimit() int {
+	if svo == nil || svo.maxSchemaCompositionDepth <= 0 {
+		return defaultMaxSchemaCompositionDepth
+	}
+
+	return svo.maxSchemaCompositionDepth
 }
 
 // expandOptions builds the spec expand options for schema/$ref expansion during validation,

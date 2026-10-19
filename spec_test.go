@@ -94,6 +94,24 @@ func TestSpec_ExpandResponseRecursive(t *testing.T) {
 	assert.Empty(t, res.Errors)
 }
 
+func TestSpec_CompositionDepthLimit(t *testing.T) {
+	doc, err := loads.Analyzed(nestedSpecWithAllOfDepth(8), "2.0")
+	require.NoError(t, err)
+
+	err = Spec(doc, strfmt.Default, WithMaxSchemaCompositionDepth(6))
+	require.Error(t, err)
+	require.ErrorContains(t, err, "schema composition nesting exceeds limit of 6")
+	require.ErrorContains(t, err, "definitions.X.allOf")
+
+	require.NoError(t, Spec(doc, strfmt.Default, WithMaxSchemaCompositionDepth(10)))
+}
+
+func nestedSpecWithAllOfDepth(depth int) []byte {
+	schema := strings.Repeat(`{"allOf":[`, depth) + `{"type":"object"}` + strings.Repeat(`]}`, depth)
+	doc := `{"swagger":"2.0","info":{"title":"t","version":"0"},"paths":{},"definitions":{"X":` + schema + `}}`
+	return []byte(doc)
+}
+
 // Spec with no path.
 func TestSpec_Issue52(t *testing.T) {
 	fp := filepath.Join("testdata", "bugs", "52", "swagger.json")

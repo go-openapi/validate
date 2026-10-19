@@ -222,3 +222,31 @@ func TestSchemaValidator_TypeArray_Issue83(t *testing.T) {
 	// swagger behavior
 	require.Error(t, AgainstSchema(schema, input, strfmt.Default, SwaggerSchema(true)))
 }
+
+func TestAgainstSchema_CompositionDepthLimit(t *testing.T) {
+	schema := deepAllOfSchema(6)
+	input := map[string]any{}
+
+	err := AgainstSchema(schema, input, strfmt.Default, WithMaxSchemaCompositionDepth(4))
+	require.Error(t, err)
+	require.ErrorContains(t, err, "schema composition nesting exceeds limit of 4")
+
+	require.NoError(t, AgainstSchema(schema, input, strfmt.Default, WithMaxSchemaCompositionDepth(8)))
+}
+
+func deepAllOfSchema(depth int) *spec.Schema {
+	schema := &spec.Schema{
+		SchemaProps: spec.SchemaProps{
+			Type: []string{objectType},
+		},
+	}
+	for i := 0; i < depth; i++ {
+		schema = &spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				AllOf: []spec.Schema{*schema},
+			},
+		}
+	}
+
+	return schema
+}

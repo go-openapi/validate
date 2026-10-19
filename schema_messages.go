@@ -23,6 +23,9 @@ const (
 	// InvalidTypeConversionError indicates that a numerical conversion for the given type could not be carried on.
 	InvalidTypeConversionError = "invalid type conversion in %s: %v "
 
+	// SchemaCompositionNestingTooDeepError indicates that composition keywords are nested beyond the configured safety limit.
+	SchemaCompositionNestingTooDeepError = "%q schema composition nesting exceeds limit of %d"
+
 	// MustValidateAtLeastOneSchemaError indicates that in a AnyOf construct, none of the schema constraints specified were verified.
 	MustValidateAtLeastOneSchemaError = "%q must validate at least one schema (anyOf)"
 
@@ -47,6 +50,10 @@ func invalidSchemaProvidedMsg(err error) errors.Error {
 
 func invalidTypeConversionMsg(path string, err error) errors.Error {
 	return errors.New(errors.CompositeErrorCode, InvalidTypeConversionError, path, err)
+}
+
+func schemaCompositionNestingTooDeepMsg(path string, limit int) errors.Error {
+	return errors.New(errors.CompositeErrorCode, SchemaCompositionNestingTooDeepError, path, limit)
 }
 
 func mustValidateOnlyOneSchemaMsg(path, additionalMsg string) errors.Error {

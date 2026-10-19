@@ -38,6 +38,17 @@ type SchemaValidator struct {
 //
 // When no pre-parsed *[spec.Schema] structure is provided, it uses a JSON schema as default. See example.
 func AgainstSchema(schema *spec.Schema, data any, formats strfmt.Registry, options ...Option) error {
+	opts := new(SchemaValidatorOptions)
+	for _, o := range options {
+		o(opts)
+	}
+
+	if exceededAt, exceeded := firstSchemaCompositionDepthExceeded(schema, rootPath(), opts.maxSchemaCompositionDepthLimit()); exceeded {
+		return errors.CompositeValidationError(
+			schemaCompositionNestingTooDeepMsg(exceededAt.dotted(), opts.maxSchemaCompositionDepthLimit()),
+		)
+	}
+
 	res := NewSchemaValidator(schema, nil, "", formats,
 		append(options, WithRecycleValidators(true), withRecycleResults(true))...,
 	).Validate(data)
@@ -56,9 +67,17 @@ func AgainstSchema(schema *spec.Schema, data any, formats strfmt.Registry, optio
 //
 // Panics if the provided schema is invalid.
 func NewSchemaValidator(schema *spec.Schema, rootSchema any, root string, formats strfmt.Registry, options ...Option) *SchemaValidator {
+	rootPath := rootPathFromString(root)
+
 	opts := new(SchemaValidatorOptions)
 	for _, o := range options {
 		o(opts)
+	}
+
+	if exceededAt, exceeded := firstSchemaCompositionDepthExceeded(schema, rootPath, opts.maxSchemaCompositionDepthLimit()); exceeded {
+		panic(invalidSchemaProvidedMsg(
+			schemaCompositionNestingTooDeepMsg(exceededAt.dotted(), opts.maxSchemaCompositionDepthLimit()),
+		).Error())
 	}
 
 	// the caller still owns this schema, and validation expands what it walks: work on a copy,
@@ -77,7 +96,7 @@ func NewSchemaValidator(schema *spec.Schema, rootSchema any, root string, format
 		opts.ownSchemata = true
 	}
 
-	return newSchemaValidator(schema, rootSchema, rootPathFromString(root), formats, opts)
+	return newSchemaValidator(schema, rootSchema, rootPath, formats, opts)
 }
 
 // rootPathFromString interprets the root path of the exported constructors.
