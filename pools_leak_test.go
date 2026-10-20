@@ -79,3 +79,24 @@ func TestPools_NoLeakOnNilSchema(t *testing.T) {
 	require.NoError(t, AgainstSchema(nil, map[string]any{}, strfmt.Default))
 	require.True(t, pools.AssertNoLeaks(t))
 }
+
+// TestPools_NoDoubleRedeemOnPanic builds a validator that panics inside Validate: the $ref of
+// property "x" is expanded when the object validator walks the data. The validators that
+// redeem themselves on the way out must not be redeemed again by their parent.
+//
+// Like the other tests here, it only bites with the "poolsdebug" tag: the pools then panic
+// on a double redeem, and that panic replaces the one from the schema.
+func TestPools_NoDoubleRedeemOnPanic(t *testing.T) {
+	resetPools()
+	pools.ResetTracking()
+	t.Cleanup(resetPools)
+	t.Cleanup(pools.ResetTracking)
+
+	var schema spec.Schema
+	require.NoError(t, json.Unmarshal([]byte(`{"properties":{"x":{"$ref":"#/definitions/missing"}}}`), &schema))
+
+	require.PanicsWithValue(t,
+		`Invalid schema provided to SchemaValidator: nil value has no field "missing": JSON pointer error`,
+		func() { _ = AgainstSchema(&schema, map[string]any{"x": 1}, strfmt.Default) },
+	)
+}
