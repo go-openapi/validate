@@ -265,10 +265,12 @@ func (s *SchemaValidator) Validate(data any) *Result {
 			continue
 		}
 
-		result.Merge(v.Validate(d))
 		if s.Options.recycleValidators {
-			s.validators[idx] = nil // prevents further (unsafe) usage
+			// prevents further (unsafe) usage. Validate redeems it, even if it panics:
+			// redeemChildren must not redeem it again
+			s.validators[idx] = nil
 		}
+		result.Merge(v.Validate(d))
 		result.Inc()
 	}
 	result.Inc()

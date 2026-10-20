@@ -141,10 +141,10 @@ func (s *schemaPropsValidator) validateAnyOf(data any, mainResult, keepResultAny
 	var bestFailures *Result
 
 	for i, anyOfSchema := range s.anyOfValidators {
-		result := anyOfSchema.Validate(data)
 		if s.Options.recycleValidators {
-			s.anyOfValidators[i] = nil
+			s.anyOfValidators[i] = nil // Validate redeems it, even if it panics
 		}
+		result := anyOfSchema.Validate(data)
 		// We keep inner IMPORTANT! errors no matter what MatchCount tells us
 		keepResultAnyOf.Merge(result.keepRelevantErrors()) // merges (and redeems) a new instance of Result
 
@@ -186,10 +186,10 @@ func (s *schemaPropsValidator) validateOneOf(data any, mainResult, keepResultOne
 	)
 
 	for i, oneOfSchema := range s.oneOfValidators {
-		result := oneOfSchema.Validate(data)
 		if s.Options.recycleValidators {
-			s.oneOfValidators[i] = nil
+			s.oneOfValidators[i] = nil // Validate redeems it, even if it panics
 		}
+		result := oneOfSchema.Validate(data)
 
 		// We keep inner IMPORTANT! errors no matter what MatchCount tells us
 		keepResultOneOf.Merge(result.keepRelevantErrors()) // merges (and redeems) a new instance of Result
@@ -242,10 +242,10 @@ func (s *schemaPropsValidator) validateAllOf(data any, mainResult, keepResultAll
 	var validated int
 
 	for i, allOfSchema := range s.allOfValidators {
-		result := allOfSchema.Validate(data)
 		if s.Options.recycleValidators {
-			s.allOfValidators[i] = nil
+			s.allOfValidators[i] = nil // Validate redeems it, even if it panics
 		}
+		result := allOfSchema.Validate(data)
 		// We keep inner IMPORTANT! errors no matter what MatchCount tells us
 		keepResultAllOf.Merge(result.keepRelevantErrors())
 		if result.IsValid() {
@@ -264,10 +264,11 @@ func (s *schemaPropsValidator) validateAllOf(data any, mainResult, keepResultAll
 }
 
 func (s *schemaPropsValidator) validateNot(data any, mainResult *Result) {
-	result := s.notValidator.Validate(data)
+	notValidator := s.notValidator
 	if s.Options.recycleValidators {
-		s.notValidator = nil
+		s.notValidator = nil // Validate redeems it, even if it panics
 	}
+	result := notValidator.Validate(data)
 	// We keep inner IMPORTANT! errors no matter what MatchCount tells us
 	if result.IsValid() {
 		mainResult.addErrorsAt(s.Path, mustNotValidatechemaMsg(s.Path.dotted()))
