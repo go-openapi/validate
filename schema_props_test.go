@@ -18,7 +18,7 @@ import (
 func TestSchemaPropsValidator_EdgeCases(t *testing.T) {
 	t.Run("should validate props against empty validator", func(t *testing.T) {
 		s := newSchemaPropsValidator(
-			nil, "", nil, nil, nil, nil, nil, nil, strfmt.Default, nil)
+			nil, "", nil, nil, nil, nil, nil, nil, strfmt.Default, nil, nil)
 		s.setPath(newPathSegments("path"))
 		assert.EqualT(t, "path", s.Path.dotted())
 	})
@@ -30,7 +30,7 @@ func TestSchemaPropsValidator_EdgeCases(t *testing.T) {
 				[]spec.Schema{
 					*spec.StringProperty(),
 					*spec.StrFmtProperty("date"),
-				}, nil, nil, nil, nil, nil, strfmt.Default, &SchemaValidatorOptions{recycleValidators: true})
+				}, nil, nil, nil, nil, nil, strfmt.Default, &SchemaValidatorOptions{recycleValidators: true}, nil)
 		}
 
 		t.Run("should validate date string", func(t *testing.T) {
@@ -69,7 +69,7 @@ func TestSchemaPropsValidator_EdgeCases(t *testing.T) {
 				[]spec.Schema{
 					*spec.Int64Property(),
 					*spec.StrFmtProperty("date"),
-				}, nil, nil, nil, nil, strfmt.Default, &SchemaValidatorOptions{recycleValidators: true})
+				}, nil, nil, nil, nil, strfmt.Default, &SchemaValidatorOptions{recycleValidators: true}, nil)
 		}
 
 		t.Run("should validate date string", func(t *testing.T) {
@@ -100,7 +100,7 @@ func TestSchemaPropsValidator_EdgeCases(t *testing.T) {
 				[]spec.Schema{
 					*spec.StringProperty(),
 					*spec.StrFmtProperty("date"),
-				}, nil, nil, nil, strfmt.Default, &SchemaValidatorOptions{recycleValidators: true})
+				}, nil, nil, nil, strfmt.Default, &SchemaValidatorOptions{recycleValidators: true}, nil)
 		}
 
 		t.Run("should validate date string", func(t *testing.T) {
@@ -130,7 +130,7 @@ func TestSchemaPropsValidator_EdgeCases(t *testing.T) {
 				nil,
 				nil,
 				spec.StringProperty(),
-				nil, nil, strfmt.Default, &SchemaValidatorOptions{recycleValidators: true})
+				nil, nil, strfmt.Default, &SchemaValidatorOptions{recycleValidators: true}, nil)
 		}
 
 		t.Run("should validate number", func(t *testing.T) {
