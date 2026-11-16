@@ -1,10 +1,10 @@
 module github.com/go-openapi/validate
 
 require (
-	github.com/go-openapi/analysis v1.0.1
+	github.com/go-openapi/analysis v1.0.2
 	github.com/go-openapi/errors v0.22.9
 	github.com/go-openapi/jsonpointer v1.0.2
-	github.com/go-openapi/loads v0.25.3
+	github.com/go-openapi/loads v0.25.4
 	github.com/go-openapi/spec v1.0.1
 	github.com/go-openapi/strfmt v0.27.4
 	github.com/go-openapi/swag/conv v0.29.2
@@ -25,8 +25,8 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/oklog/ulid/v2 v2.1.2 // indirect
-	golang.org/x/net v0.61.0 // indirect
-	golang.org/x/text v0.43.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
+	golang.org/x/text v0.44.0 // indirect
 )
 
 go 1.26.0
